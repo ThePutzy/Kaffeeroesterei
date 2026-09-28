@@ -71,6 +71,11 @@ export function validateTheme(theme) {
   const offline = theme.offline;
   if (!isPositive(offline?.maxHours)) invalid('offline.maxHours must be positive');
   if (!isPositive(offline.rate) || offline.rate > 1) invalid('offline.rate must be in (0, 1]');
+
+  const boost = theme.boost;
+  if (!isPositive(boost?.factor) || boost.factor <= 1) invalid('boost.factor must be greater than 1');
+  if (!isPositive(boost.seconds)) invalid('boost.seconds must be positive');
+  if (!isPositive(boost.priceSeconds)) invalid('boost.priceSeconds must be positive');
 }
 
 export function createEconomy(theme) {
@@ -106,6 +111,7 @@ export function createEconomy(theme) {
       prestigePoints: 0,
       prestiges: 0,
       achievements: [],
+      boostSeconds: 0, // time left on an income boost
     };
   }
 
@@ -172,8 +178,12 @@ export function createEconomy(theme) {
     return 1 + state.prestigePoints * theme.prestige.bonusPerPoint;
   }
 
+  function boostMultiplier(state) {
+    return state.boostSeconds > 0 ? theme.boost.factor : 1;
+  }
+
   // Generator and global upgrades affect production; click upgrades affect
-  // clicks. The prestige bonus applies to both.
+  // clicks. The prestige bonus and an active boost apply to both.
   // Returns the production per second of every generator, by id.
   function productionByGenerator(state) {
     const perGenerator = new Map();
@@ -186,7 +196,7 @@ export function createEconomy(theme) {
         global *= effect.factor;
       }
     }
-    const factor = global * prestigeMultiplier(state);
+    const factor = global * prestigeMultiplier(state) * boostMultiplier(state);
     return new Map(
       theme.generators.map((generator) => [
         generator.id,
@@ -201,13 +211,42 @@ export function createEconomy(theme) {
     return total;
   }
 
+  // Production without a boost: the basis for offline earnings and the
+  // boost price.
+  function baseProductionPerSecond(state) {
+    return productionPerSecond({ ...state, boostSeconds: 0 });
+  }
+
   function clickValue(state) {
     let factor = 1;
     for (const id of state.upgrades) {
       const { effect } = upgradeById(id);
       if (effect.type === 'clickMultiplier') factor *= effect.factor;
     }
-    return theme.click.base * factor * prestigeMultiplier(state);
+    return theme.click.base * factor * prestigeMultiplier(state) * boostMultiplier(state);
+  }
+
+  // Boost for free, e.g. as the reward for watching an ad. One at a time.
+  function activateBoost(state) {
+    if (state.boostSeconds > 0) return null;
+    return { ...state, boostSeconds: theme.boost.seconds };
+  }
+
+  // The alternative to an ad: pay with the production of priceSeconds.
+  function boostPrice(state) {
+    return baseProductionPerSecond(state) * theme.boost.priceSeconds;
+  }
+
+  function buyBoost(state) {
+    const price = boostPrice(state);
+    if (state.boostSeconds > 0 || !(price > 0) || !(price <= state.currency)) return null;
+    return { ...activateBoost(state), currency: state.currency - price };
+  }
+
+  // Lets boost time run out without earning, e.g. while the player is away.
+  function consumeBoost(state, seconds) {
+    if (!(state.boostSeconds > 0) || !(seconds > 0)) return state;
+    return { ...state, boostSeconds: Math.max(0, state.boostSeconds - seconds) };
   }
 
   function earn(state, amount) {
@@ -224,9 +263,13 @@ export function createEconomy(theme) {
     return { ...earn(state, clickValue(state)), clicks: state.clicks + 1 };
   }
 
+  // Production for `seconds`; a boost that ends within the step only counts
+  // for the part of the step it still covers.
   function tick(state, seconds) {
     if (!(seconds > 0) || !Number.isFinite(seconds)) return state;
-    return earn(state, productionPerSecond(state) * seconds);
+    const boosted = Math.min(seconds, state.boostSeconds);
+    const amount = baseProductionPerSecond(state) * (seconds + boosted * (theme.boost.factor - 1));
+    return consumeBoost(earn(state, amount), seconds);
   }
 
   function prestigeGain(state) {
@@ -247,6 +290,7 @@ export function createEconomy(theme) {
       prestigePoints: state.prestigePoints + gain,
       prestiges: state.prestiges + 1,
       achievements: state.achievements,
+      boostSeconds: state.boostSeconds, // a running boost was earned, it keeps running
     };
   }
 
@@ -267,9 +311,15 @@ export function createEconomy(theme) {
     isUpgradeAvailable,
     buyUpgrade,
     prestigeMultiplier,
+    boostMultiplier,
     productionByGenerator,
     productionPerSecond,
+    baseProductionPerSecond,
     clickValue,
+    activateBoost,
+    boostPrice,
+    buyBoost,
+    consumeBoost,
     earn,
     click,
     tick,

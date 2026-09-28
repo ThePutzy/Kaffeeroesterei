@@ -54,5 +54,14 @@
   "reset.confirm.title": "Gesamten Fortschritt zurücksetzen?",
   "reset.confirm.body": "Alles wird gelöscht, auch Prestige-Punkte und Erfolge. Das lässt sich nicht rückgängig machen.",
   "reset.confirm.yes": "Zurücksetzen",
-  "reset.done": "Fortschritt zurückgesetzt."
+  "reset.done": "Fortschritt zurückgesetzt.",
+  "ads.watch": "Werbung ansehen",
+  "ads.playing": "Werbung läuft …",
+  "ads.unavailable": "Gerade ist keine Werbung verfügbar. Versuch es später noch einmal.",
+  "boost.offer": "{minutes} Min. lang {factor}× Einnahmen",
+  "boost.active": "{factor}× Einnahmen: noch {time}",
+  "boost.buy": "Kaufen für {price}",
+  "boost.started": "{minutes} Minuten lang Einnahmen ×{factor}!",
+  "offline.double": "Werbung ansehen: verdoppeln",
+  "offline.doubled": "Verdoppelt: +{amount}"
 }

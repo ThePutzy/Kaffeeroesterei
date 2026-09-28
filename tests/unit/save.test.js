@@ -117,3 +117,11 @@ test('an unreadable save is kept aside before the game starts fresh', () => {
   assert.deepEqual(loadSave(store, economy).state, played);
   assert.equal(loadSave(createStore('empty', memoryStorage()), economy), null);
 });
+
+test('boost time is restored, optional and capped', () => {
+  const withBoost = parseSave(serialize({ state: { ...played, boostSeconds: 30 } }), economy);
+  assert.equal(withBoost.state.boostSeconds, 30);
+  const { boostSeconds, ...withoutBoost } = played;
+  assert.equal(parseSave(serialize({ state: withoutBoost }), economy).state.boostSeconds, 0);
+  assert.equal(parseSave(serialize({ state: { ...played, boostSeconds: 9999 } }), economy).state.boostSeconds, 60);
+});

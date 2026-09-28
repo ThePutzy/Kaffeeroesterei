@@ -2,7 +2,7 @@
   "crazygames": {
     "runtime": {
       "theme": "kaffeeroesterei",
-      "ads": { "adapter": "none" },
+      "ads": { "adapter": "crazygames" },
       "languageDetection": "none"
     },
     "allowedUrls": []

@@ -57,6 +57,18 @@ export function createGame({ economy, state = economy.createState(), now }) {
       current = economy.createState();
       emit({ type: 'reset' });
     },
+    // The reward for a watched ad.
+    activateBoost() {
+      return apply(economy.activateBoost(current), { type: 'boost' });
+    },
+    // The alternative to the ad: pay with currency.
+    buyBoost() {
+      return apply(economy.buyBoost(current), { type: 'boost' });
+    },
+    // Extra earnings, e.g. doubled offline earnings after an ad.
+    grant(amount) {
+      return apply(economy.earn(current, amount));
+    },
     // Advances the game to `time` (milliseconds). A clock that went
     // backwards adds nothing.
     update(time) {
@@ -67,10 +79,10 @@ export function createGame({ economy, state = economy.createState(), now }) {
         apply(economy.tick(current, seconds));
         return;
       }
+      // Time away also runs down a boost.
       const earnings = offlineEarnings(economy, current, seconds);
-      if (earnings.amount > 0) {
-        apply(economy.earn(current, earnings.amount), { type: 'offline', awaySeconds: seconds, ...earnings });
-      }
+      const next = economy.consumeBoost(economy.earn(current, earnings.amount), seconds);
+      apply(next, earnings.amount > 0 ? { type: 'offline', awaySeconds: seconds, ...earnings } : undefined);
     },
   };
 }

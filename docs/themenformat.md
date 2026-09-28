@@ -13,6 +13,7 @@ Das beschreibt `themes/<name>/theme.json`, die Formeln des Wirtschaftskerns (`sr
 | `achievements[]` | Erfolge: `id`, `condition` |
 | `prestige` | `threshold`, `exponent` (größer als 0, höchstens 1), `bonusPerPoint` |
 | `offline` | `maxHours` (Obergrenze der Abwesenheit), `rate` (Anteil der normalen Produktion, größer als 0, höchstens 1) |
+| `boost` | `factor` (Einnahmen-Faktor, größer als 1), `seconds` (Dauer), `priceSeconds` (Preis beim Kauf mit Währung: so viele Sekunden der aktuellen Produktion ohne Boost) |
 
 **Effekte** (`effect.factor` muss größer als 1 sein):
 
@@ -46,6 +47,7 @@ Das beschreibt `themes/<name>/theme.json`, die Formeln des Wirtschaftskerns (`sr
 - **Prestige behält:** Gesamtertrag, Klicks, Prestige-Punkte, Zahl der Prestiges und Erfolge.
 - **Erfolge** haben in diesem Schritt nur Bedingungen und keinen Bonus.
 - **Offline-Ertrag:** Produktion pro Sekunde × Abwesenheit (höchstens `maxHours`) × `rate`. Als Abwesenheit zählt jede Lücke von mehr als 60 Sekunden ohne Aktualisierung: geschlossenes Spiel, verborgener Tab oder schlafendes Gerät. Kürzere Lücken zählen voll.
+- **Boost:** Solange er läuft, wirkt `boost.factor` auf Produktion und Klicks. Es gibt ihn als Belohnung für eine Werbung oder zum Kauf für `Grundproduktion × priceSeconds`. Er läuft auch während der Abwesenheit ab; der Offline-Ertrag rechnet ohne Boost. Ein Prestige beendet ihn nicht.
 - **Zahlen** sind normale JavaScript-Zahlen (bis etwa 1e308). Der Simulator prüft, dass sie unter 1e300 bleiben.
 
 ## Balance-Simulator

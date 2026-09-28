@@ -16,6 +16,12 @@ const SETTINGS_ICON =
   '<circle cx="12" cy="12" r="7.5" fill="none" stroke="currentColor" stroke-width="3.5" stroke-dasharray="3.2 2.7"/>' +
   '<circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
 
+// Marks every button that plays an ad, as CrazyGames requires.
+const VIDEO_ICON =
+  '<svg class="video-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">' +
+  '<rect x="2" y="5" width="20" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>' +
+  '<path d="M10 9l5 3-5 3z" fill="currentColor"/></svg>';
+
 function markup(theme, upgrades, achievements) {
   const generators = theme.generators
     .map(
@@ -70,6 +76,13 @@ function markup(theme, upgrades, achievements) {
         <span class="click-value" data-ref="clickValue"></span>
       </button>
       <div class="floaters" aria-hidden="true" data-ref="floaters"></div>
+      <div class="boost">
+        <p class="boost-title" data-ref="boostTitle"></p>
+        <div class="boost-actions" data-ref="boostActions">
+          <button type="button" class="boost-button" data-action="boost-ad" data-ref="boostAd">${VIDEO_ICON}<span data-text="ads.watch"></span></button>
+          <button type="button" class="boost-button" data-action="boost-buy" data-ref="boostBuy"></button>
+        </div>
+      </div>
     </section>
     <nav class="tabs" role="tablist" data-label="tabs.label">
       ${TABS.map(
@@ -135,7 +148,8 @@ function markup(theme, upgrades, achievements) {
         <h2 id="offline-title" data-text="offline.title"></h2>
         <p data-ref="offlineBody"></p>
         <p class="note" data-ref="offlineNote"></p>
-        <div class="dialog-actions">
+        <div class="dialog-actions equal">
+          <button type="button" class="primary" data-action="offline-double" data-ref="offlineDouble">${VIDEO_ICON}<span data-text="offline.double"></span></button>
           <button value="close" class="primary" data-text="offline.continue"></button>
         </div>
       </form>
@@ -149,6 +163,9 @@ function markup(theme, upgrades, achievements) {
           <button value="confirm" class="primary" data-text="prestige.action"></button>
         </div>
       </form>
+    </dialog>
+    <dialog class="ad-overlay" data-ref="adOverlay" aria-labelledby="ad-overlay-text">
+      <p id="ad-overlay-text" data-text="ads.playing"></p>
     </dialog>
     <div class="toasts" role="status" aria-live="polite" data-ref="toasts"></div>`;
 }
@@ -178,7 +195,15 @@ function rowsBy(root, selector) {
   );
 }
 
-export function createUi({ root, game, i18n, storageAvailable = true, onLanguageChange = () => {}, onReset = () => {} }) {
+export function createUi({
+  root,
+  game,
+  i18n,
+  adFlow = null,
+  storageAvailable = true,
+  onLanguageChange = () => {},
+  onReset = () => {},
+}) {
   const { economy } = game;
   const { theme } = economy;
   const upgrades = [...(theme.upgrades ?? [])].sort((a, b) => a.cost - b.cost);
@@ -225,8 +250,8 @@ export function createUi({ root, game, i18n, storageAvailable = true, onLanguage
   // Several gaps while the dialog is open add up.
   function showOffline({ awaySeconds, amount }) {
     offlineShown = offlineShown
-      ? { awaySeconds: offlineShown.awaySeconds + awaySeconds, amount: offlineShown.amount + amount }
-      : { awaySeconds, amount };
+      ? { ...offlineShown, awaySeconds: offlineShown.awaySeconds + awaySeconds, amount: offlineShown.amount + amount }
+      : { awaySeconds, amount, doubled: false };
     setText(
       refs.offlineBody,
       i18n.t('offline.body', { duration: describeDuration(offlineShown.awaySeconds), amount: format(offlineShown.amount) }),
@@ -238,7 +263,20 @@ export function createUi({ root, game, i18n, storageAvailable = true, onLanguage
         hours: format(theme.offline.maxHours),
       }),
     );
+    setHidden(refs.offlineDouble, offlineShown.doubled || !adFlow?.canOfferReward());
     if (!refs.offline.open) refs.offline.showModal();
+  }
+
+  function formatClock(seconds) {
+    const whole = Math.ceil(seconds);
+    return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
+  }
+
+  function watchAd(grant) {
+    adFlow?.reward(grant).then((watched) => {
+      if (!watched) toast(i18n.t('ads.unavailable'));
+      render();
+    });
   }
 
   // Texts that only change with the language.
@@ -341,6 +379,20 @@ export function createUi({ root, game, i18n, storageAvailable = true, onLanguage
         : i18n.t('prestige.notYet', { value: format(theme.prestige.threshold), current: format(state.runEarned) }),
     );
     setDisabled(refs.prestigeButton, gain < 1);
+
+    const { factor, seconds } = theme.boost;
+    const boostActive = state.boostSeconds > 0;
+    setText(
+      refs.boostTitle,
+      boostActive
+        ? i18n.t('boost.active', { factor: format(factor), time: formatClock(state.boostSeconds) })
+        : i18n.t('boost.offer', { factor: format(factor), minutes: format(seconds / 60) }),
+    );
+    setHidden(refs.boostActions, boostActive);
+    setHidden(refs.boostAd, !adFlow?.canOfferReward());
+    const price = economy.boostPrice(state);
+    setText(refs.boostBuy, i18n.t('boost.buy', { price: format(price) }));
+    setDisabled(refs.boostBuy, !(price > 0 && price <= state.currency));
   }
 
   function toast(text) {
@@ -390,6 +442,18 @@ export function createUi({ root, game, i18n, storageAvailable = true, onLanguage
       refs.settings.close();
       refs.confirmReset.returnValue = '';
       refs.confirmReset.showModal();
+    } else if (action === 'boost-buy') {
+      game.buyBoost();
+    } else if (action === 'boost-ad') {
+      watchAd(() => game.activateBoost());
+    } else if (action === 'offline-double' && offlineShown && !offlineShown.doubled) {
+      const bonus = offlineShown.amount;
+      watchAd(() => {
+        game.grant(bonus);
+        offlineShown.doubled = true;
+        setHidden(refs.offlineDouble, true);
+        setText(refs.offlineNote, i18n.t('offline.doubled', { amount: format(bonus) }));
+      });
     }
     render();
   });
@@ -437,8 +501,17 @@ export function createUi({ root, game, i18n, storageAvailable = true, onLanguage
       showOffline(event);
     } else if (event.type === 'reset') {
       toast(i18n.t('reset.done'));
+    } else if (event.type === 'boost') {
+      toast(i18n.t('boost.started', { factor: format(theme.boost.factor), minutes: format(theme.boost.seconds / 60) }));
     }
   });
+
+  // While an ad runs, nothing in the game can be used.
+  adFlow?.on((type) => {
+    if (type === 'start' && !refs.adOverlay.open) refs.adOverlay.showModal();
+    if (type === 'end' && refs.adOverlay.open) refs.adOverlay.close();
+  });
+  refs.adOverlay.addEventListener('cancel', (event) => event.preventDefault());
 
   selectTab(activeTab);
   selectAmount(buyAmount);
