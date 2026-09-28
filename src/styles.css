@@ -502,10 +502,13 @@ select:focus-visible {
   text-align: center;
 }
 
+/* Equal columns keep both buttons the same width whatever the price text;
+   on narrow screens the labels wrap instead of the buttons drifting apart. */
 .boost-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  max-width: 100%;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
   gap: 6px;
 }
 

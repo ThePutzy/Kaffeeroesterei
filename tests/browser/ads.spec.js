@@ -37,6 +37,15 @@ test('the boost can also be bought with coins instead of an ad', async ({ page }
   await expect(rate(page)).toHaveText('4 per second');
 });
 
+test('the ad button and the coin price have the same size', async ({ page }) => {
+  await seedSave(page, { generators: { g5: 6 } }); // a long label: "Buy for 864,000"
+  await openPausedGame(page);
+  const watchBox = await page.getByRole('button', { name: 'Watch ad' }).boundingBox();
+  const buyBox = await page.getByRole('button', { name: 'Buy for 864,000' }).boundingBox();
+  expect(Math.abs(watchBox.width - buyBox.width), 'same width').toBeLessThanOrEqual(1);
+  expect(Math.abs(watchBox.height - buyBox.height), 'same height').toBeLessThanOrEqual(1);
+});
+
 test('offline earnings can be doubled once with an ad', async ({ page }) => {
   await seedSave(page, { generators: { g1: 10 } }, { savedAt: START.getTime() - 2 * 3600 * 1000 });
   await openPausedGame(page);
