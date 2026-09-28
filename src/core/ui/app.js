@@ -76,7 +76,7 @@ function markup(theme, upgrades, achievements) {
         <span class="click-value" data-ref="clickValue"></span>
       </button>
       <div class="floaters" aria-hidden="true" data-ref="floaters"></div>
-      <div class="boost">
+      <div class="boost" data-ref="boost">
         <p class="boost-title" data-ref="boostTitle"></p>
         <div class="boost-actions" data-ref="boostActions">
           <button type="button" class="boost-button" data-action="boost-ad" data-ref="boostAd">${VIDEO_ICON}<span data-text="ads.watch"></span></button>
@@ -150,7 +150,7 @@ function markup(theme, upgrades, achievements) {
         <p class="note" data-ref="offlineNote"></p>
         <div class="dialog-actions equal">
           <button type="button" class="primary" data-action="offline-double" data-ref="offlineDouble">${VIDEO_ICON}<span data-text="offline.double"></span></button>
-          <button value="close" class="primary" data-text="offline.continue"></button>
+          <button value="close" class="primary" data-text="offline.continue" autofocus></button>
         </div>
       </form>
     </dialog>
@@ -164,7 +164,7 @@ function markup(theme, upgrades, achievements) {
         </div>
       </form>
     </dialog>
-    <dialog class="ad-overlay" data-ref="adOverlay" aria-labelledby="ad-overlay-text">
+    <dialog class="ad-overlay" data-ref="adOverlay" aria-labelledby="ad-overlay-text" closedby="none">
       <p id="ad-overlay-text" data-text="ads.playing"></p>
     </dialog>
     <div class="toasts" role="status" aria-live="polite" data-ref="toasts"></div>`;
@@ -210,7 +210,7 @@ export function createUi({
   const achievements = theme.achievements ?? [];
   let activeTab = 'generators';
   let buyAmount = '1';
-  let offlineShown = null; // time away and earnings shown in the open dialog
+  let offlineShown = null; // time away and earnings shown in the open dialog, if any
 
   root.innerHTML = markup(theme, upgrades, achievements);
   const refs = Object.fromEntries([...root.querySelectorAll('[data-ref]')].map((node) => [node.dataset.ref, node]));
@@ -247,11 +247,12 @@ export function createUi({
     return i18n.t('duration.minutes', { minutes });
   }
 
-  // Several gaps while the dialog is open add up.
+  // Several gaps while the dialog is open add up in the same record, so a
+  // reward for this dialog can tell whether the dialog is still open.
   function showOffline({ awaySeconds, amount }) {
-    offlineShown = offlineShown
-      ? { ...offlineShown, awaySeconds: offlineShown.awaySeconds + awaySeconds, amount: offlineShown.amount + amount }
-      : { awaySeconds, amount, doubled: false };
+    offlineShown ??= { awaySeconds: 0, amount: 0, doubled: false };
+    offlineShown.awaySeconds += awaySeconds;
+    offlineShown.amount += amount;
     setText(
       refs.offlineBody,
       i18n.t('offline.body', { duration: describeDuration(offlineShown.awaySeconds), amount: format(offlineShown.amount) }),
@@ -382,15 +383,21 @@ export function createUi({
 
     const { factor, seconds } = theme.boost;
     const boostActive = state.boostSeconds > 0;
+    const price = economy.boostPrice(state);
+    // Nothing is offered before anything produces: a price of 0 would look
+    // free, and no ad should be offered before the player has played a bit.
+    setHidden(refs.boost, !boostActive && !(price > 0));
     setText(
       refs.boostTitle,
       boostActive
         ? i18n.t('boost.active', { factor: format(factor), time: formatClock(state.boostSeconds) })
         : i18n.t('boost.offer', { factor: format(factor), minutes: format(seconds / 60) }),
     );
-    setHidden(refs.boostActions, boostActive);
+    // While the boost runs the buttons only turn invisible, so the layout
+    // below them does not jump when they come back.
+    const visibility = boostActive ? 'hidden' : '';
+    if (refs.boostActions.style.visibility !== visibility) refs.boostActions.style.visibility = visibility;
     setHidden(refs.boostAd, !adFlow?.canOfferReward());
-    const price = economy.boostPrice(state);
     setText(refs.boostBuy, i18n.t('boost.buy', { price: format(price) }));
     setDisabled(refs.boostBuy, !(price > 0 && price <= state.currency));
   }
@@ -447,10 +454,12 @@ export function createUi({
     } else if (action === 'boost-ad') {
       watchAd(() => game.activateBoost());
     } else if (action === 'offline-double' && offlineShown && !offlineShown.doubled) {
-      const bonus = offlineShown.amount;
+      const shown = offlineShown;
+      const bonus = shown.amount;
       watchAd(() => {
         game.grant(bonus);
-        offlineShown.doubled = true;
+        shown.doubled = true;
+        if (offlineShown !== shown) return; // the dialog was closed meanwhile
         setHidden(refs.offlineDouble, true);
         setText(refs.offlineNote, i18n.t('offline.doubled', { amount: format(bonus) }));
       });
@@ -506,12 +515,19 @@ export function createUi({
     }
   });
 
-  // While an ad runs, nothing in the game can be used.
+  // While an ad runs, nothing in the game can be used. Browsers may close a
+  // modal dialog after repeated Escape presses even if "cancel" is prevented,
+  // so the overlay reopens while the ad runs and everything else is inert.
   adFlow?.on((type) => {
-    if (type === 'start' && !refs.adOverlay.open) refs.adOverlay.showModal();
-    if (type === 'end' && refs.adOverlay.open) refs.adOverlay.close();
+    const running = type === 'start';
+    for (const child of root.children) if (child !== refs.adOverlay) child.inert = running;
+    if (running && !refs.adOverlay.open) refs.adOverlay.showModal();
+    if (!running && refs.adOverlay.open) refs.adOverlay.close();
   });
   refs.adOverlay.addEventListener('cancel', (event) => event.preventDefault());
+  refs.adOverlay.addEventListener('close', () => {
+    if (adFlow?.busy) refs.adOverlay.showModal();
+  });
 
   selectTab(activeTab);
   selectAmount(buyAmount);

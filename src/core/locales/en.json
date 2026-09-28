@@ -56,7 +56,7 @@
   "reset.confirm.yes": "Reset",
   "reset.done": "Progress reset.",
   "ads.watch": "Watch ad",
-  "ads.playing": "Advertisement is playing …",
+  "ads.playing": "Advertisement is playing\u00a0…",
   "ads.unavailable": "No ad available right now. Please try again later.",
   "boost.offer": "{factor}× income for {minutes} min",
   "boost.active": "{factor}× income: {time} left",
