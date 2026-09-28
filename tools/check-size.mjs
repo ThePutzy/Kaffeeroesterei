@@ -4,7 +4,7 @@
 //   target's allowedUrls from config/targets.json (no external requests).
 // Usage: node tools/check-size.mjs [target ...]   (default: all targets)
 import { readdir, readFile, stat } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { existsSync, realpathSync } from 'node:fs';
 import { extname, join, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ROOT, loadTargets } from './build.mjs';
@@ -21,12 +21,40 @@ const NAMESPACE_URLS = new Set([
 
 const TEXT_EXTENSIONS = new Set(['.html', '.js', '.mjs', '.css', '.json', '.svg', '.txt', '.xml', '.webmanifest']);
 
-// Absolute http(s) URLs, plus protocol-relative ones such as src="//cdn.example.com/x.js".
-const URL_PATTERN = /\bhttps?:\/\/[^\s"'`<>()\\]+|(?<=["'`(=\s])\/\/[a-z0-9-]+(?:\.[a-z0-9-]+)+[^\s"'`<>()\\]*/gi;
+// Absolute URLs (http, https, ws, wss, ftp; also JSON-escaped as "https:\/\/…"),
+// plus protocol-relative ones such as src="//cdn.example.com/x.js".
+const URL_PATTERN =
+  /(?:https?|wss?|ftp):(?:\\?\/){2}[^\s"'`<>()\\]+|(?<=^|[\s"'`(=,])\/\/[a-z0-9-]+(?:\.[a-z0-9-]+)+[^\s"'`<>()\\]*/gim;
 
+// The value of an xmlns or xmlns:prefix attribute names a namespace.
+const XMLNS_BEFORE = /xmlns(?::[\w.-]+)?\s*=\s*["']$/;
+
+// A package holds plain files only; a symlink would point outside of it and
+// escape both checks.
 export async function listFiles(dir) {
   const entries = await readdir(dir, { recursive: true, withFileTypes: true });
+  const links = entries.filter((entry) => entry.isSymbolicLink()).map((entry) => relative(dir, join(entry.parentPath, entry.name)));
+  if (links.length > 0) throw new Error(`symbolic links in ${dir}: ${links.join(', ')}`);
   return entries.filter((entry) => entry.isFile()).map((entry) => join(entry.parentPath, entry.name));
+}
+
+// Allowed entries match by exact origin and path prefix, so an entry for
+// https://sdk.example.com does not allow https://sdk.example.com.evil.test.
+function isAllowed(url, allowedUrls) {
+  let parsed;
+  try {
+    parsed = new URL(url.replaceAll('\\/', '/'), 'https://protocol-relative.invalid');
+  } catch {
+    return false;
+  }
+  return allowedUrls.some((entry) => {
+    try {
+      const allowed = new URL(entry);
+      return parsed.origin === allowed.origin && parsed.pathname.startsWith(allowed.pathname);
+    } catch {
+      return false; // an unreadable entry allows nothing
+    }
+  });
 }
 
 export async function measure(dir) {
@@ -46,9 +74,9 @@ export async function findExternalUrls(dir, allowedUrls = []) {
   for (const file of await listFiles(dir)) {
     if (!TEXT_EXTENSIONS.has(extname(file).toLowerCase())) continue;
     const text = await readFile(file, 'utf8');
-    for (const [url] of text.matchAll(URL_PATTERN)) {
-      if (NAMESPACE_URLS.has(url)) continue;
-      if (allowedUrls.some((prefix) => url.startsWith(prefix))) continue;
+    for (const { 0: url, index } of text.matchAll(URL_PATTERN)) {
+      if (NAMESPACE_URLS.has(url) || XMLNS_BEFORE.test(text.slice(Math.max(0, index - 64), index))) continue;
+      if (isAllowed(url, allowedUrls)) continue;
       findings.push({ file: relative(dir, file), url });
     }
   }
@@ -94,7 +122,8 @@ async function main(names) {
   return ok;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// Run as a command, also when called through a symlinked path.
+if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
   try {
     if (!(await main(process.argv.slice(2)))) process.exit(1);
   } catch (error) {

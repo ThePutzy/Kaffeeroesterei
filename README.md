@@ -19,11 +19,11 @@ Stand: Schritt 6 (Entwürfe für die eigene Seite). Das Spiel ist mit eigenen Te
 
 | Befehl | Zweck |
 | --- | --- |
-| `npm run dev` | Startet einen lokalen Server auf http://127.0.0.1:8080/. Unter `/` läuft der Quellstand, unter `/dist/<ziel>/` das gebaute Paket. Mit `npm run dev -- --host 0.0.0.0` ist er auch vom Handy im selben WLAN erreichbar. |
+| `npm run dev` | Startet einen lokalen Server auf http://127.0.0.1:8080/. Unter `/` läuft der Quellstand, unter `/dist/<ziel>/` das gebaute Paket. Mit `npm run dev -- --host 0.0.0.0` ist er auch vom Handy im selben WLAN erreichbar; das nur in einem vertrauenswürdigen Netz, denn der Server liefert den Repository-Ordner aus (ohne versteckte Dateien wie `.git` und ohne `node_modules`). |
 | `npm test` | Unit-Tests mit dem eingebauten Node-Testrunner |
 | `npm run sim` | Balance-Simulator: spielt das Thema durch und prüft Tempo und Zahlen (siehe [docs/themenformat.md](docs/themenformat.md)) |
 | `npm run build` | Baut je Ziel ein Paket nach `dist/<ziel>/` |
-| `npm run check:size` | Prüft jedes Paket: unter 2.000.000 Bytes und keine externen URLs |
+| `npm run check:size` | Prüft jedes Paket: unter 2.000.000 Bytes, keine externen URLs (auch `ws://`, `wss://`, `ftp://`) und keine Symlinks |
 | `npm run test:browser` | Browser-Test mit Playwright; baut vorher neu |
 | `npm run check` | Führt alles nacheinander aus |
 
@@ -38,7 +38,7 @@ Die Ziele stehen in `config/targets.json`, derzeit `crazygames` und `web`:
   - `browser`: Sprache des Browsers, sonst Englisch.
   - `none`: Englisch. So verlangt es CrazyGames, solange das SDK keine Sprache liefert.
   - In beiden Fällen kann der Spieler die Sprache in den Einstellungen wechseln.
-- `allowedUrls` ist die Ausnahmeliste für die URL-Prüfung, zum Beispiel für ein Werbe-SDK. Derzeit ist sie leer.
+- `allowedUrls` ist die Ausnahmeliste für die URL-Prüfung, zum Beispiel für ein Werbe-SDK. Ein Eintrag gilt für genau diese Herkunft (Schema, Host, Port) und alles unter seinem Pfad; `https://sdk.example.com` erlaubt also nicht `https://sdk.example.com.evil.test`. Derzeit ist die Liste leer.
 
 Zugangsdaten, Schlüssel und Publisher-IDs gehören nicht ins Repository, auch nicht in diese Datei.
 

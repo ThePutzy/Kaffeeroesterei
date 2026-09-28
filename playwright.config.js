@@ -22,7 +22,9 @@ export default defineConfig({
   webServer: {
     command: `node tools/serve.mjs --port ${PORT}`,
     url: `http://127.0.0.1:${PORT}/index.html`,
-    reuseExistingServer: !process.env.CI,
+    // Never reuse a server that is already running: it could serve another
+    // checkout (a second worktree, a run that was killed) and test the wrong files.
+    reuseExistingServer: false,
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }, ...extraBrowsers],
 });

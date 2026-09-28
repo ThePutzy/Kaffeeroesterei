@@ -331,6 +331,7 @@ Texte und Bilder müssen bei devicePixelRatio 1 in diesen iframe-Größen lesbar
 - Neues kommt als eigene, kleine PRs oben auf den Stapel:
   - `claude/durchsicht-doku`: Doku-Korrekturen und die nachgelesenen CrazyGames-Anforderungen (alle Fenstergrößen, Basic Launch, Einreichung).
   - `claude/speicherstand-absichern`: mehrere Tabs, Spielstand einer neueren Version, fehlgeschlagenes Speichern.
+  - `claude/werkzeuge-absichern`: Build, Größen-Check, lokaler Server und Test-Fixture.
 
 ## Entscheidungen (freigegeben am 28.09.2026)
 

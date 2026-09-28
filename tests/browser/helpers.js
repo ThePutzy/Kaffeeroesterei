@@ -17,6 +17,8 @@ export const test = base.extend({
           watched.foreignRequests.push(request.url());
         }
       });
+      // Chromium and WebKit report WebSockets only here, not as requests.
+      page.on('websocket', (socket) => watched.foreignRequests.push(socket.url()));
       await use(watched);
       expect(watched.errors, 'console errors').toEqual([]);
       expect(watched.foreignRequests, 'requests to other origins').toEqual([]);
