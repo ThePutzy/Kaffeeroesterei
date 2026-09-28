@@ -25,10 +25,11 @@ Du kannst dieses Spiel ohne Anmeldung spielen. Wir fragen keine Namen, E-Mail-Ad
 
 - beim Aufruf der Seite (technisch notwendige Daten beim Hosting-Anbieter, siehe 3)
 - [nur mit Werbung:] bei der Auslieferung von Werbung und bei deiner Einwilligungs-Entscheidung (siehe 5 und 6)
+- wenn du uns eine E-Mail schreibst (siehe 7)
 
 ## 3. Hosting und Aufruf der Seite
 
-Die Seite liegt bei [Cloudflare, Inc. oder die zuständige Gesellschaft – prüfen], Dienst „Cloudflare Pages“. Wenn du die Seite aufrufst, verarbeitet der Anbieter technisch notwendige Daten:
+Die Seite liegt bei [Cloudflare, Inc. oder der zuständigen Gesellschaft – prüfen] (Dienst „Cloudflare Pages“). Wenn du die Seite aufrufst, verarbeitet der Anbieter technisch notwendige Daten:
 
 - deine IP-Adresse
 - Datum und Uhrzeit des Aufrufs
@@ -50,19 +51,20 @@ Das dient dazu, die Seite auszuliefern und vor Angriffen zu schützen.
 Das Spiel speichert deinen Spielstand im Speicher deines Browsers (`localStorage`):
 
 - Fortschritt, gewählte Sprache und die Zeit der letzten Speicherung
+- Ist ein gespeicherter Spielstand beschädigt, legt das Spiel eine Kopie davon beiseite, statt sie zu überschreiben.
 - Diese Daten verlassen dein Gerät nicht und werden nicht an uns oder andere übertragen.
 
 Das Speichern ist nötig, damit das Spiel deinen Fortschritt behält, also für den Dienst, den du ausdrücklich nutzen willst. Dafür ist nach § 25 Abs. 2 Nr. 2 TDDDG keine Einwilligung nötig.
 
 > Das ist meine Einschätzung auf Grundlage des Gesetzestexts, keine Rechtsberatung. Bitte prüfen.
 
-**Löschen:** Du kannst den Spielstand jederzeit löschen, im Spiel über „Einstellungen → Fortschritt zurücksetzen“ oder über die Einstellungen deines Browsers („Websitedaten löschen“).
+**Löschen:** Über „Einstellungen → Fortschritt zurücksetzen“ setzt du deinen Fortschritt zurück; die gewählte Sprache und der Zeitpunkt der Speicherung bleiben gespeichert. Alle Daten des Spiels entfernst du über die Einstellungen deines Browsers („Websitedaten löschen“).
 
 ## 5. Werbung (Google AdSense / H5 Games Ads)
 
 > Nur aufnehmen, wenn die Werbung eingeschaltet ist.
 
-Wir finanzieren das Spiel durch Werbung. Anbieter ist [Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland – prüfen]. Werbung erscheint nur, wenn du sie selbst wählst (zum Beispiel für eine Belohnung im Spiel) oder in Pausen nach einem Prestige.
+Wir finanzieren das Spiel durch Werbung. Anbieter ist [Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland – prüfen]. Werbung erscheint nur, wenn du sie selbst wählst (zum Beispiel für eine Belohnung im Spiel) oder in Pausen, nachdem du eine Rösterei verkauft hast (Prestige).
 
 Pflichtangaben laut Google AdSense („Erforderlicher Content“, gelesen am 28.09.2026):
 
@@ -85,11 +87,22 @@ Für die Einwilligung in Werbung und Cookies nutzen wir [Name des von Google zer
 - **Rechtsgrundlage:** [prüfen, z. B. Art. 6 Abs. 1 lit. c DSGVO in Verbindung mit Art. 7 Abs. 1 DSGVO – Nachweis der Einwilligung]
 - **Datenschutzerklärung des Anbieters:** [Link]
 
-## 7. Keine weiteren Dienste
+## 7. Kontakt per E-Mail
 
-Wir setzen keine Analyse- oder Tracking-Werkzeuge ein. Es gibt keine Konten, keinen Newsletter, keine Kommentarfunktion und keine eingebundenen Inhalte anderer Anbieter wie Videos, Karten, Schriften oder Knöpfe sozialer Netzwerke.
+Schreibst du uns eine E-Mail, verarbeiten wir deine E-Mail-Adresse und deine Nachricht, um dir zu antworten.
 
-## 8. Deine Rechte
+- **Rechtsgrundlage:** [prüfen, z. B. Art. 6 Abs. 1 lit. f DSGVO; unser berechtigtes Interesse ist, Anfragen zu beantworten]
+- **Speicherdauer:** [prüfen, z. B. bis deine Anfrage erledigt ist, soweit keine Aufbewahrungspflicht besteht]
+
+> Nutzt du statt der E-Mail oder zusätzlich ein Kontaktformular, braucht es dafür einen eigenen Abschnitt.
+
+## 8. Keine weiteren Dienste
+
+Außer der Werbung (Abschnitt 5) und dem Einwilligungstool (Abschnitt 6) setzen wir keine Analyse- oder Tracking-Werkzeuge ein. Es gibt keine Konten, keinen Newsletter und keine Kommentarfunktion, und wir binden keine Inhalte anderer Anbieter ein, etwa Videos, Karten, Schriften oder Knöpfe sozialer Netzwerke.
+
+> Ohne Werbung beginnt der Absatz mit „Wir setzen keine Analyse- oder Tracking-Werkzeuge ein.“
+
+## 9. Deine Rechte
 
 Du hast das Recht:
 
@@ -101,10 +114,10 @@ Du hast das Recht:
 - eine Einwilligung jederzeit mit Wirkung für die Zukunft zu widerrufen (Art. 7 Abs. 3)
 - dich bei einer Datenschutz-Aufsichtsbehörde zu beschweren (Art. 77), zum Beispiel bei [zuständige Aufsichtsbehörde des Bundeslands – Name, Anschrift, Webseite]
 
-Für alles andere schreib uns an [E-Mail-Adresse].
+Um deine Rechte geltend zu machen oder bei Fragen zum Datenschutz, schreib uns an [E-Mail-Adresse].
 
 > Die Artikelnummern stammen aus meinem Wissen und sind nicht an der Quelle geprüft (EUR-Lex nicht erreichbar).
 
-## 9. Änderungen
+## 10. Änderungen
 
 Wir passen diese Erklärung an, wenn sich das Spiel oder die Rechtslage ändert. Stand: [Datum].

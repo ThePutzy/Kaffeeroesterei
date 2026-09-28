@@ -15,10 +15,12 @@ Wir mögen Spiele, die man zwischendurch spielen kann: kurz reinschauen, ein paa
 - **Sparsam mit Daten:** Keine Anmeldung, keine Analyse-Werkzeuge. Dein Spielstand bleibt in deinem Browser.
 - **Faire Werbung:** Das Spiel finanziert sich durch Werbung. Belohnungen per Werbung sind freiwillig.
 
+> Den Punkt „Faire Werbung“ nur aufnehmen, wenn die Seite Werbung zeigt.
+
 [Optional, du entscheidest: Das Spiel ist mit Unterstützung von KI-Werkzeugen entwickelt worden.]
 
 > Ob du den KI-Satz aufnimmst, ist deine Entscheidung. Ob es dafür eine Pflicht gibt, habe ich nicht geprüft.
 
 ## Kontakt
 
-Fragen, Ideen oder einen Fehler gefunden? Schreib uns an [E-Mail-Adresse].
+Du hast Fragen oder Ideen oder einen Fehler gefunden? Schreib uns an [E-Mail-Adresse].
