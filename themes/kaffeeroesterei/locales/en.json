@@ -7,7 +7,8 @@
   "upgrades.none": "No upgrades available right now. Keep roasting!",
   "condition.runEarned": "Earn {value} beans in one roastery",
   "condition.lifetimeEarned": "Earn {value} beans in total",
-  "condition.prestiges": "Roasteries sold: {value}",
+  "condition.clicks": "Roast {value} times",
+  "condition.prestiges": "Sell your roastery {value}×",
   "prestige.points": "Reputation: {value}",
   "prestige.explain": "Sell your roastery and open a new one. Beans, equipment and upgrades reset. You keep your reputation, and every point raises all income by {bonus}.",
   "prestige.gain": "Reputation from a sale now: +{value}",
@@ -18,6 +19,7 @@
   "prestige.done": "A new roastery! Income bonus now +{value}.",
   "offline.body": "You were away for {duration}. Your roastery made {amount} beans.",
   "offline.note": "While you are away, your equipment makes {rate} of its usual output, for up to {hours} hours.",
+  "reset.confirm.body": "Everything is deleted, including your reputation and achievements. This cannot be undone.",
 
   "generator.pan.name": "Roasting Pan",
   "generator.hand_drum.name": "Hand Drum",

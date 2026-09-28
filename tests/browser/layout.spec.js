@@ -1,4 +1,4 @@
-import { expect, openGame, test } from './helpers.js';
+import { expect, openGame, seedSave, test } from './helpers.js';
 
 // A phone in portrait plus the iframe sizes CrazyGames lists as most
 // important (docs.crazygames.com/requirements/gameplay, read 2026-09-28).
@@ -43,6 +43,24 @@ for (const viewport of VIEWPORTS) {
 
       const browser = testInfo.project.name;
       await page.screenshot({ path: `test-results/screenshots/${browser}-${viewport.name}.png` });
+    });
+  });
+}
+
+// German names are the longest; every achievement title has to stay inside
+// its tile, also on the smallest CrazyGames size.
+for (const viewport of [VIEWPORTS[0], VIEWPORTS[1], VIEWPORTS[4]]) {
+  test.describe(`German achievements at ${viewport.width}x${viewport.height}`, () => {
+    test.use({ viewport: { width: viewport.width, height: viewport.height } });
+
+    test('titles fit their tiles', async ({ page }) => {
+      await seedSave(page, {}, { settings: { language: 'de' } });
+      await openGame(page);
+      await page.getByRole('tab', { name: 'Erfolge' }).click();
+      const overflowing = await page.locator('.tile-title').evaluateAll((titles) =>
+        titles.filter((title) => title.scrollWidth > title.clientWidth).map((title) => title.textContent),
+      );
+      expect(overflowing).toEqual([]);
     });
   });
 }

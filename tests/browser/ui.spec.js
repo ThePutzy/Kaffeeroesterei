@@ -35,6 +35,16 @@ test('a press released near the edge of the click button still counts', async ({
   await expect(page.locator('.balance-amount')).toHaveText('1');
 });
 
+test('the rising click value has the text color of the click button', async ({ page }) => {
+  await openGame(page);
+  await page.locator('.click-button').click();
+  const colors = await page.evaluate(() => [
+    getComputedStyle(document.querySelector('.floater')).color,
+    getComputedStyle(document.querySelector('.click-button')).color,
+  ]);
+  expect(colors[0]).toBe(colors[1]); // readable on the theme's click button
+});
+
 test('production accumulates while time passes', async ({ page }) => {
   await openPausedGame(page);
   await clickTimes(page, 20);
