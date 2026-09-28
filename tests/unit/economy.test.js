@@ -144,6 +144,9 @@ test('production and clicks apply upgrade and prestige multipliers', () => {
   assert.equal(eco.productionPerSecond({ ...base, upgrades: ['ua', 'ug'] }), 21); // x1.5 global
   assertClose(eco.productionPerSecond({ ...base, upgrades: ['ua', 'ug'], prestigePoints: 3 }), 27.3); // x1.3
 
+  const perGenerator = eco.productionByGenerator({ ...base, upgrades: ['ua', 'ug'] });
+  assert.deepEqual([...perGenerator], [['ga', 6], ['gb', 15]]); // (2 * 1 * 2) * 1.5 and (1 * 10) * 1.5
+
   assert.equal(eco.clickValue(base), 1);
   assert.equal(eco.clickValue({ ...base, upgrades: ['uc'] }), 3);
   assert.equal(eco.clickValue({ ...base, upgrades: ['uc', 'ubasic', 'ug'] }), 6); // global does not affect clicks

@@ -4,4 +4,5 @@ export const config = {
   target: 'dev',
   theme: 'kaffeeroesterei',
   ads: { adapter: 'none' },
+  languageDetection: 'browser',
 };
