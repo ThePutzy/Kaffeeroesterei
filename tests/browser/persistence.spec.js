@@ -103,3 +103,69 @@ test('an unreadable save is kept aside and the game starts fresh', async ({ page
   const kept = await page.evaluate((key) => localStorage.getItem(`${key}:unreadable`), SAVE_KEY);
   expect(kept).toBe('{"version":1,"state":broken');
 });
+
+async function clickTimes(page, times) {
+  for (let i = 0; i < times; i += 1) await page.locator('.click-button').click();
+}
+
+// What the game does when a tab is left or closed. Firing the event directly
+// works the same in every browser (WebKit's page.close() does not fire it).
+async function leave(page) {
+  await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
+}
+
+test('an older tab does not overwrite the progress of a newer one', async ({ context }) => {
+  const older = await context.newPage();
+  await openGame(older);
+  await clickTimes(older, 3);
+  const newer = await context.newPage();
+  await openGame(newer);
+  await expect(older.getByRole('dialog', { name: 'Open in another tab' })).toBeVisible();
+
+  await clickTimes(newer, 7);
+  await leave(newer); // saves 7
+  await leave(older); // must not save its 3 over it
+  const again = await context.newPage();
+  await openGame(again);
+  await expect(balance(again)).toHaveText('7');
+});
+
+test('"continue here" loads the newer save and hands the save back', async ({ context }) => {
+  const older = await context.newPage();
+  await openGame(older);
+  const newer = await context.newPage();
+  await openGame(newer);
+  await clickTimes(newer, 2);
+  await newer.getByRole('button', { name: 'Settings' }).click();
+  await newer.getByLabel('Language').selectOption('en'); // saves the 2 right away
+
+  await older.getByRole('button', { name: 'Continue here' }).click();
+  await expect(older.locator('html')).toHaveAttribute('data-ready', 'true');
+  await expect(balance(older)).toHaveText('2');
+  await expect(older.getByRole('dialog', { name: 'Open in another tab' })).toBeHidden();
+  await expect(newer.getByRole('dialog', { name: 'Open in another tab' })).toBeVisible();
+});
+
+test('a save from a newer version of the game is kept, not saved over', async ({ page }) => {
+  const newerSave = JSON.stringify({ version: 99, savedAt: 1, settings: {}, state: { currency: 5 } });
+  await seedStorage(page, SAVE_KEY, newerSave);
+  await openGame(page);
+  await expect(page.locator('.toast').first()).toContainText('This save comes from a newer version of the game.');
+  await page.locator('.click-button').click();
+  await page.reload(); // leaving the page would normally save
+  await expect(page.locator('html')).toHaveAttribute('data-ready', 'true');
+  expect(await page.evaluate((key) => localStorage.getItem(key), SAVE_KEY)).toBe(newerSave);
+});
+
+test('a save that fails later on is reported', async ({ page }) => {
+  await openGame(page);
+  await page.evaluate(() => {
+    Storage.prototype.setItem = () => {
+      throw new DOMException('The storage is full', 'QuotaExceededError');
+    };
+  });
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await page.getByLabel('Language').selectOption('de'); // saving the choice fails
+  await expect(page.locator('.toast').last()).toContainText('Speichern ist fehlgeschlagen');
+  await expect(page.getByRole('dialog', { name: 'Einstellungen' })).toContainText('Speichern ist fehlgeschlagen');
+});

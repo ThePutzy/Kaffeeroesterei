@@ -48,8 +48,12 @@ async function start() {
   }
   const adFlow = createAdFlow({ ads: await loadAds(config.ads) });
   const store = createStore(`${theme.id}.save`);
-  const save = store.available ? loadSave(store, economy) : null;
+  const loaded = store.available ? loadSave(store, economy) : { save: null, readOnly: false };
+  const { save } = loaded;
   const settings = { ...save?.settings };
+  // False for good once the save belongs to a newer version or another tab.
+  let saving = store.available && !loaded.readOnly;
+  let writeFailed = false;
 
   const language = detectLanguage({
     saved: settings.language,
@@ -65,7 +69,12 @@ async function start() {
   function persist() {
     const now = Date.now();
     game.update(now);
-    store.write(serialize({ state: game.state, savedAt: now, settings }));
+    if (!saving) return;
+    const written = store.write(serialize({ state: game.state, savedAt: now, settings }));
+    if (!written && !writeFailed) {
+      writeFailed = true; // e.g. storage full; told once, later saves still try
+      ui.showStorageProblem('failed');
+    }
   }
 
   const ui = createUi({
@@ -73,7 +82,7 @@ async function start() {
     game,
     i18n,
     adFlow,
-    storageAvailable: store.available,
+    storageProblem: !store.available ? 'unavailable' : loaded.readOnly ? 'newer' : null,
     onLanguageChange(next) {
       settings.language = next;
       persist();
@@ -92,6 +101,16 @@ async function start() {
   // Pay out the time since the last save right away, not only on the first frame.
   game.update(Date.now());
   ui.render();
+
+  // Two tabs must not overwrite each other's progress: the tab that saved last
+  // owns the save. Saving right away claims it; an older tab that sees the
+  // write stops saving and offers to continue with the newer save.
+  window.addEventListener('storage', (event) => {
+    if (event.key !== store.key || !saving) return;
+    saving = false;
+    ui.showOtherTab();
+  });
+  persist();
   // While the tab is hidden nothing runs; the time counts as time away.
   setInterval(() => {
     if (!document.hidden) persist();

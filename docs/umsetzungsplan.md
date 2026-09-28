@@ -328,7 +328,9 @@ Texte und Bilder müssen bei devicePixelRatio 1 in diesen iframe-Größen lesbar
 
 - Nach Schritt 6 wurde der ganze Stapel noch einmal durchgesehen: Spielkern, Oberfläche und Texte, Werkzeuge und Tests, Doku.
 - Fehler eines Schritts sind in dessen Branch behoben; der PR des Schritts nennt sie unter „Nachtrag“.
-- Neues kommt als eigene, kleine PRs oben auf den Stapel. Der erste ist `claude/durchsicht-doku`: Doku-Korrekturen und die nachgelesenen CrazyGames-Anforderungen (alle Fenstergrößen, Basic Launch, Einreichung).
+- Neues kommt als eigene, kleine PRs oben auf den Stapel:
+  - `claude/durchsicht-doku`: Doku-Korrekturen und die nachgelesenen CrazyGames-Anforderungen (alle Fenstergrößen, Basic Launch, Einreichung).
+  - `claude/speicherstand-absichern`: mehrere Tabs, Spielstand einer neueren Version, fehlgeschlagenes Speichern.
 
 ## Entscheidungen (freigegeben am 28.09.2026)
 

@@ -59,9 +59,12 @@ Zugangsdaten, Schlüssel und Publisher-IDs gehören nicht ins Repository, auch n
 ## Speicherstand
 
 - **Wo:** im `localStorage` des Browsers unter `<Thema>.save`, also `kaffeeroesterei.save`.
-- **Wann:** alle 10 Sekunden, solange die Seite sichtbar ist, außerdem beim Verbergen oder Verlassen der Seite, nach einem Prestige, nach dem Sprachwechsel und nach dem Zurücksetzen.
+- **Wann:** beim Start, alle 10 Sekunden, solange die Seite sichtbar ist, außerdem beim Verbergen oder Verlassen der Seite, nach einem Prestige, nach dem Sprachwechsel und nach dem Zurücksetzen.
 - **Ohne Speicher**, etwa im privaten Fenster: Das Spiel läuft weiter und weist darauf hin.
-- **Unlesbarer Speicherstand:** Er wird unter `<Thema>.save:unreadable` beiseitegelegt, danach startet das Spiel neu.
+- **Unlesbarer Speicherstand:** Er wird unter `<Thema>.save:unreadable` beiseitegelegt, danach startet das Spiel neu. Liegt dort schon eine ältere Kopie, bleibt sie erhalten.
+- **Spielstand einer neueren Version**, etwa wenn nach einem Update wieder eine alte Version ausgeliefert wird: Er bleibt unangetastet. Diese Version speichert dann nicht und sagt das.
+- **Mehrere Tabs:** Es speichert nur der Tab, der zuletzt gespeichert hat. Ein älterer Tab hört auf zu speichern und bietet „Hier weiterspielen“ an; das lädt den neueren Stand.
+- **Speichern schlägt später fehl**, etwa bei vollem Speicher: Das Spiel sagt es einmal und versucht es weiter.
 - **Neues Speicherformat:** `SAVE_VERSION` in `src/core/save.js` erhöhen und eine Migration ergänzen.
 
 ## Werbung

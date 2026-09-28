@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createEconomy } from '../../src/core/economy.js';
-import { SAVE_VERSION, createStore, loadSave, parseSave, serialize } from '../../src/core/save.js';
+import { SAVE_VERSION, createStore, isNewerSave, loadSave, parseSave, serialize } from '../../src/core/save.js';
 
 const mini = JSON.parse(readFileSync(new URL('../fixtures/mini-theme.json', import.meta.url), 'utf8'));
 const economy = createEconomy(mini);
@@ -84,10 +84,17 @@ test('older saves go through the migrations', () => {
   assert.equal(parseSave(oldText, economy, {}), null); // no way to migrate
 });
 
+test('a migration that fails on odd data makes the save unreadable instead of throwing', () => {
+  const oldText = JSON.stringify({ version: 0, state: 'garbage' });
+  const migrations = { 0: (data) => ({ ...data, state: { ...data.state, currency: data.state.wallet.coins } }) };
+  assert.equal(parseSave(oldText, economy, migrations), null);
+});
+
 test('the store reads and writes through the storage', () => {
   const storage = memoryStorage();
   const store = createStore('game', storage);
   assert.equal(store.available, true);
+  assert.equal(store.key, 'game');
   assert.equal(store.read(), null);
   assert.equal(store.write('abc'), true);
   assert.equal(store.read(), 'abc');
@@ -110,12 +117,29 @@ test('an unreadable save is kept aside before the game starts fresh', () => {
   const storage = memoryStorage();
   const store = createStore('game', storage);
   store.write('{"version":1,"state":"garbage"}');
-  assert.equal(loadSave(store, economy), null);
+  assert.deepEqual(loadSave(store, economy), { save: null, readOnly: false });
   assert.equal(storage.getItem('game:unreadable'), '{"version":1,"state":"garbage"}');
 
+  store.write('{"version":1,"state":"more garbage"}');
+  loadSave(store, economy);
+  assert.equal(storage.getItem('game:unreadable'), '{"version":1,"state":"garbage"}'); // the first copy stays
+
   store.write(serialize({ state: played, savedAt: 1 }));
-  assert.deepEqual(loadSave(store, economy).state, played);
-  assert.equal(loadSave(createStore('empty', memoryStorage()), economy), null);
+  assert.deepEqual(loadSave(store, economy).save.state, played);
+  assert.deepEqual(loadSave(createStore('empty', memoryStorage()), economy), { save: null, readOnly: false });
+});
+
+test('a save from a newer version is left alone and must not be saved over', () => {
+  const storage = memoryStorage();
+  const store = createStore('game', storage);
+  const newer = JSON.stringify({ version: SAVE_VERSION + 1, state: { anything: true } });
+  store.write(newer);
+  assert.equal(isNewerSave(newer), true);
+  assert.equal(isNewerSave(serialize({ state: played })), false);
+  assert.equal(isNewerSave('null'), false);
+  assert.deepEqual(loadSave(store, economy), { save: null, readOnly: true });
+  assert.equal(storage.getItem('game'), newer);
+  assert.equal(storage.getItem('game:unreadable'), null);
 });
 
 test('boost time is restored, optional and capped', () => {
