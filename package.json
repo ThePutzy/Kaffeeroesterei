@@ -11,9 +11,10 @@
     "dev": "node tools/serve.mjs",
     "test": "node --test \"tests/unit/**/*.test.js\"",
     "test:browser": "playwright test",
+    "sim": "node tools/simulate.mjs",
     "build": "node tools/build.mjs",
     "check:size": "node tools/check-size.mjs",
-    "check": "npm test && npm run build && npm run check:size && npm run test:browser"
+    "check": "npm test && npm run sim && npm run build && npm run check:size && npm run test:browser"
   },
   "devDependencies": {
     "@playwright/test": "1.56.1"

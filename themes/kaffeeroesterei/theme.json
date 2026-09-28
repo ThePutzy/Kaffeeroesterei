@@ -1,0 +1,48 @@
+{
+  "id": "kaffeeroesterei",
+  "click": { "base": 1 },
+  "generators": [
+    { "id": "g1", "baseCost": 20, "costGrowth": 1.14, "baseRate": 0.2 },
+    { "id": "g2", "baseCost": 220, "costGrowth": 1.14, "baseRate": 1.4 },
+    { "id": "g3", "baseCost": 2400, "costGrowth": 1.14, "baseRate": 10 },
+    { "id": "g4", "baseCost": 27000, "costGrowth": 1.14, "baseRate": 70 },
+    { "id": "g5", "baseCost": 290000, "costGrowth": 1.14, "baseRate": 480 },
+    { "id": "g6", "baseCost": 3200000, "costGrowth": 1.14, "baseRate": 3400 },
+    { "id": "g7", "baseCost": 35000000, "costGrowth": 1.14, "baseRate": 24000 },
+    { "id": "g8", "baseCost": 390000000, "costGrowth": 1.14, "baseRate": 165000 }
+  ],
+  "upgrades": [
+    { "id": "g1_boost1", "cost": 500, "effect": { "type": "generatorMultiplier", "generator": "g1", "factor": 2 }, "unlock": { "type": "owned", "generator": "g1", "value": 10 } },
+    { "id": "g1_boost2", "cost": 10000, "effect": { "type": "generatorMultiplier", "generator": "g1", "factor": 2 }, "unlock": { "type": "owned", "generator": "g1", "value": 25 } },
+    { "id": "g2_boost1", "cost": 5500, "effect": { "type": "generatorMultiplier", "generator": "g2", "factor": 2 }, "unlock": { "type": "owned", "generator": "g2", "value": 10 } },
+    { "id": "g2_boost2", "cost": 110000, "effect": { "type": "generatorMultiplier", "generator": "g2", "factor": 2 }, "unlock": { "type": "owned", "generator": "g2", "value": 25 } },
+    { "id": "g3_boost1", "cost": 60000, "effect": { "type": "generatorMultiplier", "generator": "g3", "factor": 2 }, "unlock": { "type": "owned", "generator": "g3", "value": 10 } },
+    { "id": "g3_boost2", "cost": 1200000, "effect": { "type": "generatorMultiplier", "generator": "g3", "factor": 2 }, "unlock": { "type": "owned", "generator": "g3", "value": 25 } },
+    { "id": "g4_boost1", "cost": 675000, "effect": { "type": "generatorMultiplier", "generator": "g4", "factor": 2 }, "unlock": { "type": "owned", "generator": "g4", "value": 10 } },
+    { "id": "g4_boost2", "cost": 13500000, "effect": { "type": "generatorMultiplier", "generator": "g4", "factor": 2 }, "unlock": { "type": "owned", "generator": "g4", "value": 25 } },
+    { "id": "g5_boost1", "cost": 7250000, "effect": { "type": "generatorMultiplier", "generator": "g5", "factor": 2 }, "unlock": { "type": "owned", "generator": "g5", "value": 10 } },
+    { "id": "g5_boost2", "cost": 145000000, "effect": { "type": "generatorMultiplier", "generator": "g5", "factor": 2 }, "unlock": { "type": "owned", "generator": "g5", "value": 25 } },
+    { "id": "g6_boost1", "cost": 80000000, "effect": { "type": "generatorMultiplier", "generator": "g6", "factor": 2 }, "unlock": { "type": "owned", "generator": "g6", "value": 10 } },
+    { "id": "g6_boost2", "cost": 1600000000, "effect": { "type": "generatorMultiplier", "generator": "g6", "factor": 2 }, "unlock": { "type": "owned", "generator": "g6", "value": 25 } },
+    { "id": "g7_boost1", "cost": 875000000, "effect": { "type": "generatorMultiplier", "generator": "g7", "factor": 2 }, "unlock": { "type": "owned", "generator": "g7", "value": 10 } },
+    { "id": "g7_boost2", "cost": 17500000000, "effect": { "type": "generatorMultiplier", "generator": "g7", "factor": 2 }, "unlock": { "type": "owned", "generator": "g7", "value": 25 } },
+    { "id": "g8_boost1", "cost": 9750000000, "effect": { "type": "generatorMultiplier", "generator": "g8", "factor": 2 }, "unlock": { "type": "owned", "generator": "g8", "value": 10 } },
+    { "id": "g8_boost2", "cost": 195000000000, "effect": { "type": "generatorMultiplier", "generator": "g8", "factor": 2 }, "unlock": { "type": "owned", "generator": "g8", "value": 25 } },
+    { "id": "click_boost1", "cost": 100, "effect": { "type": "clickMultiplier", "factor": 2 }, "unlock": { "type": "clicks", "value": 30 } },
+    { "id": "click_boost2", "cost": 3000, "effect": { "type": "clickMultiplier", "factor": 3 }, "unlock": { "type": "clicks", "value": 300 } },
+    { "id": "global_boost1", "cost": 40000, "effect": { "type": "globalMultiplier", "factor": 1.5 }, "unlock": { "type": "runEarned", "value": 50000 } },
+    { "id": "global_boost2", "cost": 4000000, "effect": { "type": "globalMultiplier", "factor": 1.5 }, "unlock": { "type": "runEarned", "value": 5000000 } },
+    { "id": "global_boost3", "cost": 400000000, "effect": { "type": "globalMultiplier", "factor": 2 }, "unlock": { "type": "runEarned", "value": 500000000 } }
+  ],
+  "achievements": [
+    { "id": "ach_first_g1", "condition": { "type": "owned", "generator": "g1", "value": 1 } },
+    { "id": "ach_g1_25", "condition": { "type": "owned", "generator": "g1", "value": 25 } },
+    { "id": "ach_earned_1e3", "condition": { "type": "lifetimeEarned", "value": 1000 } },
+    { "id": "ach_earned_1e6", "condition": { "type": "lifetimeEarned", "value": 1000000 } },
+    { "id": "ach_earned_1e9", "condition": { "type": "lifetimeEarned", "value": 1000000000 } },
+    { "id": "ach_clicks_100", "condition": { "type": "clicks", "value": 100 } },
+    { "id": "ach_clicks_1000", "condition": { "type": "clicks", "value": 1000 } },
+    { "id": "ach_prestige_1", "condition": { "type": "prestiges", "value": 1 } }
+  ],
+  "prestige": { "threshold": 50000, "exponent": 0.5, "bonusPerPoint": 0.1 }
+}
