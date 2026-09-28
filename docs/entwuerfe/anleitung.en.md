@@ -38,7 +38,7 @@ Your roastery keeps working while the game is closed or in the background. If yo
 
 ## Double income
 
-Below the bean you can buy double income for 10 minutes, paid with beans.
+Once your equipment is producing, you can buy double income for 10 minutes below the bean, paid with beans.
 
 > Include the following sentences only if the site shows ads:
 

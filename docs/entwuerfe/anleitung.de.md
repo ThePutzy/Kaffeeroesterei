@@ -38,7 +38,7 @@ Deine Rösterei arbeitet weiter, auch wenn das Spiel geschlossen ist oder im Hin
 
 ## Doppelte Einnahmen
 
-Unter der Bohne kannst du für 10 Minuten doppelte Einnahmen kaufen; du zahlst mit Bohnen.
+Sobald deine Ausstattung Bohnen produziert, kannst du unter der Bohne für 10 Minuten doppelte Einnahmen kaufen; du zahlst mit Bohnen.
 
 > Die folgenden Sätze nur aufnehmen, wenn die Seite Werbung zeigt:
 
