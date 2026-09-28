@@ -33,6 +33,17 @@ test('clicking earns currency and buys the first producer', async ({ page }) => 
   await expect(generator(page, 'g3')).toBeHidden();
 });
 
+test('a press released near the edge of the click button still counts', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' }); // the pressed look applies at once
+  await openGame(page);
+  const box = await page.locator('.click-button').boundingBox();
+  const radius = box.width / 2;
+  await page.mouse.move(box.x + radius + radius * 0.97, box.y + radius);
+  await page.mouse.down();
+  await page.mouse.up();
+  await expect(page.locator('.balance-amount')).toHaveText('1');
+});
+
 test('production accumulates while time passes', async ({ page }) => {
   await openPausedGame(page);
   await clickTimes(page, 20);
