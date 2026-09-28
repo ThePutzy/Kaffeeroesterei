@@ -6,7 +6,7 @@ Browser-Idle-Spiel, Thema 1: Kaffeerösterei. Reines HTML, CSS und JavaScript (E
 - Umsetzungsplan: [docs/umsetzungsplan.md](docs/umsetzungsplan.md)
 - Themenformat, Formeln und Balance-Simulator: [docs/themenformat.md](docs/themenformat.md)
 
-Stand: Schritt 4 (Werbe-Adapter). Das Spiel ist spielbar, speichert im Browser und hat Belohnungen per Werbung, bisher nur simuliert. Die Inhalte sind noch vorläufig (IDs `g1` … `g8` statt Namen); die echten kommen in Schritt 5.
+Stand: Schritt 5 (Inhalte der Kaffeerösterei). Das Spiel ist mit eigenen Texten (Englisch und Deutsch) und eigenen SVG-Grafiken spielbar, speichert im Browser und hat Belohnungen per Werbung, bisher nur simuliert. Arbeitstitel: **Roast & Rise**; er ist noch nicht auf Markenrechte geprüft.
 
 ## Voraussetzungen
 
@@ -47,7 +47,7 @@ Zugangsdaten, Schlüssel und Publisher-IDs gehören nicht ins Repository, auch n
 | --- | --- |
 | `src/core/` | Wirtschaft (`economy.js`), Spielablauf (`game.js`), Texte (`i18n.js`, `locales/`), Zahlenformat (`format.js`), Oberfläche (`ui/`) |
 | `src/ads/` | Werbe-Schnittstelle und Adapter |
-| `themes/kaffeeroesterei/` | Themendaten (`theme.json`), Texte (`locales/en.json`, `locales/de.json`; sie überschreiben gleichnamige Kerntexte), später SVG-Grafiken |
+| `themes/kaffeeroesterei/` | Themendaten (`theme.json`), Texte (`locales/en.json`, `locales/de.json`; sie überschreiben gleichnamige Kerntexte), Farben (`theme.css`), SVG-Grafiken (`art/`) |
 | `tools/` | Build, lokaler Server, Größen-Check, Balance-Simulator |
 | `tests/unit/` | Unit-Tests (`*.test.js`) |
 | `tests/fixtures/` | Testdaten, z. B. ein kleines Test-Thema mit nachrechenbaren Werten |

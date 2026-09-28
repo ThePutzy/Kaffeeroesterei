@@ -1,0 +1,14 @@
+/* Colors of the coffee roastery theme; they override the core variables. */
+:root {
+  --color-bg: #f5ede3;
+  --color-surface: #fffaf3;
+  --color-surface-strong: #ead9c4;
+  --color-text: #2b1a10;
+  --color-muted: #6e5646;
+  --color-accent: #7a3b1c;
+  --color-accent-strong: #582812;
+  --color-on-accent: #fff8ef;
+  --color-border: #dcc6ae;
+  --click-background: radial-gradient(circle at 38% 30%, #fffaf1, #f1dcc0 58%, #d8b287);
+  --click-text: #3b2314;
+}

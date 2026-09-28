@@ -6,6 +6,9 @@
 const ID_PATTERN = /^[a-z0-9_]+$/;
 const CONDITION_TYPES = new Set(['owned', 'runEarned', 'lifetimeEarned', 'clicks', 'prestiges']);
 const EFFECT_TYPES = new Set(['generatorMultiplier', 'globalMultiplier', 'clickMultiplier']);
+// Theme art: relative .svg paths inside the theme folder.
+const ART_PATH = /^[a-z0-9_-]+(\/[a-z0-9_-]+)*\.svg$/;
+const STYLESHEET = /^[a-z0-9_-]+\.css$/;
 
 function isPositive(value) {
   return typeof value === 'number' && Number.isFinite(value) && value > 0;
@@ -13,6 +16,12 @@ function isPositive(value) {
 
 function invalid(message) {
   throw new Error(`Invalid theme: ${message}`);
+}
+
+function validateArt(path, where) {
+  if (path !== undefined && (typeof path !== 'string' || !ART_PATH.test(path))) {
+    invalid(`${where}: "${path}" must be a relative .svg path`);
+  }
 }
 
 function validateCondition(condition, where, generatorIds) {
@@ -43,6 +52,11 @@ export function validateTheme(theme) {
       invalid(`generator ${generator.id}: costGrowth must be greater than 1`);
     }
     if (!isPositive(generator.baseRate)) invalid(`generator ${generator.id}: baseRate must be positive`);
+    validateArt(generator.icon, `generator ${generator.id} icon`);
+  }
+  for (const [name, path] of Object.entries(theme.art ?? {})) validateArt(path, `art.${name}`);
+  if (theme.stylesheet !== undefined && !STYLESHEET.test(theme.stylesheet)) {
+    invalid(`stylesheet "${theme.stylesheet}" must be a .css file in the theme folder`);
   }
   const generatorIds = new Set(theme.generators.map((generator) => generator.id));
 
