@@ -1,15 +1,4 @@
-import { expect, openGame, readNumber, test } from './helpers.js';
-
-const START = new Date('2026-01-01T00:00:00Z');
-
-// Time only moves when a test moves it, so production is exact. The clock
-// starts a second early: pauseAt() fails if the running clock has already
-// passed START, which happened now and then in Firefox and WebKit.
-async function openPausedGame(page) {
-  await page.clock.install({ time: START.getTime() - 1000 });
-  await page.clock.pauseAt(START);
-  await openGame(page);
-}
+import { expect, openGame, openPausedGame, readNumber, seedSave, test } from './helpers.js';
 
 async function clickTimes(page, times) {
   const button = page.locator('.click-button');
@@ -55,10 +44,8 @@ test('production accumulates while time passes', async ({ page }) => {
 });
 
 test('buy amounts x10 and max buy several producers at once', async ({ page }) => {
+  await seedSave(page, { currency: 1e6, generators: { g1: 1 } });
   await openPausedGame(page);
-  await clickTimes(page, 20);
-  await generator(page, 'g1').locator('.buy').click();
-  await page.clock.fastForward(3_000_000); // plenty for many g1
 
   await page.locator('[data-amount="10"]').click();
   await expect(page.locator('[data-amount="10"]')).toHaveAttribute('aria-checked', 'true');
@@ -73,21 +60,25 @@ test('buy amounts x10 and max buy several producers at once', async ({ page }) =
   await expect(generator(page, 'g1').locator('.buy')).toBeDisabled(); // max bought, nothing left for one more
 });
 
-test('an upgrade appears once unlocked and doubles the click value', async ({ page }) => {
-  await openPausedGame(page);
+test('without enough progress no upgrade and no prestige is offered', async ({ page }) => {
+  await openGame(page);
   await page.getByRole('tab', { name: 'Upgrades' }).click();
   await expect(page.locator('#panel-upgrades .note').first()).toHaveText('No upgrades available right now. Keep producing!');
+  await page.getByRole('tab', { name: 'Prestige' }).click();
+  await expect(page.locator('#panel-prestige .primary')).toBeDisabled();
+  await expect(page.locator('.prestige-gain')).toHaveText('The first point comes at 50,000 earned in this run. So far: 0.');
+});
 
-  await clickTimes(page, 30); // unlocks the first click upgrade (30 clicks)
-  await page.getByRole('tab', { name: 'Producers' }).click();
-  await generator(page, 'g1').locator('.buy').click();
-  await page.clock.fastForward(500_000); // 0.2 per second: 100 more
+test('an unlocked upgrade can be bought and doubles the click value', async ({ page }) => {
+  await seedSave(page, { currency: 150, clicks: 30 }); // 30 clicks unlock the first click upgrade
+  await openPausedGame(page);
   await page.getByRole('tab', { name: 'Upgrades' }).click();
   const upgrade = page.locator('.upgrade[data-id="click_boost1"]');
   await expect(upgrade).toBeVisible();
   await expect(upgrade.locator('.row-title')).toHaveText('Clicks earn ×2');
   await upgrade.locator('.buy').click();
   await expect(upgrade).toBeHidden();
+  await expect(balance(page)).toHaveText('50');
   await expect(page.locator('.click-value')).toHaveText('+2');
 });
 
@@ -102,15 +93,8 @@ test('achievements unlock with a notice', async ({ page }) => {
 });
 
 test('prestige asks first, then starts a new run with points', async ({ page }) => {
+  await seedSave(page, { currency: 800, runEarned: 50_000, lifetimeEarned: 50_000, generators: { g1: 1 } });
   await openPausedGame(page);
-  await page.getByRole('tab', { name: 'Prestige' }).click();
-  await expect(page.getByRole('button', { name: 'Prestige', exact: true })).toBeDisabled();
-  await expect(page.locator('.prestige-gain')).toHaveText('The first point comes at 50,000 earned in this run. So far: 0.');
-
-  await clickTimes(page, 20);
-  await page.getByRole('tab', { name: 'Producers' }).click();
-  await generator(page, 'g1').locator('.buy').click();
-  await page.clock.fastForward(250_000_000); // 50,000 at 0.2 per second: the first point
   await page.getByRole('tab', { name: 'Prestige' }).click();
   await expect(page.locator('.prestige-gain')).toHaveText('Points from a prestige now: +1');
 

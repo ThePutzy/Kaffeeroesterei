@@ -12,6 +12,7 @@ Das beschreibt `themes/<name>/theme.json`, die Formeln des Wirtschaftskerns (`sr
 | `upgrades[]` | Upgrades: `id`, `cost`, `effect`, optional `unlock` (eine Bedingung; ohne sie ist das Upgrade sofort verfügbar) |
 | `achievements[]` | Erfolge: `id`, `condition` |
 | `prestige` | `threshold`, `exponent` (größer als 0, höchstens 1), `bonusPerPoint` |
+| `offline` | `maxHours` (Obergrenze der Abwesenheit), `rate` (Anteil der normalen Produktion, größer als 0, höchstens 1) |
 
 **Effekte** (`effect.factor` muss größer als 1 sein):
 
@@ -44,6 +45,7 @@ Das beschreibt `themes/<name>/theme.json`, die Formeln des Wirtschaftskerns (`sr
 - **Prestige setzt zurück:** Währung, Ertrag des Durchgangs, Erzeuger und Upgrades.
 - **Prestige behält:** Gesamtertrag, Klicks, Prestige-Punkte, Zahl der Prestiges und Erfolge.
 - **Erfolge** haben in diesem Schritt nur Bedingungen und keinen Bonus.
+- **Offline-Ertrag:** Produktion pro Sekunde × Abwesenheit (höchstens `maxHours`) × `rate`. Als Abwesenheit zählt jede Lücke von mehr als 60 Sekunden ohne Aktualisierung: geschlossenes Spiel, verborgener Tab oder schlafendes Gerät. Kürzere Lücken zählen voll.
 - **Zahlen** sind normale JavaScript-Zahlen (bis etwa 1e308). Der Simulator prüft, dass sie unter 1e300 bleiben.
 
 ## Balance-Simulator

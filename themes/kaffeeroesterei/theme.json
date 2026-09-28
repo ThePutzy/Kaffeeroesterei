@@ -44,5 +44,6 @@
     { "id": "ach_clicks_1000", "condition": { "type": "clicks", "value": 1000 } },
     { "id": "ach_prestige_1", "condition": { "type": "prestiges", "value": 1 } }
   ],
-  "prestige": { "threshold": 50000, "exponent": 0.5, "bonusPerPoint": 0.1 }
+  "prestige": { "threshold": 50000, "exponent": 0.5, "bonusPerPoint": 0.1 },
+  "offline": { "maxHours": 8, "rate": 0.5 }
 }

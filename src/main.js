@@ -2,9 +2,11 @@ import { config } from './config.js';
 import { createEconomy } from './core/economy.js';
 import { createGame } from './core/game.js';
 import { LANGUAGES, createI18n, detectLanguage, mergeTexts } from './core/i18n.js';
+import { createStore, loadSave, serialize } from './core/save.js';
 import { createUi } from './core/ui/app.js';
 
 const RENDER_INTERVAL_MS = 100;
+const AUTOSAVE_INTERVAL_MS = 10_000;
 const root = document.documentElement;
 const app = document.getElementById('app');
 
@@ -26,13 +28,56 @@ async function start() {
     loadTexts(`../themes/${config.theme}/locales`),
   ]);
   const economy = createEconomy(theme);
+  const store = createStore(`${theme.id}.save`);
+  const save = store.available ? loadSave(store, economy) : null;
+  const settings = { ...save?.settings };
+
   const language = detectLanguage({
+    saved: settings.language,
     detection: config.languageDetection,
     preferred: navigator.languages ?? [navigator.language],
   });
   const i18n = createI18n(mergeTexts(coreTexts, themeTexts), language);
-  const game = createGame({ economy, now: Date.now() });
-  const ui = createUi({ root: app, game, i18n });
+
+  // The game resumes at the time it was saved; the first update pays out the
+  // time in between (offline earnings, see core/game.js).
+  const game = createGame({ economy, state: save?.state, now: save?.savedAt ?? Date.now() });
+
+  function persist() {
+    const now = Date.now();
+    game.update(now);
+    store.write(serialize({ state: game.state, savedAt: now, settings }));
+  }
+
+  const ui = createUi({
+    root: app,
+    game,
+    i18n,
+    storageAvailable: store.available,
+    onLanguageChange(next) {
+      settings.language = next;
+      persist();
+    },
+    onReset() {
+      game.reset();
+      persist();
+    },
+  });
+
+  game.on((event) => {
+    if (event.type === 'prestige') persist();
+  });
+  // Pay out the time since the last save right away, not only on the first frame.
+  game.update(Date.now());
+  ui.render();
+  // While the tab is hidden nothing runs; the time counts as time away.
+  setInterval(() => {
+    if (!document.hidden) persist();
+  }, AUTOSAVE_INTERVAL_MS);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) persist();
+  });
+  window.addEventListener('pagehide', persist);
 
   let lastRender = 0;
   function frame(time) {

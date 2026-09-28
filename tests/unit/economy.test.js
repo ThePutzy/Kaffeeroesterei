@@ -267,6 +267,9 @@ test('invalid themes are rejected', () => {
     ['condition without value', (t) => delete t.achievements[0].condition.value],
     ['exponent above 1', (t) => (t.prestige.exponent = 2)],
     ['missing prestige', (t) => delete t.prestige],
+    ['missing offline', (t) => delete t.offline],
+    ['offline rate above 1', (t) => (t.offline.rate = 1.5)],
+    ['no offline hours', (t) => (t.offline.maxHours = 0)],
   ];
   for (const [name, breakIt] of broken) {
     const theme = structuredClone(mini);

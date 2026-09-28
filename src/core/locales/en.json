@@ -41,5 +41,18 @@
   "dialog.cancel": "Cancel",
   "dialog.close": "Close",
   "settings.title": "Settings",
-  "settings.language": "Language"
+  "settings.language": "Language",
+  "offline.title": "Welcome back!",
+  "offline.body": "You were away for {duration}. Your producers earned {amount}.",
+  "offline.note": "While you are away, producers earn {rate} of their usual output, for up to {hours} hours.",
+  "offline.continue": "Continue",
+  "duration.minutes": "{minutes} min",
+  "duration.hoursMinutes": "{hours} h {minutes} min",
+  "duration.daysHours": "{days} d {hours} h",
+  "settings.reset": "Reset progress",
+  "settings.storageUnavailable": "Progress can't be saved in this browser, for example in a private window. You can still play.",
+  "reset.confirm.title": "Reset all progress?",
+  "reset.confirm.body": "Everything is deleted, including prestige points and achievements. This cannot be undone.",
+  "reset.confirm.yes": "Reset",
+  "reset.done": "Progress reset."
 }

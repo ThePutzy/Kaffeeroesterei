@@ -79,6 +79,14 @@ select:focus-visible {
   font-weight: 600;
 }
 
+.danger {
+  padding: 0 16px;
+  border-color: #8f2f22;
+  background: var(--color-surface);
+  color: #8f2f22;
+  font-weight: 600;
+}
+
 /* Layout: one column on narrow screens, two columns from 700px on. */
 .app {
   display: grid;

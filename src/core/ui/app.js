@@ -113,8 +113,30 @@ function markup(theme, upgrades, achievements) {
             ${LANGUAGES.map((language) => `<option value="${language}" lang="${language}">${LANGUAGE_NAMES[language]}</option>`).join('')}
           </select>
         </label>
+        <p class="note" data-ref="storageNote" data-text="settings.storageUnavailable" hidden></p>
         <div class="dialog-actions">
+          <button type="button" class="danger" data-action="reset" data-text="settings.reset"></button>
           <button value="close" class="primary" data-text="dialog.close"></button>
+        </div>
+      </form>
+    </dialog>
+    <dialog class="dialog" data-ref="confirmReset" aria-labelledby="reset-title">
+      <form method="dialog">
+        <h2 id="reset-title" data-text="reset.confirm.title"></h2>
+        <p data-text="reset.confirm.body"></p>
+        <div class="dialog-actions">
+          <button value="cancel" data-text="dialog.cancel"></button>
+          <button value="confirm" class="danger" data-text="reset.confirm.yes"></button>
+        </div>
+      </form>
+    </dialog>
+    <dialog class="dialog" data-ref="offline" aria-labelledby="offline-title">
+      <form method="dialog">
+        <h2 id="offline-title" data-text="offline.title"></h2>
+        <p data-ref="offlineBody"></p>
+        <p class="note" data-ref="offlineNote"></p>
+        <div class="dialog-actions">
+          <button value="close" class="primary" data-text="offline.continue"></button>
         </div>
       </form>
     </dialog>
@@ -156,13 +178,14 @@ function rowsBy(root, selector) {
   );
 }
 
-export function createUi({ root, game, i18n, onLanguageChange = () => {} }) {
+export function createUi({ root, game, i18n, storageAvailable = true, onLanguageChange = () => {}, onReset = () => {} }) {
   const { economy } = game;
   const { theme } = economy;
   const upgrades = [...(theme.upgrades ?? [])].sort((a, b) => a.cost - b.cost);
   const achievements = theme.achievements ?? [];
   let activeTab = 'generators';
   let buyAmount = '1';
+  let offlineShown = null; // time away and earnings shown in the open dialog
 
   root.innerHTML = markup(theme, upgrades, achievements);
   const refs = Object.fromEntries([...root.querySelectorAll('[data-ref]')].map((node) => [node.dataset.ref, node]));
@@ -188,6 +211,34 @@ export function createUi({ root, game, i18n, onLanguageChange = () => {} }) {
       value: format(condition.value),
       generator: condition.generator ? name('generator', condition.generator) : '',
     });
+  }
+
+  function describeDuration(seconds) {
+    const minutes = Math.max(1, Math.round(seconds / 60));
+    const days = Math.floor(minutes / 1440);
+    const hours = Math.floor((minutes % 1440) / 60);
+    if (days > 0) return i18n.t('duration.daysHours', { days, hours });
+    if (hours > 0) return i18n.t('duration.hoursMinutes', { hours, minutes: minutes % 60 });
+    return i18n.t('duration.minutes', { minutes });
+  }
+
+  // Several gaps while the dialog is open add up.
+  function showOffline({ awaySeconds, amount }) {
+    offlineShown = offlineShown
+      ? { awaySeconds: offlineShown.awaySeconds + awaySeconds, amount: offlineShown.amount + amount }
+      : { awaySeconds, amount };
+    setText(
+      refs.offlineBody,
+      i18n.t('offline.body', { duration: describeDuration(offlineShown.awaySeconds), amount: format(offlineShown.amount) }),
+    );
+    setText(
+      refs.offlineNote,
+      i18n.t('offline.note', {
+        rate: formatPercent(theme.offline.rate, i18n.language),
+        hours: format(theme.offline.maxHours),
+      }),
+    );
+    if (!refs.offline.open) refs.offline.showModal();
   }
 
   // Texts that only change with the language.
@@ -335,6 +386,10 @@ export function createUi({ root, game, i18n, onLanguageChange = () => {} }) {
       refs.settings.showModal();
     } else if (action === 'prestige') {
       openPrestigeConfirm();
+    } else if (action === 'reset') {
+      refs.settings.close();
+      refs.confirmReset.returnValue = '';
+      refs.confirmReset.showModal();
     }
     render();
   });
@@ -354,6 +409,15 @@ export function createUi({ root, game, i18n, onLanguageChange = () => {} }) {
     render();
   });
 
+  refs.confirmReset.addEventListener('close', () => {
+    if (refs.confirmReset.returnValue === 'confirm') onReset();
+    render();
+  });
+
+  refs.offline.addEventListener('close', () => {
+    offlineShown = null;
+  });
+
   refs.languageSelect.addEventListener('change', () => {
     i18n.setLanguage(refs.languageSelect.value);
     translate();
@@ -369,6 +433,10 @@ export function createUi({ root, game, i18n, onLanguageChange = () => {} }) {
       }
     } else if (event.type === 'prestige') {
       toast(i18n.t('prestige.done', { value: formatPercent(economy.prestigeMultiplier(game.state) - 1, i18n.language) }));
+    } else if (event.type === 'offline') {
+      showOffline(event);
+    } else if (event.type === 'reset') {
+      toast(i18n.t('reset.done'));
     }
   });
 
@@ -376,6 +444,8 @@ export function createUi({ root, game, i18n, onLanguageChange = () => {} }) {
   selectAmount(buyAmount);
   translate();
   render();
+  setHidden(refs.storageNote, storageAvailable);
+  if (!storageAvailable) toast(i18n.t('settings.storageUnavailable'));
 
   return { render, translate, toast };
 }
