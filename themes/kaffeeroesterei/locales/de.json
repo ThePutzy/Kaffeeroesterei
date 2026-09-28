@@ -7,7 +7,8 @@
   "upgrades.none": "Gerade ist kein Upgrade verfügbar. Weiter rösten!",
   "condition.runEarned": "Verdiene {value} Bohnen in einer Rösterei",
   "condition.lifetimeEarned": "Verdiene insgesamt {value} Bohnen",
-  "condition.prestiges": "Verkaufte Röstereien: {value}",
+  "condition.clicks": "Röste {value}-mal",
+  "condition.prestiges": "Verkaufe deine Rösterei {value}-mal",
   "prestige.points": "Ansehen: {value}",
   "prestige.explain": "Verkaufe deine Rösterei und eröffne eine neue. Bohnen, Ausstattung und Upgrades werden zurückgesetzt. Dein Ansehen bleibt, und jeder Punkt erhöht alle Einnahmen um {bonus}.",
   "prestige.gain": "Ansehen bei einem Verkauf jetzt: +{value}",
@@ -18,6 +19,7 @@
   "prestige.done": "Eine neue Rösterei! Einnahmen-Bonus jetzt +{value}.",
   "offline.body": "Du warst {duration} weg. Deine Rösterei hat {amount} Bohnen gemacht.",
   "offline.note": "Während du weg bist, bringt deine Ausstattung {rate} des üblichen Ertrags, höchstens {hours} Stunden lang.",
+  "reset.confirm.body": "Alles wird gelöscht, auch dein Ansehen und deine Erfolge. Das lässt sich nicht rückgängig machen.",
 
   "generator.pan.name": "Röstpfanne",
   "generator.hand_drum.name": "Handtrommel",
