@@ -2,6 +2,8 @@
 
 Stand der Entscheidungen: 28.09.2026. Diese Datei ist der Kontext für jede Sitzung. Du siehst das Gespräch nicht, in dem der Plan entstanden ist; verlasse dich auf diese Datei.
 
+Der freigegebene Umsetzungsplan (Schritte, Branches, Prüfungen) steht in `docs/umsetzungsplan.md`.
+
 ## Ziel
 
 Ein Browser-Idle-Spiel, das hauptsächlich über Werbung Geld verdienen soll. Erst auf einem Spieleportal (CrazyGames) veröffentlichen, danach auf einer eigenen Domain. Kein festes Einnahmeziel, möglichst geringe Kosten, so viel wie möglich soll über Claude Code laufen.

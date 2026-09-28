@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Tests, build, size check, browser tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: npm run check:size
+
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run test:browser
+        env:
+          PW_ALL_BROWSERS: '1'
+
+      # One artifact per target, so index.html sits at the root of each download.
+      - name: Upload CrazyGames package
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-crazygames
+          path: dist/crazygames/
+          retention-days: 14
+
+      - name: Upload web package
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-web
+          path: dist/web/
+          retention-days: 14
+
+      - name: Upload browser test report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
