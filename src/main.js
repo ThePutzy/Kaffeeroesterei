@@ -61,6 +61,7 @@ async function start() {
     preferred: navigator.languages ?? [navigator.language],
   });
   const i18n = createI18n(mergeTexts(coreTexts, themeTexts), language);
+  errorText = (message) => i18n.t('app.error', { message });
 
   // The game resumes at the time it was saved; the first update pays out the
   // time in between (offline earnings, see core/game.js).
@@ -137,9 +138,12 @@ async function start() {
   root.dataset.ready = 'true';
 }
 
+// In the player's language once the texts are loaded, in English before.
+let errorText = (message) => `The game could not start: ${message}`;
+
 start().catch((error) => {
   console.error(error);
   app.innerHTML = '<p class="app-error"></p>';
-  app.firstElementChild.textContent = `The game could not start: ${error.message}`;
+  app.firstElementChild.textContent = errorText(error.message);
   root.dataset.ready = 'error';
 });

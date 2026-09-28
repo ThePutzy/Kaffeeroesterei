@@ -110,8 +110,24 @@ test('offline earnings can be doubled once with an ad', async ({ page }) => {
   await expect(dialog).toContainText('Doubled: +7,200');
   await expect(double).toBeHidden();
   await continueButton.click();
-  // 7,200 offline + 7,200 bonus, plus what 2 per second produced during the 0.8 s ad.
-  await expect.poll(() => readNumber(balance(page))).toBe(14_402);
+  // 7,200 offline + 7,200 bonus, plus 1.6 that 2 per second produced during
+  // the 0.8 s ad; the balance is shown rounded down.
+  await expect.poll(() => readNumber(balance(page))).toBe(14_401);
+});
+
+test('if no ad is available for doubling, the dialog itself says so', async ({ page }) => {
+  // An ad network that has no ad to show.
+  await page.route('**/src/ads/none.js', (route) =>
+    route.fulfill({
+      contentType: 'text/javascript',
+      body: 'export function createAdapter() { return { init() {}, canShowRewarded: () => true, showRewarded: async () => false, async showInterstitial() {} }; }',
+    }),
+  );
+  await seedSave(page, { generators: { pan: 10 } }, { savedAt: START.getTime() - 2 * 3600 * 1000 });
+  await openPausedGame(page);
+  const dialog = page.getByRole('dialog', { name: 'Welcome back!' });
+  await dialog.getByRole('button', { name: 'Watch ad: double it' }).click();
+  await expect(dialog).toContainText('No ad available right now. Please try again later.');
 });
 
 test('a prestige is followed by an ad break once the game has run for 5 minutes', async ({ page }) => {

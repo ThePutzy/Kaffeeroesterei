@@ -332,6 +332,7 @@ Texte und Bilder müssen bei devicePixelRatio 1 in diesen iframe-Größen lesbar
   - `claude/durchsicht-doku`: Doku-Korrekturen und die nachgelesenen CrazyGames-Anforderungen (alle Fenstergrößen, Basic Launch, Einreichung).
   - `claude/speicherstand-absichern`: mehrere Tabs, Spielstand einer neueren Version, fehlgeschlagenes Speichern.
   - `claude/werkzeuge-absichern`: Build, Größen-Check, lokaler Server und Test-Fixture.
+  - `claude/bedienung-verbessern`: Upgrade-Liste ohne Springen, Meldungen nicht hinter Dialogen, Rundung von Kontostand und Preisen, Tastatur und Screenreader.
 
 ## Entscheidungen (freigegeben am 28.09.2026)
 
