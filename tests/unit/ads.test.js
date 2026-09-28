@@ -43,6 +43,14 @@ test('a broken adapter never breaks the game: errors mean no ad and no reward', 
   await broken.showInterstitial();
 });
 
+test('an ad call that never ends counts as ended after the timeout', async () => {
+  const never = () => new Promise(() => {});
+  const stuck = wrapAdapter({ init: never, canShowRewarded: () => true, showRewarded: never, showInterstitial: never }, { timeoutMs: 20 });
+  await stuck.init();
+  assert.equal(await stuck.showRewarded(), false);
+  await stuck.showInterstitial();
+});
+
 test('only a real true counts as an earned reward', async () => {
   const sloppy = wrapAdapter({ init() {}, canShowRewarded: () => 'yes', showRewarded: async () => 'yes', showInterstitial() {} });
   assert.equal(sloppy.canShowRewarded(), false);
@@ -53,7 +61,13 @@ test('adapters are loaded by name', async () => {
   assert.equal((await loadAds({ adapter: 'none', simulate: true })).canShowRewarded(), true);
   assert.equal((await loadAds({ adapter: 'crazygames' })).canShowRewarded(), false);
   await assert.rejects(loadAds({ adapter: '../main' }), /Invalid ads adapter/);
-  await assert.rejects(loadAds({ adapter: 'missing' }));
+});
+
+test('an adapter that cannot be loaded means playing without ads', async (t) => {
+  t.mock.method(console, 'warn', () => {});
+  const ads = await loadAds({ adapter: 'missing' });
+  assert.equal(ads.canShowRewarded(), false);
+  assert.equal(await ads.showRewarded(), false);
 });
 
 test('without simulation the "none" adapter has no ads', async () => {
@@ -125,14 +139,31 @@ test('without ads nothing is offered or shown', async () => {
   assert.equal(ads.calls.rewarded, 0);
 });
 
-test('breaks after a prestige keep a minimum gap', async () => {
+test('a failing listener neither blocks the game nor costs the reward', async (t) => {
+  t.mock.method(console, 'error', () => {});
+  const ads = fakeAds();
+  const flow = createAdFlow({ ads: ads.adapter });
+  flow.on(() => {
+    throw new Error('listener');
+  });
+  let granted = 0;
+  const pending = flow.reward(() => (granted += 1));
+  ads.finish(true);
+  assert.equal(await pending, true);
+  assert.equal(granted, 1);
+  assert.equal(flow.busy, false);
+});
+
+test('breaks after a prestige keep a minimum gap, also after the game starts', async () => {
   let time = 0;
   const ads = fakeAds();
   const flow = createAdFlow({ ads: ads.adapter, now: () => time, minInterstitialGapMs: 1000 });
-  assert.equal(await flow.breakAfterPrestige(), true);
-  time = 999;
-  assert.equal(await flow.breakAfterPrestige(), false);
+  assert.equal(await flow.breakAfterPrestige(), false); // right after the start
   time = 1000;
+  assert.equal(await flow.breakAfterPrestige(), true);
+  time = 1999;
+  assert.equal(await flow.breakAfterPrestige(), false);
+  time = 2000;
   assert.equal(await flow.breakAfterPrestige(), true);
   assert.equal(ads.calls.interstitial, 2);
 });

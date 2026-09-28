@@ -56,7 +56,7 @@
   "reset.confirm.yes": "Zurücksetzen",
   "reset.done": "Fortschritt zurückgesetzt.",
   "ads.watch": "Werbung ansehen",
-  "ads.playing": "Werbung läuft …",
+  "ads.playing": "Werbung läuft\u00a0…",
   "ads.unavailable": "Gerade ist keine Werbung verfügbar. Versuch es später noch einmal.",
   "boost.offer": "{minutes} Min. lang {factor}× Einnahmen",
   "boost.active": "{factor}× Einnahmen: noch {time}",

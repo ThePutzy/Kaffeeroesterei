@@ -27,6 +27,40 @@ test('a boost ad blocks the game while it plays, then doubles income', async ({ 
   await expect(page.getByRole('button', { name: 'Watch ad' })).toBeHidden();
 });
 
+test('escape does not end the ad early or unblock the game', async ({ page }) => {
+  await seedSave(page, { generators: { g1: 10 } });
+  await openPausedGame(page);
+  await page.getByRole('button', { name: 'Watch ad' }).click();
+  await expect(adOverlay(page)).toBeVisible();
+  for (let i = 0; i < 4; i += 1) await page.keyboard.press('Escape');
+  await expect(adOverlay(page)).toBeVisible();
+  await page.locator('.click-button').click({ force: true, timeout: 1000 }).catch(() => {});
+  await expect(balance(page)).toHaveText('0'); // the game behind the ad stays blocked
+  await page.clock.fastForward(AD_MS);
+  await expect(adOverlay(page)).toBeHidden();
+  const before = await readNumber(balance(page));
+  await page.locator('.click-button').click();
+  await expect.poll(() => readNumber(balance(page))).toBeCloseTo(before + 2); // boosted click
+});
+
+test('no boost is offered before anything produces', async ({ page }) => {
+  await seedSave(page, { currency: 20 });
+  await openPausedGame(page);
+  await expect(page.locator('.boost')).toBeHidden(); // no "Buy for 0", no ad yet
+  await page.locator('.generator .buy').first().click();
+  await expect(page.getByRole('button', { name: 'Watch ad' })).toBeVisible();
+});
+
+test('the boost card keeps its height while the boost runs', async ({ page }) => {
+  await seedSave(page, { currency: 1000, generators: { g1: 10 } });
+  await openPausedGame(page);
+  const before = await page.locator('.boost').boundingBox();
+  await page.getByRole('button', { name: 'Buy for 600' }).click();
+  await expect(page.locator('.boost-title')).toHaveText(/left$/);
+  const during = await page.locator('.boost').boundingBox();
+  expect(during.height).toBe(before.height); // nothing below it jumps
+});
+
 test('the boost can also be bought with coins instead of an ad', async ({ page }) => {
   await seedSave(page, { currency: 1000, generators: { g1: 10 } }); // price: 300 s x 2 per second
   await openPausedGame(page);
@@ -44,6 +78,17 @@ test('the ad button and the coin price have the same size', async ({ page }) => 
   const buyBox = await page.getByRole('button', { name: 'Buy for 864,000' }).boundingBox();
   expect(Math.abs(watchBox.width - buyBox.width), 'same width').toBeLessThanOrEqual(1);
   expect(Math.abs(watchBox.height - buyBox.height), 'same height').toBeLessThanOrEqual(1);
+});
+
+test('pressing Enter on "Welcome back!" continues and never starts an ad', async ({ page }) => {
+  await seedSave(page, { generators: { g1: 10 } }, { savedAt: START.getTime() - 2 * 3600 * 1000 });
+  await openPausedGame(page);
+  const dialog = page.getByRole('dialog', { name: 'Welcome back!' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Continue' })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(dialog).toBeHidden();
+  await expect(adOverlay(page)).toBeHidden();
 });
 
 test('offline earnings can be doubled once with an ad', async ({ page }) => {
@@ -68,9 +113,10 @@ test('offline earnings can be doubled once with an ad', async ({ page }) => {
   await expect.poll(() => readNumber(balance(page))).toBe(14_402);
 });
 
-test('a prestige is followed by an ad break', async ({ page }) => {
-  await seedSave(page, { runEarned: 50_000, lifetimeEarned: 50_000, generators: { g1: 1 } });
+test('a prestige is followed by an ad break once the game has run for 5 minutes', async ({ page }) => {
+  await seedSave(page, { runEarned: 50_000, lifetimeEarned: 50_000 });
   await openPausedGame(page);
+  await page.clock.fastForward(5 * 60 * 1000); // no break in the first 5 minutes
   await page.getByRole('tab', { name: 'Prestige' }).click();
   await page.locator('#panel-prestige .primary').click();
   await page.getByRole('dialog', { name: 'Start a new run?' }).getByRole('button', { name: 'Prestige' }).click();

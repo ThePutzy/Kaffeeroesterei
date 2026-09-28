@@ -2,23 +2,30 @@
 // - rewarded ads only when the player asks for one, one at a time, and the
 //   reward only after the ad was watched;
 // - an interstitial only at a natural break (after a prestige), at most once
-//   per minInterstitialGapMs;
+//   per minInterstitialGapMs, and not within that time after the game starts;
 // - while an ad runs, listeners get "start"/"end" so the UI can block input.
 export const MIN_INTERSTITIAL_GAP_MS = 5 * 60 * 1000;
 
 export function createAdFlow({ ads, now = () => Date.now(), minInterstitialGapMs = MIN_INTERSTITIAL_GAP_MS }) {
   let busy = false;
-  let lastInterstitial = Number.NEGATIVE_INFINITY;
+  let lastInterstitial = now();
   const listeners = new Set();
 
+  // A failing listener must not keep the game blocked or cost a reward.
   function emit(type) {
-    for (const listener of listeners) listener(type);
+    for (const listener of listeners) {
+      try {
+        listener(type);
+      } catch (error) {
+        console.error(error);
+      }
+    }
   }
 
   async function run(show) {
     busy = true;
-    emit('start');
     try {
+      emit('start');
       return await show();
     } finally {
       busy = false;
