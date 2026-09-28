@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
-import { test, expect } from '@playwright/test';
 import { config as devConfig } from '../../src/config.js';
+import { expect, openGame, test } from './helpers.js';
 
 const targets = JSON.parse(readFileSync(new URL('../../config/targets.json', import.meta.url), 'utf8'));
 
@@ -9,44 +9,29 @@ function generatorCount(themeId) {
   return String(theme.generators.length);
 }
 
-// Records console errors and every request that leaves the page's own origin.
-function watchPage(page, baseURL) {
-  const origin = new URL(baseURL).origin;
-  const errors = [];
-  const foreignRequests = [];
-  page.on('console', (message) => {
-    if (message.type() === 'error') errors.push(message.text());
-  });
-  page.on('pageerror', (error) => errors.push(error.message));
-  page.on('request', (request) => {
-    const url = new URL(request.url());
-    if (url.protocol !== 'data:' && url.protocol !== 'blob:' && url.origin !== origin) {
-      foreignRequests.push(request.url());
-    }
-  });
-  return { errors, foreignRequests };
-}
-
 // Packages are served from a sub path, which only works with relative paths.
+// Console errors and foreign requests fail every test (see helpers.js).
 for (const [name, target] of Object.entries(targets)) {
-  test(`package "${name}" loads without errors or foreign requests`, async ({ page, baseURL }) => {
-    const watched = watchPage(page, baseURL);
-    await page.goto(`/dist/${name}/`);
-    await expect(page.locator('html')).toHaveAttribute('data-ready', 'true');
-    await expect(page.locator('#status')).toHaveText(`Target: ${name}`);
-    // The theme was fetched and accepted by the economy core.
+  test(`package "${name}" loads its own config and theme`, async ({ page }) => {
+    await openGame(page, `/dist/${name}/`);
+    await expect(page.locator('html')).toHaveAttribute('data-target', name);
     await expect(page.locator('html')).toHaveAttribute('data-generators', generatorCount(target.runtime.theme));
-    expect(watched.errors).toEqual([]);
-    expect(watched.foreignRequests).toEqual([]);
   });
 }
 
-test('source version loads with the development config', async ({ page, baseURL }) => {
-  const watched = watchPage(page, baseURL);
-  await page.goto('/');
-  await expect(page.locator('html')).toHaveAttribute('data-ready', 'true');
-  await expect(page.locator('#status')).toHaveText('Target: dev');
+test('source version loads with the development config', async ({ page }) => {
+  await openGame(page);
+  await expect(page.locator('html')).toHaveAttribute('data-target', 'dev');
   await expect(page.locator('html')).toHaveAttribute('data-generators', generatorCount(devConfig.theme));
-  expect(watched.errors).toEqual([]);
-  expect(watched.foreignRequests).toEqual([]);
+});
+
+test.describe('with a German browser', () => {
+  test.use({ locale: 'de-DE' });
+
+  test('the web package follows the browser language, the CrazyGames package starts in English', async ({ page }) => {
+    await openGame(page, '/dist/web/');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'de');
+    await openGame(page, '/dist/crazygames/');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  });
 });

@@ -2,14 +2,16 @@
   "crazygames": {
     "runtime": {
       "theme": "kaffeeroesterei",
-      "ads": { "adapter": "none" }
+      "ads": { "adapter": "none" },
+      "languageDetection": "none"
     },
     "allowedUrls": []
   },
   "web": {
     "runtime": {
       "theme": "kaffeeroesterei",
-      "ads": { "adapter": "none" }
+      "ads": { "adapter": "none" },
+      "languageDetection": "browser"
     },
     "allowedUrls": []
   }

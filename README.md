@@ -6,7 +6,7 @@ Browser-Idle-Spiel, Thema 1: Kaffeerösterei. Reines HTML, CSS und JavaScript (E
 - Umsetzungsplan: [docs/umsetzungsplan.md](docs/umsetzungsplan.md)
 - Themenformat, Formeln und Balance-Simulator: [docs/themenformat.md](docs/themenformat.md)
 
-Stand: Schritt 2 (Wirtschaftskern und Balance-Simulator). Die Seite ist noch ein Platzhalter; die Oberfläche kommt in Schritt 3.
+Stand: Schritt 3a (Oberfläche). Das Spiel ist spielbar, speichert aber noch nicht; Speicherstand und Offline-Ertrag kommen in Schritt 3b. Die Inhalte sind noch vorläufig (IDs `g1` … `g8` statt Namen), die echten kommen in Schritt 5.
 
 ## Voraussetzungen
 
@@ -32,7 +32,11 @@ ES-Module laden nicht über `file://`. Zum Ausprobieren darum immer `npm run dev
 
 Die Ziele stehen in `config/targets.json`, derzeit `crazygames` und `web`:
 
-- `runtime` landet als `src/config.js` im Paket (Thema, Werbe-Adapter).
+- `runtime` landet als `src/config.js` im Paket (Thema, Werbe-Adapter, Spracherkennung).
+- `languageDetection`:
+  - `browser`: Sprache des Browsers, sonst Englisch.
+  - `none`: Englisch. So verlangt es CrazyGames, solange das SDK keine Sprache liefert.
+  - In beiden Fällen kann der Spieler die Sprache in den Einstellungen wechseln.
 - `allowedUrls` ist die Ausnahmeliste für die URL-Prüfung, zum Beispiel für ein Werbe-SDK. Derzeit ist sie leer.
 
 Zugangsdaten, Schlüssel und Publisher-IDs gehören nicht ins Repository, auch nicht in diese Datei.
@@ -41,9 +45,9 @@ Zugangsdaten, Schlüssel und Publisher-IDs gehören nicht ins Repository, auch n
 
 | Ordner | Inhalt |
 | --- | --- |
-| `src/core/` | Wirtschaft, Speicherstand, Offline-Ertrag, Oberfläche |
+| `src/core/` | Wirtschaft (`economy.js`), Spielablauf (`game.js`), Texte (`i18n.js`, `locales/`), Zahlenformat (`format.js`), Oberfläche (`ui/`) |
 | `src/ads/` | Werbe-Schnittstelle und Adapter |
-| `themes/kaffeeroesterei/` | Themendaten, Texte (en, de), SVG-Grafiken |
+| `themes/kaffeeroesterei/` | Themendaten (`theme.json`), Texte (`locales/en.json`, `locales/de.json`; sie überschreiben gleichnamige Kerntexte), später SVG-Grafiken |
 | `tools/` | Build, lokaler Server, Größen-Check, Balance-Simulator |
 | `tests/unit/` | Unit-Tests (`*.test.js`) |
 | `tests/fixtures/` | Testdaten, z. B. ein kleines Test-Thema mit nachrechenbaren Werten |

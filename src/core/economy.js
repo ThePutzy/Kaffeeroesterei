@@ -170,7 +170,8 @@ export function createEconomy(theme) {
 
   // Generator and global upgrades affect production; click upgrades affect
   // clicks. The prestige bonus applies to both.
-  function productionPerSecond(state) {
+  // Returns the production per second of every generator, by id.
+  function productionByGenerator(state) {
     const perGenerator = new Map();
     let global = 1;
     for (const id of state.upgrades) {
@@ -181,11 +182,19 @@ export function createEconomy(theme) {
         global *= effect.factor;
       }
     }
+    const factor = global * prestigeMultiplier(state);
+    return new Map(
+      theme.generators.map((generator) => [
+        generator.id,
+        owned(state, generator.id) * generator.baseRate * (perGenerator.get(generator.id) ?? 1) * factor,
+      ]),
+    );
+  }
+
+  function productionPerSecond(state) {
     let total = 0;
-    for (const generator of theme.generators) {
-      total += owned(state, generator.id) * generator.baseRate * (perGenerator.get(generator.id) ?? 1);
-    }
-    return total * global * prestigeMultiplier(state);
+    for (const production of productionByGenerator(state).values()) total += production;
+    return total;
   }
 
   function clickValue(state) {
@@ -254,6 +263,7 @@ export function createEconomy(theme) {
     isUpgradeAvailable,
     buyUpgrade,
     prestigeMultiplier,
+    productionByGenerator,
     productionPerSecond,
     clickValue,
     earn,

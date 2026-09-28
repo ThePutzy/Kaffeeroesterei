@@ -93,7 +93,8 @@ Texte und Bilder müssen bei devicePixelRatio 1 in diesen iframe-Größen lesbar
 
   `npm run check` führt alles nacheinander aus. Die CI wiederholt die Prüfungen in Chromium, Firefox und WebKit.
 - **PR-Text auf Deutsch** mit drei Abschnitten: Was geändert wurde / Wie geprüft (mit Ergebnis) / Was nicht geprüft werden konnte.
-- **Größe:** Wird ein Schritt zu groß, wird er in zwei PRs geteilt (z. B. 3a/3b), vorher angekündigt.
+- **Größe:** Wird ein Schritt zu groß, wird er in zwei PRs geteilt (z. B. 3a/3b), vorher angekündigt. Schritt 3 ist so geteilt: 3a Oberfläche, 3b Speicherstand und Offline-Ertrag.
+- **Gestapelte PRs** *(Änderung vom 28.09.2026)*: Der Nutzer hat am Abend gebeten, ohne Rückfragen so viel wie möglich zu schaffen. Ab Schritt 3a baut darum jeder Branch auf dem vorigen auf, und der PR zielt auf den vorigen Branch, sodass er nur seinen eigenen Diff zeigt. Gemergt wird in der Reihenfolge der Schritte. Nach jedem Merge wird der nächste Branch auf den neuen Stand von `main` gebracht, und sein PR zielt dann auf `main`.
 - **Abhängigkeiten:** keine zur Laufzeit. Die einzige Entwicklungs-Abhängigkeit ist `@playwright/test`, fest auf 1.56.1. Unit-Tests laufen mit `node --test`.
 - Code und Kommentare auf Englisch, Doku auf Deutsch. Nichts Fremdes, keine IDs oder Schlüssel im Repo.
 

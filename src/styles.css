@@ -1,0 +1,465 @@
+/* Core styles. Colors are variables so a theme can override them. */
+:root {
+  --color-bg: #f4ece2;
+  --color-surface: #fffaf4;
+  --color-surface-strong: #eadbca;
+  --color-text: #2a1c13;
+  --color-muted: #6f5b4b;
+  --color-accent: #7b3f1d;
+  --color-accent-strong: #5c2d12;
+  --color-on-accent: #fffaf4;
+  --color-border: #dccbb8;
+  --radius: 14px;
+  --shadow: 0 1px 2px rgb(42 28 19 / 12%), 0 3px 10px rgb(42 28 19 / 8%);
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.35;
+  overflow: hidden;
+  /* Recommended by CrazyGames: no magnifier or text selection on long press. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+button:focus-visible,
+select:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.primary {
+  padding: 0 18px;
+  border-color: var(--color-accent-strong);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: 600;
+}
+
+/* Layout: one column on narrow screens, two columns from 700px on. */
+.app {
+  display: grid;
+  height: 100vh;
+  height: 100dvh;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  grid-template-areas: "top" "roaster" "tabs" "panels";
+}
+
+@media (min-width: 700px) {
+  .app {
+    grid-template-columns: minmax(240px, 2fr) minmax(0, 3fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas: "top tabs" "roaster panels";
+  }
+}
+
+.topbar {
+  display: flex;
+  grid-area: top;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+}
+
+.balance {
+  min-width: 0;
+}
+
+.balance-amount {
+  overflow: hidden;
+  font-size: 1.75rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.balance-rate {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.icon-button {
+  display: grid;
+  flex: none;
+  place-items: center;
+  border: none;
+  background: transparent;
+  color: var(--color-muted);
+}
+
+.roaster {
+  display: grid;
+  position: relative;
+  grid-area: roaster;
+  place-items: center;
+  padding: 4px 12px 12px;
+}
+
+.click-button {
+  display: flex;
+  width: clamp(96px, min(40vw, 26vh), 220px);
+  aspect-ratio: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: none;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #a0603a, var(--color-accent) 55%, var(--color-accent-strong));
+  box-shadow: var(--shadow);
+  color: var(--color-on-accent);
+  transition: transform 80ms ease-out;
+}
+
+.click-button:active {
+  transform: scale(0.95);
+}
+
+.click-label {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.click-value {
+  font-size: 0.95rem;
+  opacity: 0.9;
+}
+
+@media (min-width: 700px) {
+  .roaster {
+    align-content: center;
+  }
+
+  .click-button {
+    width: clamp(96px, min(24vw, 50vh), 260px);
+  }
+}
+
+.floaters {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.floater {
+  position: absolute;
+  top: 45%;
+  left: calc(50% + var(--offset, 0px));
+  color: var(--color-on-accent);
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgb(42 28 19 / 60%);
+  animation: float-up 900ms ease-out forwards;
+}
+
+@keyframes float-up {
+  from {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translate(-50%, -70px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floater {
+    display: none;
+  }
+
+  .click-button {
+    transition: none;
+  }
+}
+
+.tabs {
+  display: flex;
+  grid-area: tabs;
+  gap: 4px;
+  max-width: 760px;
+  padding: 4px 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+/* Tabs share the row by content width, so long labels such as
+   "Achievements" fit on a phone; only on very narrow screens they shorten. */
+.tabs [role="tab"] {
+  flex: 1 1 auto;
+  padding: 0 6px;
+  overflow: hidden;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .tabs [role="tab"] {
+    font-size: 0.8rem;
+  }
+}
+
+.tabs [role="tab"][aria-selected="true"] {
+  border-color: var(--color-accent-strong);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.panels {
+  grid-area: panels;
+  min-height: 0;
+  padding: 8px 12px 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Keeps rows readable on wide screens. */
+.panel {
+  max-width: 760px;
+}
+
+.segmented {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.segmented button {
+  flex: 1;
+}
+
+.segmented [aria-checked="true"] {
+  border-color: var(--color-accent-strong);
+  background: var(--color-surface-strong);
+  font-weight: 700;
+}
+
+.list,
+.grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list {
+  display: grid;
+  gap: 8px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 8px 8px 12px;
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow);
+}
+
+.row-main {
+  min-width: 0;
+}
+
+.row-title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.count {
+  color: var(--color-muted);
+  font-weight: 400;
+}
+
+.row-detail,
+.note {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.buy {
+  display: flex;
+  flex: none;
+  min-width: 96px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-color: var(--color-accent-strong);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.buy-label {
+  font-size: 0.75rem;
+  opacity: 0.9;
+}
+
+.price {
+  font-weight: 700;
+}
+
+.grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+}
+
+.tile {
+  padding: 10px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-muted);
+}
+
+.tile.is-unlocked {
+  border-style: solid;
+  background: var(--color-surface);
+  box-shadow: var(--shadow);
+  color: var(--color-text);
+}
+
+.tile.is-unlocked .tile-title::before {
+  content: "✓ ";
+  color: var(--color-accent);
+}
+
+.tile-title {
+  font-weight: 600;
+}
+
+.tile-detail {
+  font-size: 0.8rem;
+}
+
+.prestige p {
+  margin: 0 0 10px;
+}
+
+.prestige-points {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.prestige-gain {
+  font-weight: 600;
+}
+
+.dialog {
+  width: min(420px, calc(100vw - 32px));
+  padding: 20px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow);
+  color: var(--color-text);
+}
+
+.dialog::backdrop {
+  background: rgb(42 28 19 / 45%);
+}
+
+.dialog h2 {
+  margin: 0 0 12px;
+  font-size: 1.25rem;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.field select {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-bg);
+}
+
+.dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.dialog-actions button {
+  padding: 0 16px;
+}
+
+.toasts {
+  display: grid;
+  position: fixed;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  left: 12px;
+  justify-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.toast {
+  max-width: 420px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--color-text);
+  box-shadow: var(--shadow);
+  color: var(--color-surface);
+  font-size: 0.9rem;
+}
+
+.app-error {
+  padding: 24px;
+}
