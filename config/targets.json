@@ -1,0 +1,16 @@
+{
+  "crazygames": {
+    "runtime": {
+      "theme": "kaffeeroesterei",
+      "ads": { "adapter": "none" }
+    },
+    "allowedUrls": []
+  },
+  "web": {
+    "runtime": {
+      "theme": "kaffeeroesterei",
+      "ads": { "adapter": "none" }
+    },
+    "allowedUrls": []
+  }
+}
