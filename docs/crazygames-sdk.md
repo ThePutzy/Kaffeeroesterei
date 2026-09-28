@@ -75,5 +75,6 @@ Quellen:
 - `gameplayStart` und `gameplayStop`, `loadingStart` und `loadingStop` auslösen.
 - Die Sprache aus `user.systemInfo` übernehmen.
 - Den Speicherstand über das Datenmodul führen.
+- **Alternative ohne Werbung:** CrazyGames verlangt zu jeder Belohnung eine Alternative ohne Werbung. Für den Boost gibt es sie (Kauf mit Bohnen), für „Offline-Ertrag verdoppeln“ noch nicht. Vor dem Full Launch ergänzen oder die Verdopplung weglassen.
 - **Offene Auslegung:** Ist die Boost-Karte neben der Klickfläche ein „Bildschirm mit aktivem Spielgeschehen“? Bei einem Idle-Spiel ist das nicht eindeutig. Vor dem Full Launch klären, notfalls die Karte in einen eigenen Bereich verlegen.
 - Die Developer-Terms sind noch nicht gelesen.
