@@ -271,6 +271,9 @@ test('invalid themes are rejected', () => {
     ['offline rate above 1', (t) => (t.offline.rate = 1.5)],
     ['no offline hours', (t) => (t.offline.maxHours = 0)],
     ['boost factor of 1', (t) => (t.boost.factor = 1)],
+    ['icon outside the theme', (t) => (t.generators[0].icon = '../secret.svg')],
+    ['icon that is no svg', (t) => (t.generators[0].icon = 'art/pan.png')],
+    ['art with a URL', (t) => (t.art = { logo: 'https://example.com/logo.svg' })],
     ['missing boost', (t) => delete t.boost],
     ['no boost price', (t) => (t.boost.priceSeconds = 0)],
   ];

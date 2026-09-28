@@ -22,11 +22,19 @@ const VIDEO_ICON =
   '<rect x="2" y="5" width="20" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>' +
   '<path d="M10 9l5 3-5 3z" fill="currentColor"/></svg>';
 
+// Theme art is optional; paths are validated theme data, relative to the page.
+function artImage(theme, path, className, size) {
+  if (!path) return '';
+  return `<img class="${className}" src="themes/${theme.id}/${path}" alt="" width="${size}" height="${size}" draggable="false">`;
+}
+
 function markup(theme, upgrades, achievements) {
+  const art = theme.art ?? {};
   const generators = theme.generators
     .map(
-      ({ id }) => `
+      ({ id, icon }) => `
         <li class="row generator" data-id="${id}">
+          ${artImage(theme, icon, 'row-icon', 40)}
           <div class="row-main">
             <div class="row-title"><span data-field="name"></span> <span class="count" data-field="owned"></span></div>
             <div class="row-detail" data-field="production"></div>
@@ -65,13 +73,14 @@ function markup(theme, upgrades, achievements) {
   return `
     <header class="topbar">
       <div class="balance">
-        <div class="balance-amount" data-ref="currency"></div>
+        <div class="balance-amount">${artImage(theme, art.currency, 'currency-icon', 24)}<span data-ref="currency"></span></div>
         <div class="balance-rate" data-ref="rate"></div>
       </div>
       <button type="button" class="icon-button" data-action="open-settings" data-label="settings.title">${SETTINGS_ICON}</button>
     </header>
     <section class="roaster">
       <button type="button" class="click-button" data-action="click">
+        ${artImage(theme, art.click, 'click-art', 96)}
         <span class="click-label" data-text="click.action"></span>
         <span class="click-value" data-ref="clickValue"></span>
       </button>
@@ -120,6 +129,7 @@ function markup(theme, upgrades, achievements) {
     <dialog class="dialog" data-ref="settings" aria-labelledby="settings-title">
       <form method="dialog">
         <h2 id="settings-title" data-text="settings.title"></h2>
+        <div class="settings-brand">${artImage(theme, art.logo, 'brand-logo', 40)}<span data-text="app.title"></span></div>
         <label class="field">
           <span data-text="settings.language"></span>
           <select data-ref="languageSelect">

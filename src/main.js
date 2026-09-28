@@ -18,6 +18,17 @@ async function loadJson(path) {
   return response.json();
 }
 
+function loadStylesheet(path) {
+  return new Promise((resolve, reject) => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = new URL(path, import.meta.url).href;
+    link.onload = resolve;
+    link.onerror = () => reject(new Error(`${path}: could not be loaded`));
+    document.head.append(link);
+  });
+}
+
 async function loadTexts(folder) {
   const entries = await Promise.all(LANGUAGES.map(async (language) => [language, await loadJson(`${folder}/${language}.json`)]));
   return Object.fromEntries(entries);
@@ -30,6 +41,11 @@ async function start() {
     loadTexts(`../themes/${config.theme}/locales`),
   ]);
   const economy = createEconomy(theme);
+  const themeFolder = `../themes/${config.theme}`;
+  if (theme.stylesheet) await loadStylesheet(`${themeFolder}/${theme.stylesheet}`);
+  if (theme.art?.logo) {
+    document.querySelector('link[rel="icon"]').href = new URL(`${themeFolder}/${theme.art.logo}`, import.meta.url).href;
+  }
   const adFlow = createAdFlow({ ads: await loadAds(config.ads) });
   const store = createStore(`${theme.id}.save`);
   const save = store.available ? loadSave(store, economy) : null;

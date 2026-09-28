@@ -1,14 +1,16 @@
 # Themenformat und Balancing
 
-Das beschreibt `themes/<name>/theme.json`, die Formeln des Wirtschaftskerns (`src/core/economy.js`) und den Balance-Simulator (`tools/simulate.mjs`). Stand: Schritt 2. Die Werte in `themes/kaffeeroesterei/theme.json` sind vorläufig und tragen neutrale IDs (`g1` … `g8`); die echten Inhalte kommen in Schritt 5.
+Das beschreibt `themes/<name>/theme.json`, die Texte und Grafiken eines Themas, die Formeln des Wirtschaftskerns (`src/core/economy.js`) und den Balance-Simulator (`tools/simulate.mjs`). Stand: Schritt 5, Inhalte der Kaffeerösterei.
 
 ## theme.json
 
 | Feld | Bedeutung |
 | --- | --- |
 | `id` | Name des Themenordners |
+| `stylesheet` | optional: CSS-Datei im Themenordner, die die Farb-Variablen des Kerns überschreibt (z. B. `theme.css`) |
+| `art` | optional: `currency` (Symbol am Kontostand), `click` (Bild in der Klickfläche), `logo` (Favicon, Einstellungen). Relative `.svg`-Pfade im Themenordner |
 | `click.base` | Ertrag pro Klick ohne Boni |
-| `generators[]` | Erzeuger: `id`, `baseCost` (Preis des ersten Stücks), `costGrowth` (Preisfaktor je gekauftem Stück, größer als 1), `baseRate` (Ertrag pro Sekunde je Stück) |
+| `generators[]` | Erzeuger: `id`, optional `icon` (relativer `.svg`-Pfad), `baseCost` (Preis des ersten Stücks), `costGrowth` (Preisfaktor je gekauftem Stück, größer als 1), `baseRate` (Ertrag pro Sekunde je Stück) |
 | `upgrades[]` | Upgrades: `id`, `cost`, `effect`, optional `unlock` (eine Bedingung; ohne sie ist das Upgrade sofort verfügbar) |
 | `achievements[]` | Erfolge: `id`, `condition` |
 | `prestige` | `threshold`, `exponent` (größer als 0, höchstens 1), `bonusPerPoint` |
@@ -34,6 +36,22 @@ Das beschreibt `themes/<name>/theme.json`, die Formeln des Wirtschaftskerns (`sr
 | `prestiges` | mindestens `value` Prestiges |
 
 **IDs** bestehen nur aus Kleinbuchstaben, Ziffern und Unterstrich und sind über alle Listen hinweg eindeutig. Sie werden später zu Textschlüsseln. Fehlerhafte Daten lehnt `createEconomy` mit einer Fehlermeldung ab.
+
+## Texte und Grafiken
+
+- **Texte:** `themes/<name>/locales/en.json` und `de.json`.
+  - Namen: `generator.<id>.name`, `upgrade.<id>.name` und `achievement.<id>.name`.
+  - Dazu kommt `app.title`, der Titel im Browser-Tab und in den Einstellungen.
+  - Schlüssel mit demselben Namen wie ein Kerntext (`src/core/locales/`) überschreiben ihn. So heißt „Erzeuger“ bei der Kaffeerösterei „Ausstattung“ und „Prestige“ heißt „Ansehen“.
+- **Was die Tests prüfen** (`tests/unit/theme.test.js`):
+  - Jede ID hat in jeder Sprache einen Namen.
+  - Es gibt keine unbekannten Schlüssel.
+  - Überschriebene Texte behalten die Platzhalter des Kerntexts.
+- **Grafiken:** SVG, von Hand als Code geschrieben, unter `themes/<name>/art/`. Die Tests prüfen:
+  - höchstens 4 KB je Datei
+  - `viewBox` vorhanden
+  - keine Skripte, keine eingebetteten Bilder, keine Verweise nach außen
+  - Jede Datei wird benutzt, und jede benutzte Datei existiert.
 
 ## Formeln
 

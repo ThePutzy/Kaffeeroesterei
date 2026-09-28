@@ -18,7 +18,7 @@
   "generator.nextUnlock": "Weitere Erzeuger erscheinen, wenn du kaufst.",
   "upgrades.none": "Gerade ist kein Upgrade verfügbar. Weiter produzieren!",
   "upgrades.bought": "Gekaufte Upgrades: {count} von {total}",
-  "upgrade.effect.generatorMultiplier": "{generator} produzieren ×{factor}",
+  "upgrade.effect.generatorMultiplier": "{generator}: Ertrag ×{factor}",
   "upgrade.effect.globalMultiplier": "Gesamte Produktion ×{factor}",
   "upgrade.effect.clickMultiplier": "Klicks bringen ×{factor}",
   "condition.owned": "Besitze {value} × {generator}",

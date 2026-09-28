@@ -9,7 +9,7 @@ const rate = (page) => page.locator('.balance-rate');
 const adOverlay = (page) => page.getByRole('dialog', { name: 'Advertisement is playing …' });
 
 test('a boost ad blocks the game while it plays, then doubles income', async ({ page }) => {
-  await seedSave(page, { generators: { g1: 10 } }); // 2 per second
+  await seedSave(page, { generators: { pan: 10 } }); // 2 per second
   await openPausedGame(page);
   await expect(page.locator('.boost-title')).toHaveText('2× income for 10 min');
 
@@ -29,7 +29,7 @@ test('a boost ad blocks the game while it plays, then doubles income', async ({ 
 });
 
 test('escape does not end the ad early or unblock the game', async ({ page }) => {
-  await seedSave(page, { generators: { g1: 10 } });
+  await seedSave(page, { generators: { pan: 10 } });
   await openPausedGame(page);
   await page.getByRole('button', { name: 'Watch ad' }).click();
   await expect(adOverlay(page)).toBeVisible();
@@ -53,7 +53,7 @@ test('no boost is offered before anything produces', async ({ page }) => {
 });
 
 test('the boost card keeps its height while the boost runs', async ({ page }) => {
-  await seedSave(page, { currency: 1000, generators: { g1: 10 } });
+  await seedSave(page, { currency: 1000, generators: { pan: 10 } });
   await openPausedGame(page);
   const before = await page.locator('.boost').boundingBox();
   await page.getByRole('button', { name: 'Buy for 600' }).click();
@@ -63,7 +63,7 @@ test('the boost card keeps its height while the boost runs', async ({ page }) =>
 });
 
 test('the boost can also be bought with coins instead of an ad', async ({ page }) => {
-  await seedSave(page, { currency: 1000, generators: { g1: 10 } }); // price: 300 s x 2 per second
+  await seedSave(page, { currency: 1000, generators: { pan: 10 } }); // price: 300 s x 2 per second
   await openPausedGame(page);
   const buy = page.getByRole('button', { name: 'Buy for 600' });
   await expect(buy).toBeEnabled();
@@ -73,7 +73,7 @@ test('the boost can also be bought with coins instead of an ad', async ({ page }
 });
 
 test('the ad button and the coin price have the same size', async ({ page }) => {
-  await seedSave(page, { generators: { g5: 6 } }); // a long label: "Buy for 864,000"
+  await seedSave(page, { generators: { cafe: 6 } }); // a long label: "Buy for 864,000"
   await openPausedGame(page);
   const watchBox = await page.getByRole('button', { name: 'Watch ad' }).boundingBox();
   const buyBox = await page.getByRole('button', { name: 'Buy for 864,000' }).boundingBox();
@@ -82,7 +82,7 @@ test('the ad button and the coin price have the same size', async ({ page }) => 
 });
 
 test('pressing Enter on "Welcome back!" continues and never starts an ad', async ({ page }) => {
-  await seedSave(page, { generators: { g1: 10 } }, { savedAt: START.getTime() - 2 * 3600 * 1000 });
+  await seedSave(page, { generators: { pan: 10 } }, { savedAt: START.getTime() - 2 * 3600 * 1000 });
   await openPausedGame(page);
   const dialog = page.getByRole('dialog', { name: 'Welcome back!' });
   await expect(dialog).toBeVisible();
@@ -93,10 +93,10 @@ test('pressing Enter on "Welcome back!" continues and never starts an ad', async
 });
 
 test('offline earnings can be doubled once with an ad', async ({ page }) => {
-  await seedSave(page, { generators: { g1: 10 } }, { savedAt: START.getTime() - 2 * 3600 * 1000 });
+  await seedSave(page, { generators: { pan: 10 } }, { savedAt: START.getTime() - 2 * 3600 * 1000 });
   await openPausedGame(page);
   const dialog = page.getByRole('dialog', { name: 'Welcome back!' });
-  await expect(dialog).toContainText('Your producers earned 7,200.');
+  await expect(dialog).toContainText('Your roastery made 7,200 beans.');
 
   const double = dialog.getByRole('button', { name: 'Watch ad: double it' });
   const continueButton = dialog.getByRole('button', { name: 'Continue' });
@@ -118,13 +118,13 @@ test('a prestige is followed by an ad break once the game has run for 5 minutes'
   await seedSave(page, { runEarned: 50_000, lifetimeEarned: 50_000 });
   await openPausedGame(page);
   await page.clock.fastForward(5 * 60 * 1000); // no break in the first 5 minutes
-  await page.getByRole('tab', { name: 'Prestige' }).click();
+  await page.getByRole('tab', { name: 'Reputation' }).click();
   await page.locator('#panel-prestige .primary').click();
-  await page.getByRole('dialog', { name: 'Start a new run?' }).getByRole('button', { name: 'Prestige' }).click();
+  await page.getByRole('dialog', { name: 'Sell your roastery?' }).getByRole('button', { name: 'Sell and start over' }).click();
   await expect(adOverlay(page)).toBeVisible();
   await page.clock.fastForward(AD_MS);
   await expect(adOverlay(page)).toBeHidden();
-  await expect(page.locator('.prestige-points')).toHaveText('Prestige points: 1');
+  await expect(page.locator('.prestige-points')).toHaveText('Reputation: 1');
 });
 
 test('no ad appears on its own while playing', async ({ page }) => {
@@ -154,7 +154,7 @@ test('no ad appears on its own while playing', async ({ page }) => {
 
 for (const target of ['web', 'crazygames']) {
   test(`the ${target} package has no ad network yet and shows no ad buttons`, async ({ page }) => {
-    await seedSave(page, { generators: { g1: 10 } }, { savedAt: START.getTime() - 2 * 3600 * 1000 });
+    await seedSave(page, { generators: { pan: 10 } }, { savedAt: START.getTime() - 2 * 3600 * 1000 });
     await page.clock.install({ time: START.getTime() - 1000 }); // see openPausedGame
     await page.clock.pauseAt(START);
     await openGame(page, `/dist/${target}/`);
