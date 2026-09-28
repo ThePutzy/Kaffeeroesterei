@@ -7,7 +7,7 @@ Browser-Idle-Spiel, Thema 1: Kaffeerösterei. Reines HTML, CSS und JavaScript (E
 - Themenformat, Formeln und Balance-Simulator: [docs/themenformat.md](docs/themenformat.md)
 - Entwürfe für die eigene Seite (Anleitung, Über uns, Datenschutz, Impressum): [docs/entwuerfe/](docs/entwuerfe/README.md)
 
-Stand: Schritt 5 (Inhalte der Kaffeerösterei). Das Spiel ist mit eigenen Texten (Englisch und Deutsch) und eigenen SVG-Grafiken spielbar, speichert im Browser und hat Belohnungen per Werbung, bisher nur simuliert. Arbeitstitel: **Roast & Rise**; er ist noch nicht auf Markenrechte geprüft.
+Stand: Schritt 6 (Entwürfe für die eigene Seite). Das Spiel ist mit eigenen Texten (Englisch und Deutsch) und eigenen SVG-Grafiken spielbar, speichert im Browser und hat Belohnungen per Werbung, bisher nur simuliert. Arbeitstitel: **Roast & Rise**; er ist noch nicht auf Markenrechte geprüft. Entwürfe für Anleitung, Über uns, Datenschutz und Impressum liegen in `docs/entwuerfe/`.
 
 ## Voraussetzungen
 
@@ -46,7 +46,7 @@ Zugangsdaten, Schlüssel und Publisher-IDs gehören nicht ins Repository, auch n
 
 | Ordner | Inhalt |
 | --- | --- |
-| `src/core/` | Wirtschaft (`economy.js`), Spielablauf (`game.js`), Texte (`i18n.js`, `locales/`), Zahlenformat (`format.js`), Oberfläche (`ui/`) |
+| `src/core/` | Wirtschaft (`economy.js`), Spielablauf (`game.js`), Speicherstand (`save.js`), Offline-Ertrag (`offline.js`), Werbe-Ablauf (`adflow.js`), Texte (`i18n.js`, `locales/`), Zahlenformat (`format.js`), Oberfläche (`ui/`) |
 | `src/ads/` | Werbe-Schnittstelle und Adapter |
 | `themes/kaffeeroesterei/` | Themendaten (`theme.json`), Texte (`locales/en.json`, `locales/de.json`; sie überschreiben gleichnamige Kerntexte), Farben (`theme.css`), SVG-Grafiken (`art/`) |
 | `tools/` | Build, lokaler Server, Größen-Check, Balance-Simulator |
@@ -59,7 +59,7 @@ Zugangsdaten, Schlüssel und Publisher-IDs gehören nicht ins Repository, auch n
 ## Speicherstand
 
 - **Wo:** im `localStorage` des Browsers unter `<Thema>.save`, also `kaffeeroesterei.save`.
-- **Wann:** alle 10 Sekunden, beim Verbergen oder Verlassen der Seite, nach einem Prestige und nach dem Sprachwechsel.
+- **Wann:** alle 10 Sekunden, solange die Seite sichtbar ist, außerdem beim Verbergen oder Verlassen der Seite, nach einem Prestige, nach dem Sprachwechsel und nach dem Zurücksetzen.
 - **Ohne Speicher**, etwa im privaten Fenster: Das Spiel läuft weiter und weist darauf hin.
 - **Unlesbarer Speicherstand:** Er wird unter `<Thema>.save:unreadable` beiseitegelegt, danach startet das Spiel neu.
 - **Neues Speicherformat:** `SAVE_VERSION` in `src/core/save.js` erhöhen und eine Migration ergänzen.
