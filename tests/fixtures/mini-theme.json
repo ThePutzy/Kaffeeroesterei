@@ -1,0 +1,40 @@
+{
+  "id": "mini",
+  "click": { "base": 1 },
+  "generators": [
+    { "id": "ga", "baseCost": 10, "costGrowth": 1.5, "baseRate": 1 },
+    { "id": "gb", "baseCost": 100, "costGrowth": 2, "baseRate": 10 }
+  ],
+  "upgrades": [
+    {
+      "id": "ua",
+      "cost": 50,
+      "effect": { "type": "generatorMultiplier", "generator": "ga", "factor": 2 },
+      "unlock": { "type": "owned", "generator": "ga", "value": 2 }
+    },
+    {
+      "id": "uc",
+      "cost": 20,
+      "effect": { "type": "clickMultiplier", "factor": 3 },
+      "unlock": { "type": "clicks", "value": 5 }
+    },
+    {
+      "id": "ug",
+      "cost": 200,
+      "effect": { "type": "globalMultiplier", "factor": 1.5 },
+      "unlock": { "type": "runEarned", "value": 100 }
+    },
+    {
+      "id": "ubasic",
+      "cost": 5,
+      "effect": { "type": "clickMultiplier", "factor": 2 }
+    }
+  ],
+  "achievements": [
+    { "id": "first", "condition": { "type": "owned", "generator": "ga", "value": 1 } },
+    { "id": "rich", "condition": { "type": "lifetimeEarned", "value": 1000 } },
+    { "id": "clicker", "condition": { "type": "clicks", "value": 10 } },
+    { "id": "reborn", "condition": { "type": "prestiges", "value": 1 } }
+  ],
+  "prestige": { "threshold": 1000, "exponent": 0.5, "bonusPerPoint": 0.1 }
+}

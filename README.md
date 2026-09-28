@@ -4,8 +4,9 @@ Browser-Idle-Spiel, Thema 1: Kaffeerösterei. Reines HTML, CSS und JavaScript (E
 
 - Projektkontext und Regeln: [CLAUDE.md](CLAUDE.md)
 - Umsetzungsplan: [docs/umsetzungsplan.md](docs/umsetzungsplan.md)
+- Themenformat, Formeln und Balance-Simulator: [docs/themenformat.md](docs/themenformat.md)
 
-Stand: Schritt 1 (Gerüst). Die Seite ist noch ein Platzhalter, das Spiel entsteht in den folgenden Schritten.
+Stand: Schritt 2 (Wirtschaftskern und Balance-Simulator). Die Seite ist noch ein Platzhalter; die Oberfläche kommt in Schritt 3.
 
 ## Voraussetzungen
 
@@ -19,6 +20,7 @@ Stand: Schritt 1 (Gerüst). Die Seite ist noch ein Platzhalter, das Spiel entste
 | --- | --- |
 | `npm run dev` | Startet einen lokalen Server auf http://127.0.0.1:8080/. Unter `/` läuft der Quellstand, unter `/dist/<ziel>/` das gebaute Paket. Mit `npm run dev -- --host 0.0.0.0` ist er auch vom Handy im selben WLAN erreichbar. |
 | `npm test` | Unit-Tests mit dem eingebauten Node-Testrunner |
+| `npm run sim` | Balance-Simulator: spielt das Thema durch und prüft Tempo und Zahlen (siehe [docs/themenformat.md](docs/themenformat.md)) |
 | `npm run build` | Baut je Ziel ein Paket nach `dist/<ziel>/` |
 | `npm run check:size` | Prüft jedes Paket: unter 2.000.000 Bytes und keine externen URLs |
 | `npm run test:browser` | Browser-Test mit Playwright; baut vorher neu |
@@ -42,8 +44,9 @@ Zugangsdaten, Schlüssel und Publisher-IDs gehören nicht ins Repository, auch n
 | `src/core/` | Wirtschaft, Speicherstand, Offline-Ertrag, Oberfläche |
 | `src/ads/` | Werbe-Schnittstelle und Adapter |
 | `themes/kaffeeroesterei/` | Themendaten, Texte (en, de), SVG-Grafiken |
-| `tools/` | Build, lokaler Server, Größen-Check (später Balance-Simulator) |
+| `tools/` | Build, lokaler Server, Größen-Check, Balance-Simulator |
 | `tests/unit/` | Unit-Tests (`*.test.js`) |
+| `tests/fixtures/` | Testdaten, z. B. ein kleines Test-Thema mit nachrechenbaren Werten |
 | `tests/browser/` | Browser-Tests (`*.spec.js`) |
 | `config/` | Ziel-Konfiguration |
 | `docs/` | Dokumentation |
@@ -56,4 +59,4 @@ Zugangsdaten, Schlüssel und Publisher-IDs gehören nicht ins Repository, auch n
 
 ## Pakete herunterladen
 
-Die CI (GitHub Actions) führt bei jedem Pull Request alle Prüfungen aus, den Browser-Test in Chromium, Firefox und WebKit. Danach hängt sie die Pakete als Artefakte `package-crazygames` und `package-web` an den Lauf: im Reiter „Actions“ den Lauf öffnen, dann „Artifacts“. Jede ZIP-Datei enthält `index.html` direkt im Hauptordner.
+Die CI (GitHub Actions) führt bei jedem Pull Request alle Prüfungen aus, auch den Balance-Simulator und den Browser-Test in Chromium, Firefox und WebKit. Danach hängt sie die Pakete als Artefakte `package-crazygames` und `package-web` an den Lauf: im Reiter „Actions“ den Lauf öffnen, dann „Artifacts“. Jede ZIP-Datei enthält `index.html` direkt im Hauptordner.
