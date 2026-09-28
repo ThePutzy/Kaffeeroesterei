@@ -67,6 +67,10 @@ export function validateTheme(theme) {
   if (!isPositive(prestige?.threshold)) invalid('prestige.threshold must be positive');
   if (!isPositive(prestige.exponent) || prestige.exponent > 1) invalid('prestige.exponent must be in (0, 1]');
   if (!isPositive(prestige.bonusPerPoint)) invalid('prestige.bonusPerPoint must be positive');
+
+  const offline = theme.offline;
+  if (!isPositive(offline?.maxHours)) invalid('offline.maxHours must be positive');
+  if (!isPositive(offline.rate) || offline.rate > 1) invalid('offline.rate must be in (0, 1]');
 }
 
 export function createEconomy(theme) {

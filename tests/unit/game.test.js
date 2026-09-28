@@ -69,3 +69,36 @@ test('listeners can unsubscribe', () => {
   game.buyGenerator('ga');
   assert.deepEqual(seen, []);
 });
+
+test('gaps over a minute pay offline earnings and report them', () => {
+  const { game, events } = startGame({ generators: { ga: 2, gb: 1 } }); // 12 per second
+  game.update(60_000); // exactly one minute still counts as playing
+  assert.equal(game.state.currency, 720);
+  game.update(60_000 + 600_000); // ten minutes away: half rate
+  assert.equal(game.state.currency, 720 + 12 * 600 * 0.5);
+  const offline = events.find((event) => event.type === 'offline');
+  assert.deepEqual(offline, { type: 'offline', awaySeconds: 600, seconds: 600, amount: 3600 });
+});
+
+test('offline earnings stop at the cap', () => {
+  const { game, events } = startGame({ generators: { ga: 1 } }); // 1 per second, cap 2 h
+  game.update(10 * 3600 * 1000);
+  assert.equal(game.state.currency, 2 * 3600 * 0.5);
+  const offline = events.find((event) => event.type === 'offline');
+  assert.equal(offline.awaySeconds, 36000);
+  assert.equal(offline.seconds, 7200);
+});
+
+test('time away without production reports nothing', () => {
+  const { game, events } = startGame();
+  game.update(3_600_000);
+  assert.deepEqual(events, []);
+  assert.equal(game.state.currency, 0);
+});
+
+test('reset starts over and tells listeners', () => {
+  const { game, events } = startGame({ currency: 500, prestigePoints: 3 });
+  game.reset();
+  assert.deepEqual(game.state, createEconomy(mini).createState());
+  assert.deepEqual(events, [{ type: 'reset' }]);
+});

@@ -6,7 +6,7 @@ Browser-Idle-Spiel, Thema 1: Kaffeerösterei. Reines HTML, CSS und JavaScript (E
 - Umsetzungsplan: [docs/umsetzungsplan.md](docs/umsetzungsplan.md)
 - Themenformat, Formeln und Balance-Simulator: [docs/themenformat.md](docs/themenformat.md)
 
-Stand: Schritt 3a (Oberfläche). Das Spiel ist spielbar, speichert aber noch nicht; Speicherstand und Offline-Ertrag kommen in Schritt 3b. Die Inhalte sind noch vorläufig (IDs `g1` … `g8` statt Namen), die echten kommen in Schritt 5.
+Stand: Schritt 3b (Speicherstand und Offline-Ertrag). Das Spiel ist spielbar und speichert im Browser. Die Inhalte sind noch vorläufig (IDs `g1` … `g8` statt Namen); die echten kommen in Schritt 5.
 
 ## Voraussetzungen
 
@@ -54,6 +54,14 @@ Zugangsdaten, Schlüssel und Publisher-IDs gehören nicht ins Repository, auch n
 | `tests/browser/` | Browser-Tests (`*.spec.js`) |
 | `config/` | Ziel-Konfiguration |
 | `docs/` | Dokumentation |
+
+## Speicherstand
+
+- **Wo:** im `localStorage` des Browsers unter `<Thema>.save`, also `kaffeeroesterei.save`.
+- **Wann:** alle 10 Sekunden, beim Verbergen oder Verlassen der Seite, nach einem Prestige und nach dem Sprachwechsel.
+- **Ohne Speicher**, etwa im privaten Fenster: Das Spiel läuft weiter und weist darauf hin.
+- **Unlesbarer Speicherstand:** Er wird unter `<Thema>.save:unreadable` beiseitegelegt, danach startet das Spiel neu.
+- **Neues Speicherformat:** `SAVE_VERSION` in `src/core/save.js` erhöhen und eine Migration ergänzen.
 
 ## Regeln für ausgelieferte Dateien
 

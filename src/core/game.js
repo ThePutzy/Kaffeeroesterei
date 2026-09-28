@@ -1,6 +1,13 @@
+import { offlineEarnings } from './offline.js';
+
+// Longer gaps between updates (closed game, hidden tab, sleeping device)
+// count as time away and pay offline earnings instead of full production.
+export const AWAY_AFTER_SECONDS = 60;
+
 // A running game session: holds the current state, applies player actions
 // and elapsed time, and tells listeners about events (achievements,
-// prestige). Time comes in from outside, so tests can drive it.
+// prestige, offline earnings). Time comes in from outside, so tests can
+// drive it. `now` is the time the state belongs to, e.g. when it was saved.
 export function createGame({ economy, state = economy.createState(), now }) {
   let current = state;
   let lastUpdate = now;
@@ -46,12 +53,24 @@ export function createGame({ economy, state = economy.createState(), now }) {
       const gain = economy.prestigeGain(current);
       return apply(economy.prestige(current), { type: 'prestige', gain });
     },
-    // Advances production to `time` (milliseconds). A clock that went
+    reset() {
+      current = economy.createState();
+      emit({ type: 'reset' });
+    },
+    // Advances the game to `time` (milliseconds). A clock that went
     // backwards adds nothing.
     update(time) {
       const seconds = (time - lastUpdate) / 1000;
       lastUpdate = time;
-      if (seconds > 0) apply(economy.tick(current, seconds));
+      if (!(seconds > 0)) return;
+      if (seconds <= AWAY_AFTER_SECONDS) {
+        apply(economy.tick(current, seconds));
+        return;
+      }
+      const earnings = offlineEarnings(economy, current, seconds);
+      if (earnings.amount > 0) {
+        apply(economy.earn(current, earnings.amount), { type: 'offline', awaySeconds: seconds, ...earnings });
+      }
     },
   };
 }

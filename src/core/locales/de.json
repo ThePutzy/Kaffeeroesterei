@@ -41,5 +41,18 @@
   "dialog.cancel": "Abbrechen",
   "dialog.close": "Schließen",
   "settings.title": "Einstellungen",
-  "settings.language": "Sprache"
+  "settings.language": "Sprache",
+  "offline.title": "Willkommen zurück!",
+  "offline.body": "Du warst {duration} weg. Deine Erzeuger haben {amount} verdient.",
+  "offline.note": "Während du weg bist, bringen die Erzeuger {rate} ihres üblichen Ertrags, höchstens {hours} Stunden lang.",
+  "offline.continue": "Weiter",
+  "duration.minutes": "{minutes} Min.",
+  "duration.hoursMinutes": "{hours} Std. {minutes} Min.",
+  "duration.daysHours": "{days} Tg. {hours} Std.",
+  "settings.reset": "Fortschritt zurücksetzen",
+  "settings.storageUnavailable": "Der Fortschritt kann in diesem Browser nicht gespeichert werden, zum Beispiel im privaten Fenster. Spielen kannst du trotzdem.",
+  "reset.confirm.title": "Gesamten Fortschritt zurücksetzen?",
+  "reset.confirm.body": "Alles wird gelöscht, auch Prestige-Punkte und Erfolge. Das lässt sich nicht rückgängig machen.",
+  "reset.confirm.yes": "Zurücksetzen",
+  "reset.done": "Fortschritt zurückgesetzt."
 }
