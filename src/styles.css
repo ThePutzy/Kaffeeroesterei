@@ -158,8 +158,18 @@ select:focus-visible {
   transition: transform 80ms ease-out;
 }
 
+/* Press feedback that keeps the button's size: a shrinking button loses
+   clicks that are released near its edge. */
 .click-button:active {
-  transform: scale(0.95);
+  filter: brightness(0.94);
+}
+
+.click-button > * {
+  transition: transform 80ms ease-out;
+}
+
+.click-button:active > * {
+  transform: scale(0.94);
 }
 
 .click-label {
@@ -216,7 +226,8 @@ select:focus-visible {
     display: none;
   }
 
-  .click-button {
+  .click-button,
+  .click-button > * {
     transition: none;
   }
 }
