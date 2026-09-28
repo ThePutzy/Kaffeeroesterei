@@ -1,7 +1,7 @@
 // Builds one static package per target into dist/<target>/.
 // Usage: node tools/build.mjs [target ...]   (default: all targets)
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { existsSync, realpathSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -44,9 +44,11 @@ export async function buildTarget(name, target, { root = ROOT, outDir = join(roo
     if (SKIPPED_FILES.has(basename(src))) return false;
     return dirname(src) !== adsDir || shippedAds.has(basename(src));
   };
-  await cp(join(root, 'index.html'), join(dest, 'index.html'));
-  await cp(join(root, 'src'), join(dest, 'src'), { recursive: true, filter });
-  await cp(themeDir, join(dest, 'themes', theme), { recursive: true, filter });
+  // Symlinks are copied as the files they point to: a link would point back
+  // into this machine's source tree and escape the size and URL checks.
+  await cp(join(root, 'index.html'), join(dest, 'index.html'), { dereference: true });
+  await cp(join(root, 'src'), join(dest, 'src'), { recursive: true, filter, dereference: true });
+  await cp(themeDir, join(dest, 'themes', theme), { recursive: true, filter, dereference: true });
 
   // Replaces the development config copied from src/.
   await writeFile(join(dest, 'src', 'config.js'), renderConfig({ target: name, ...runtime }));
@@ -64,7 +66,8 @@ export async function build({ root = ROOT, outDir = join(root, 'dist'), names = 
   return built;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// Run as a command, also when called through a symlinked path.
+if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
   try {
     for (const dir of await build({ names: process.argv.slice(2) })) {
       console.log(`built ${dir}`);

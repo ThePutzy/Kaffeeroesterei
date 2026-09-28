@@ -2,6 +2,7 @@
 // Usage: node tools/simulate.mjs [theme]   (default: kaffeeroesterei)
 // Hard failures (invalid numbers, stalls, numbers above MAX_NUMBER) exit with
 // code 1. Missed pacing targets are warnings only.
+import { realpathSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -286,7 +287,8 @@ async function main(themeId) {
   return errors.length === 0;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// Run as a command, also when called through a symlinked path.
+if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
   try {
     if (!(await main(process.argv[2] ?? 'kaffeeroesterei'))) process.exit(1);
   } catch (error) {
