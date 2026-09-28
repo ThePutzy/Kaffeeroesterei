@@ -28,6 +28,7 @@ export function createStore(key, storage = browserStorage()) {
   const available = storage !== null && probe();
 
   return {
+    key,
     available,
     read(suffix = '') {
       try {
@@ -101,10 +102,14 @@ export function parseSave(text, economy, migrations = MIGRATIONS) {
     return null;
   }
   if (!data || typeof data !== 'object' || !Number.isInteger(data.version)) return null;
-  while (data.version < SAVE_VERSION) {
-    const migrate = migrations[data.version];
-    if (!migrate) return null;
-    data = { ...migrate(data), version: data.version + 1 };
+  try {
+    while (data.version < SAVE_VERSION) {
+      const migrate = migrations[data.version];
+      if (!migrate) return null;
+      data = { ...migrate(data), version: data.version + 1 };
+    }
+  } catch {
+    return null; // a migration that fails on odd data must not stop the game
   }
   if (data.version !== SAVE_VERSION) return null; // written by a newer game version
 
@@ -117,12 +122,28 @@ export function parseSave(text, economy, migrations = MIGRATIONS) {
   };
 }
 
-// Loads the save. An unreadable save is copied to "<key>:unreadable" before
-// the game starts fresh, so it is not lost when the next autosave runs.
+// True if the text is a save from a newer version of the game, e.g. when an
+// old version is served again after an update.
+export function isNewerSave(text) {
+  try {
+    const { version } = JSON.parse(text);
+    return Number.isInteger(version) && version > SAVE_VERSION;
+  } catch {
+    return false;
+  }
+}
+
+// Loads the save; returns { save, readOnly }.
+// - A save from a newer version stays untouched, and the game must not save
+//   over it (readOnly).
+// - Any other unreadable save is copied to "<key>:unreadable" before the game
+//   starts fresh, so the next autosave cannot destroy it. An older copy there
+//   is kept.
 export function loadSave(store, economy) {
   const text = store.read();
-  if (text === null) return null;
+  if (text === null) return { save: null, readOnly: false };
+  if (isNewerSave(text)) return { save: null, readOnly: true };
   const save = parseSave(text, economy);
-  if (!save) store.write(text, ':unreadable');
-  return save;
+  if (!save && store.read(':unreadable') === null) store.write(text, ':unreadable');
+  return { save, readOnly: false };
 }

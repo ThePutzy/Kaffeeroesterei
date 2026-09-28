@@ -136,7 +136,7 @@ function markup(theme, upgrades, achievements) {
             ${LANGUAGES.map((language) => `<option value="${language}" lang="${language}">${LANGUAGE_NAMES[language]}</option>`).join('')}
           </select>
         </label>
-        <p class="note" data-ref="storageNote" data-text="settings.storageUnavailable" hidden></p>
+        <p class="note" data-ref="storageNote" hidden></p>
         <div class="dialog-actions">
           <button type="button" class="danger" data-action="reset" data-text="settings.reset"></button>
           <button value="close" class="primary" data-text="dialog.close"></button>
@@ -174,11 +174,25 @@ function markup(theme, upgrades, achievements) {
         </div>
       </form>
     </dialog>
+    <dialog class="dialog" data-ref="otherTab" aria-labelledby="other-tab-title" closedby="none">
+      <h2 id="other-tab-title" data-text="tab.title"></h2>
+      <p data-text="tab.body"></p>
+      <div class="dialog-actions">
+        <button type="button" class="primary" data-action="reload" data-text="tab.continue"></button>
+      </div>
+    </dialog>
     <dialog class="ad-overlay" data-ref="adOverlay" aria-labelledby="ad-overlay-text" closedby="none">
       <p id="ad-overlay-text" data-text="ads.playing"></p>
     </dialog>
     <div class="toasts" role="status" aria-live="polite" data-ref="toasts"></div>`;
 }
+
+// Why progress is not (or no longer) saved, and the text that says so.
+const STORAGE_TEXTS = {
+  unavailable: 'settings.storageUnavailable',
+  newer: 'settings.saveNewer',
+  failed: 'settings.saveFailed',
+};
 
 function setText(node, text) {
   if (node.textContent !== text) node.textContent = text;
@@ -210,7 +224,7 @@ export function createUi({
   game,
   i18n,
   adFlow = null,
-  storageAvailable = true,
+  storageProblem = null, // 'unavailable' | 'newer' | 'failed', see STORAGE_TEXTS
   onLanguageChange = () => {},
   onReset = () => {},
 }) {
@@ -463,6 +477,8 @@ export function createUi({
       game.buyBoost();
     } else if (action === 'boost-ad') {
       watchAd(() => game.activateBoost());
+    } else if (action === 'reload') {
+      window.location.reload();
     } else if (action === 'offline-double' && offlineShown && !offlineShown.doubled) {
       const shown = offlineShown;
       const bonus = shown.amount;
@@ -525,26 +541,53 @@ export function createUi({
     }
   });
 
-  // While an ad runs, nothing in the game can be used. Browsers may close a
-  // modal dialog after repeated Escape presses even if "cancel" is prevented,
-  // so the overlay reopens while the ad runs and everything else is inert.
+  // While an ad runs or another tab owns the save, nothing in the game can be
+  // used. Browsers may close a modal dialog after repeated Escape presses even
+  // if "cancel" is prevented, so these dialogs reopen and the rest is inert.
+  let adRunning = false;
+  let otherTab = false;
+  function updateBlocked() {
+    for (const child of root.children) {
+      if (child !== refs.adOverlay && child !== refs.otherTab) child.inert = adRunning || otherTab;
+    }
+  }
+  function keepOpen(dialog, isNeeded) {
+    dialog.addEventListener('cancel', (event) => event.preventDefault());
+    dialog.addEventListener('close', () => {
+      if (isNeeded()) dialog.showModal();
+    });
+  }
+
   adFlow?.on((type) => {
-    const running = type === 'start';
-    for (const child of root.children) if (child !== refs.adOverlay) child.inert = running;
-    if (running && !refs.adOverlay.open) refs.adOverlay.showModal();
-    if (!running && refs.adOverlay.open) refs.adOverlay.close();
+    adRunning = type === 'start';
+    updateBlocked();
+    if (adRunning && !refs.adOverlay.open) refs.adOverlay.showModal();
+    if (!adRunning && refs.adOverlay.open) refs.adOverlay.close();
   });
-  refs.adOverlay.addEventListener('cancel', (event) => event.preventDefault());
-  refs.adOverlay.addEventListener('close', () => {
-    if (adFlow?.busy) refs.adOverlay.showModal();
-  });
+  keepOpen(refs.adOverlay, () => adFlow?.busy);
+
+  // Another tab saved: this one no longer saves, and continuing here means
+  // loading that newer save.
+  function showOtherTab() {
+    otherTab = true;
+    updateBlocked();
+    if (!refs.otherTab.open) refs.otherTab.showModal();
+  }
+  keepOpen(refs.otherTab, () => otherTab);
+
+  function showStorageProblem(kind) {
+    const key = STORAGE_TEXTS[kind];
+    refs.storageNote.dataset.text = key; // translate() keeps it in the chosen language
+    setText(refs.storageNote, i18n.t(key));
+    setHidden(refs.storageNote, false);
+    toast(i18n.t(key));
+  }
 
   selectTab(activeTab);
   selectAmount(buyAmount);
   translate();
   render();
-  setHidden(refs.storageNote, storageAvailable);
-  if (!storageAvailable) toast(i18n.t('settings.storageUnavailable'));
+  if (storageProblem) showStorageProblem(storageProblem);
 
-  return { render, translate, toast };
+  return { render, translate, toast, showOtherTab, showStorageProblem };
 }
