@@ -13,9 +13,10 @@ test('a boost ad blocks the game while it plays, then doubles income', async ({ 
   await openPausedGame(page);
   await expect(page.locator('.boost-title')).toHaveText('2× income for 10 min');
 
+  const bean = await page.locator('.click-button').boundingBox();
   await page.getByRole('button', { name: 'Watch ad' }).click();
   await expect(adOverlay(page)).toBeVisible();
-  await page.keyboard.press('Space'); // nothing behind the overlay reacts
+  await page.mouse.click(bean.x + bean.width / 2, bean.y + bean.height / 2); // nothing behind the overlay reacts
   await expect(balance(page)).toHaveText('0');
   await expect(rate(page)).toHaveText('2 per second'); // no reward before the ad ends
 
@@ -127,9 +128,26 @@ test('a prestige is followed by an ad break once the game has run for 5 minutes'
 });
 
 test('no ad appears on its own while playing', async ({ page }) => {
+  await seedSave(page, { currency: 1_000_000, clicks: 30 }); // the first click upgrade is available
   await openPausedGame(page);
-  for (let i = 0; i < 25; i += 1) await page.locator('.click-button').click();
-  await page.locator('.generator[data-id="g1"] .buy').click();
+  await page.clock.fastForward(5 * 60 * 1000); // past the first minutes, in which no break may come anyway
+  // A break caused by an action would still be running 100 ms later.
+  const expectNoAd = async () => {
+    await page.clock.runFor(100);
+    await expect(adOverlay(page)).toBeHidden();
+  };
+  await page.locator('.click-button').click();
+  await expectNoAd();
+  await page.locator('.generator .buy').first().click();
+  await expectNoAd();
+  for (const amount of ['×10', 'Max']) {
+    await page.getByRole('radio', { name: amount }).click();
+    await page.locator('.generator .buy').first().click();
+    await expectNoAd();
+  }
+  await page.getByRole('tab', { name: 'Upgrades' }).click();
+  await page.locator('.upgrade:not([hidden]) .buy').first().click();
+  await expectNoAd();
   await page.clock.fastForward(60_000);
   await expect(adOverlay(page)).toBeHidden();
 });
@@ -137,7 +155,7 @@ test('no ad appears on its own while playing', async ({ page }) => {
 for (const target of ['web', 'crazygames']) {
   test(`the ${target} package has no ad network yet and shows no ad buttons`, async ({ page }) => {
     await seedSave(page, { generators: { g1: 10 } }, { savedAt: START.getTime() - 2 * 3600 * 1000 });
-    await page.clock.install({ time: START });
+    await page.clock.install({ time: START.getTime() - 1000 }); // see openPausedGame
     await page.clock.pauseAt(START);
     await openGame(page, `/dist/${target}/`);
     const dialog = page.getByRole('dialog', { name: 'Welcome back!' });
