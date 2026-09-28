@@ -6,14 +6,16 @@ Roast & Rise is a small independent browser game by [name or studio name] from [
 
 ## The idea
 
-We like games you can play in between: drop in, make a few decisions and see later what came of them. Roast & Rise is such a game. You build a coffee roastery from the first pan to a cargo ship, at your own pace.
+We like games you can play in short breaks: drop in, make a few decisions and see later what came of them. Roast & Rise is one of them. You build a coffee roastery from the first pan to a cargo ship, at your own pace.
 
 ## How the game is made
 
 - **Nothing to install:** The game runs right in the browser, on phones and computers.
-- **Our own work:** All texts and drawings were made for this game.
+- **Our own work:** All texts and drawings were made specifically for this game.
 - **Careful with data:** No sign-up and no analytics. Your progress stays in your browser.
 - **Fair ads:** Ads pay for the game. Rewards for watching an ad are optional.
+
+> Include "Fair ads" only if the site shows ads.
 
 [Optional, your decision: The game was developed with the help of AI tools.]
 
@@ -21,4 +23,4 @@ We like games you can play in between: drop in, make a few decisions and see lat
 
 ## Contact
 
-Questions, ideas or found a bug? Write to us at [email address].
+Got a question or an idea, or found a bug? Write to us at [email address].

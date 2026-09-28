@@ -15,9 +15,9 @@
 ## Kontakt
 
 E-Mail: [E-Mail-Adresse]
-[Zweiter Kontaktweg, z. B. Telefon oder Kontaktformular]
+[Zweiter Kontaktweg, z. B. Telefon]
 
-> **§ 5 Abs. 1 Nr. 2 DDG** verlangt Angaben, die eine schnelle elektronische Kontaktaufnahme und eine unmittelbare Kommunikation ermöglichen, einschließlich der E-Mail-Adresse. Ob die E-Mail-Adresse allein genügt, bitte prüfen; oft wird ein zweiter Kontaktweg empfohlen.
+> **§ 5 Abs. 1 Nr. 2 DDG** verlangt Angaben, die eine schnelle elektronische Kontaktaufnahme und eine unmittelbare Kommunikation ermöglichen, einschließlich der E-Mail-Adresse. Ob die E-Mail-Adresse allein genügt, bitte prüfen; oft wird ein zweiter Kontaktweg empfohlen. Wählst du ein Kontaktformular, braucht die Datenschutzerklärung dafür einen eigenen Abschnitt.
 
 ## Umsatzsteuer-ID
 
