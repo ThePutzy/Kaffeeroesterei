@@ -12,6 +12,10 @@ Quellen:
 - https://docs.crazygames.com/sdk/game/
 - https://docs.crazygames.com/sdk/data/
 - https://docs.crazygames.com/sdk/user/
+- https://docs.crazygames.com/requirements/game-covers/
+- https://docs.crazygames.com/requirements/quality/
+- https://docs.crazygames.com/resources/basic-launch-metrics/
+- https://docs.crazygames.com/resources/crazygames-app/
 
 ## Stand im Spiel
 
@@ -58,12 +62,15 @@ Quellen:
 
 - **Werbung nur auf Wunsch:**
   - Belohnungen gibt es nur nach einem Klick auf „Werbung ansehen“: 10 min doppelte Einnahmen, Offline-Ertrag verdoppeln.
+  - Den Boost bietet das Spiel erst an, wenn etwas produziert.
+  - Im Dialog „Willkommen zurück!“ ist „Weiter“ vorausgewählt; Enter startet also keine Anzeige.
   - Nur eine Anzeige zur Zeit, und die Belohnung erst nach einer tatsächlich gesehenen Anzeige (`src/core/adflow.js`).
-- **Zwischenanzeige:** nur nach einem Prestige, frühestens 5 Minuten nach der letzten. Das erste Prestige kommt laut Simulator nach etwa 50 Minuten.
-- **Während einer Anzeige** sperrt ein modaler Dialog die ganze Oberfläche.
+- **Zwischenanzeige:** nur nach einem Prestige, frühestens 5 Minuten nach der letzten und frühestens 5 Minuten nach dem Start des Spiels, also auch nach einem Neuladen. Ein Prestige ist laut Simulator frühestens nach etwa 20 Minuten möglich (Szenario „active“, bei „idle“ nach etwa 33 Minuten); der simulierte Spieler nimmt es nach etwa 54 Minuten.
+- **Während einer Anzeige** sperrt ein modaler Dialog die ganze Oberfläche; auch mehrfaches Escape schließt ihn nicht. Antwortet ein Adapter nicht, gilt die Anzeige nach 2 Minuten als beendet, ohne Belohnung.
 - **Gestaltung:**
-  - Werbe-Knöpfe tragen ein Video-Symbol und sind genauso groß wie die Alternative („Kaufen für …“ oder „Weiter“).
+  - Werbe-Knöpfe tragen ein Video-Symbol und sind genauso groß wie der Knopf ohne Werbung daneben: „Kaufen für …“ beim Boost, „Weiter“ im Offline-Dialog. Browser-Tests messen das.
   - Läuft der Boost, ist das Angebot ausgeblendet, und ein Timer zeigt die Restzeit.
+  - Nach einer Belohnung erscheint eine Meldung. Gibt es keine Anzeige, bittet eine Meldung, es später noch einmal zu versuchen.
 
 ## Offene Punkte für den Full Launch
 
@@ -76,5 +83,51 @@ Quellen:
 - Die Sprache aus `user.systemInfo` übernehmen.
 - Den Speicherstand über das Datenmodul führen.
 - **Alternative ohne Werbung:** CrazyGames verlangt zu jeder Belohnung eine Alternative ohne Werbung. Für den Boost gibt es sie (Kauf mit Bohnen), für „Offline-Ertrag verdoppeln“ noch nicht. Vor dem Full Launch ergänzen oder die Verdopplung weglassen.
-- **Offene Auslegung:** Ist die Boost-Karte neben der Klickfläche ein „Bildschirm mit aktivem Spielgeschehen“? Bei einem Idle-Spiel ist das nicht eindeutig. Vor dem Full Launch klären, notfalls die Karte in einen eigenen Bereich verlegen.
+- **Offene Auslegung:** Ist die Boost-Karte unter der Klickfläche ein „Bildschirm mit aktivem Spielgeschehen“? Bei einem Idle-Spiel ist das nicht eindeutig. Vor dem Full Launch klären, notfalls die Karte in einen eigenen Bereich verlegen.
+- **Offene Auslegung:** Während einer Anzeige ist die Bedienung gesperrt, die Produktion läuft aber weiter. CrazyGames verlangt, dass das Spiel während einer Anzeige pausiert und der Spieler nicht vorankommt. Ob passive Produktion dazu zählt, vor dem Full Launch klären; notfalls die Zeit der Anzeige nicht mitrechnen.
+- **Nicht geprüft:** Das Overlay ist ein modaler `<dialog>` und liegt damit über allem anderen auf der Seite. Zeichnet ein Werbe-SDK seine Anzeige im Spiel selbst, etwa mit hohem `z-index`, könnte das Overlay sie verdecken. Beim Bau eines echten Adapters prüfen und das Overlay notfalls ausblenden, sobald die Anzeige startet.
 - Die Developer-Terms sind noch nicht gelesen.
+
+## Weitere Anforderungen, nachgelesen am 28.09.2026 (Auszug)
+
+- **Lesbarkeit:** Texte und Bilder müssen bei `devicePixelRatio` 1 lesbar sein, in diesen iframe-Größen (16:9):
+  - Desktop ohne Vollbild: 907×510, 1216×684, 1077×606, 821×462
+  - Desktop im Vollbild: 1366×768, 1920×1080, 1536×864, 1280×720
+  - Handy: 800×450; Tablet: 1080×607
+
+  Der Layout-Test (`tests/browser/layout.spec.js`) prüft alle diese Größen und dazu 390×844 (Handy hochkant).
+- **Gleiche Physik bei jeder Bildwiederholrate** (z. B. 144 Hz): Das Spiel rechnet mit der vergangenen Zeit, nicht pro Frame.
+- **Browser und Geräte:**
+  - Das Spiel muss in Chrome und Edge laufen. Läuft es in Safari schlecht, schaltet CrazyGames es dort ab.
+  - Auf Chromebooks muss es mit 4 GB RAM flüssig laufen.
+  - Maus, Tastatur und, falls für Handys freigegeben, Touch.
+- **Publikum:** ab 13 Jahren, PEGI 12.
+- **Full Launch:** Neue Spieler landen direkt im Spiel, höchstens ein Klick davor. Das Spiel hat keinen Startbildschirm.
+- **Belohnungen:** Nach der Anzeige muss klar sein, dass es die Belohnung gab, etwa mit einer Meldung. Gibt es gerade keine Anzeige, soll das Spiel ermutigen, es später noch einmal zu versuchen. Beides macht das Spiel mit einer kurzen Meldung.
+
+## Basic Launch: So bewertet CrazyGames
+
+Quelle: https://docs.crazygames.com/resources/basic-launch-metrics/
+
+- **Dauer:** Die Phase endet, wenn das Spiel mindestens 7 Tage online ist und mindestens 500 Spiele hat. Ohne 500 Spiele endet sie nach 21 Tagen.
+- **Kennzahlen** im Developer-Dashboard, täglich aktualisiert. Die Richtwerte stammen von CrazyGames:
+  - Durchschnittliche Spielzeit je Sitzung: Erfolgreiche Spiele liegen oft bei 10 Minuten oder mehr.
+  - Tag-1-Retention, also der Anteil der Spieler, die am Tag nach der ersten Sitzung wiederkommen: Starke Spiele erreichen oft 10–15 %.
+  - Conversion, also der Anteil der Spieler, die mindestens eine Minute spielen: Die besten Spiele erreichen 80 % und mehr, laden in unter 10 Sekunden und sind kleiner als 20 MB.
+- **Updates** sind jederzeit möglich und werden automatisch freigegeben.
+- Mit guten Kennzahlen kann das Spiel in den Full Launch.
+- **Tipps von CrazyGames:** klare Ziele, gespeicherter Fortschritt, tägliche Anreize wie ein Login-Bonus oder tägliche Aufgaben, schneller Einstieg, eine kurze Einführung im Spiel. Einen täglichen Anreiz und eine Einführung hat das Spiel noch nicht.
+
+## Einreichung: Was dafür gebraucht wird
+
+Quellen: https://docs.crazygames.com/requirements/intro/ und https://docs.crazygames.com/requirements/game-covers/
+
+Die Einreichung selbst ist nicht Teil dieses Projekts (CLAUDE.md). Hier steht nur, was dafür vorbereitet sein muss:
+- Beschreibung des Spiels und der Steuerung.
+- **Drei Cover-Bilder** im selben Stil: Querformat 1920×1080 (16:9), Hochformat 800×1200 (2:3) und quadratisch 800×800 (1:1).
+  - Als Text nur der Spieltitel. Keine Rahmen, keine Icons oder Store-Logos, nichts Verschwommenes, keine Bilder ohne Nutzungsrecht.
+  - CrazyGames rät von einem bloßen Screenshot ab.
+- **Zwei Vorschau-Videos**, beide Pflicht: Querformat 1080p (16:9) und Hochformat 1080p (2:3).
+  - 15–20 Sekunden, höchstens 50 MB, ohne Ton; das erste Bild ist das Cover.
+  - Ohne schwarze Balken, Mauszeiger, Logo-Einblendung, „Play Now“ oder andere Werbetexte, nicht vorgespult.
+- Cover und Videos zeigen den Titel. Sie sollten darum erst entstehen, wenn der Titel feststeht.
