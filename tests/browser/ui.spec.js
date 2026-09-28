@@ -2,9 +2,11 @@ import { expect, openGame, readNumber, test } from './helpers.js';
 
 const START = new Date('2026-01-01T00:00:00Z');
 
-// Time only moves when a test moves it, so production is exact.
+// Time only moves when a test moves it, so production is exact. The clock
+// starts a second early: pauseAt() fails if the running clock has already
+// passed START, which happened now and then in Firefox and WebKit.
 async function openPausedGame(page) {
-  await page.clock.install({ time: START });
+  await page.clock.install({ time: START.getTime() - 1000 });
   await page.clock.pauseAt(START);
   await openGame(page);
 }
