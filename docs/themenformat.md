@@ -35,7 +35,7 @@ Das beschreibt `themes/<name>/theme.json`, die Texte und Grafiken eines Themas, 
 | `clicks` | insgesamt mindestens `value` Klicks |
 | `prestiges` | mindestens `value` Prestiges |
 
-**IDs** bestehen nur aus Kleinbuchstaben, Ziffern und Unterstrich und sind über alle Listen hinweg eindeutig. Sie werden später zu Textschlüsseln. Fehlerhafte Daten lehnt `createEconomy` mit einer Fehlermeldung ab.
+**IDs** bestehen nur aus Kleinbuchstaben, Ziffern und Unterstrich und sind über alle Listen hinweg eindeutig. Aus ihnen entstehen die Textschlüssel (siehe unten). Fehlerhafte Daten lehnt `createEconomy` mit einer Fehlermeldung ab.
 
 ## Texte und Grafiken
 
@@ -57,15 +57,15 @@ Das beschreibt `themes/<name>/theme.json`, die Texte und Grafiken eines Themas, 
 
 - **Preis des nächsten Stücks:** `baseCost × costGrowth ^ Anzahl`
 - **Preis für k Stück:** Summe der nächsten k Preise (geometrische Reihe). „Max kaufbar“ rechnet mit der geschlossenen Formel und korrigiert Rundungsfehler exakt.
-- **Produktion pro Sekunde:** Σ (Anzahl × `baseRate` × Erzeuger-Multiplikatoren) × globale Multiplikatoren × Prestige-Multiplikator
-- **Klick:** `click.base` × Klick-Multiplikatoren × Prestige-Multiplikator
+- **Produktion pro Sekunde:** Σ (Anzahl × `baseRate` × Erzeuger-Multiplikatoren) × globale Multiplikatoren × Prestige-Multiplikator × `boost.factor`, solange der Boost läuft
+- **Klick:** `click.base` × Klick-Multiplikatoren × Prestige-Multiplikator × `boost.factor`, solange der Boost läuft
 - **Prestige-Multiplikator:** `1 + Punkte × bonusPerPoint`
 - **Prestige-Punkte:** `⌊(Ertrag des Durchgangs / threshold) ^ exponent⌋`
 - **Prestige setzt zurück:** Währung, Ertrag des Durchgangs, Erzeuger und Upgrades.
 - **Prestige behält:** Gesamtertrag, Klicks, Prestige-Punkte, Zahl der Prestiges und Erfolge.
-- **Erfolge** haben in diesem Schritt nur Bedingungen und keinen Bonus.
+- **Erfolge** haben nur Bedingungen und keinen Bonus.
 - **Offline-Ertrag:** Produktion pro Sekunde × Abwesenheit (höchstens `maxHours`) × `rate`. Als Abwesenheit zählt jede Lücke von mehr als 60 Sekunden ohne Aktualisierung: geschlossenes Spiel, verborgener Tab oder schlafendes Gerät. Kürzere Lücken zählen voll.
-- **Boost:** Solange er läuft, wirkt `boost.factor` auf Produktion und Klicks. Es gibt ihn als Belohnung für eine Werbung oder zum Kauf für `Grundproduktion × priceSeconds`. Er läuft auch während der Abwesenheit ab; der Offline-Ertrag rechnet ohne Boost. Ein Prestige beendet ihn nicht.
+- **Boost:** Solange er läuft, wirkt `boost.factor` auf Produktion und Klicks. Es gibt ihn als Belohnung für eine Werbung oder zum Kauf für `Grundproduktion × priceSeconds`. Er läuft auch während der Abwesenheit ab; der Offline-Ertrag rechnet ohne Boost. Ein Prestige beendet ihn nicht. Angeboten wird er erst, wenn etwas produziert; vorher läge der Preis bei 0.
 - **Zahlen** sind normale JavaScript-Zahlen (bis etwa 1e308). Der Simulator prüft, dass sie unter 1e300 bleiben.
 
 ## Balance-Simulator

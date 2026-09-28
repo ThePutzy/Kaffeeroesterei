@@ -93,8 +93,11 @@ select:focus-visible {
 /* Layout: one column on narrow screens, two columns from 700px on. */
 .app {
   display: grid;
+  /* Wide screens: keep the columns together in the middle. */
+  max-width: 1320px;
   height: 100vh;
   height: 100dvh;
+  margin-inline: auto;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto auto auto minmax(0, 1fr);

@@ -83,7 +83,7 @@ Texte und Bilder müssen bei devicePixelRatio 1 in diesen iframe-Größen lesbar
 ## Arbeitsweise (alle Schritte)
 
 - **Branches:** Schritt 1 auf `claude/keen-bohr-mkfwny`, die Schritte 2–6 auf `claude/schritt-<N>-<thema>`. Der Nutzer hat beides freigegeben.
-- **Ablauf:** Ein Schritt beginnt erst, wenn der PR davor gemergt ist, und zwar frisch von `main`.
+- **Ablauf:** Die Schritte 1 und 2 begannen jeweils nach dem Merge des vorigen PRs frisch von `main`. Ab Schritt 3a gilt „Gestapelte PRs“ (unten).
 - **Vor jedem PR laufen:**
   - `npm test`
   - `npm run sim` (ab Schritt 2)
@@ -174,7 +174,7 @@ Texte und Bilder müssen bei devicePixelRatio 1 in diesen iframe-Größen lesbar
 
 ## Schritt 3 – Oberfläche (Handy und Desktop), Speicherstand, Offline-Ertrag
 
-**Branch:** `claude/schritt-3-oberflaeche`
+**Branches:** `claude/schritt-3a-oberflaeche` (3a) und `claude/schritt-3b-speicherstand` (3b)
 
 **Inhalt**
 - Oberfläche in `src/core/ui/` mit reinem DOM:
@@ -304,7 +304,7 @@ Texte und Bilder müssen bei devicePixelRatio 1 in diesen iframe-Größen lesbar
   - Speicherstand im Browser
   - AdSense H5 Games Ads
   - dem Einwilligungstool (Anbieter noch offen)
-- Jede Datei beginnt mit einer Liste offener Punkte; unsichere Aussagen sind markiert.
+- Die offenen Punkte stehen gesammelt in `docs/entwuerfe/README.md`; unsichere Aussagen sind in den Dateien als Hinweis markiert. *(Umgesetzt so statt einer Liste am Anfang jeder Datei.)*
 
 **Prüfung**
 - Vollständigkeit gegen eine Liste der Pflichtangaben, soweit sie sich aus erreichbaren Quellen belegen lassen.
@@ -324,11 +324,17 @@ Texte und Bilder müssen bei devicePixelRatio 1 in diesen iframe-Größen lesbar
 - Analyse- und Tracking-Werkzeuge: keine.
 - Konten, Einreichung, AdSense-Bewerbung (siehe CLAUDE.md).
 
+## Nach Schritt 6: Durchsicht *(28./29.09.2026)*
+
+- Nach Schritt 6 wurde der ganze Stapel noch einmal durchgesehen: Spielkern, Oberfläche und Texte, Werkzeuge und Tests, Doku.
+- Fehler eines Schritts sind in dessen Branch behoben; der PR des Schritts nennt sie unter „Nachtrag“.
+- Neues kommt als eigene, kleine PRs oben auf den Stapel. Der erste ist `claude/durchsicht-doku`: Doku-Korrekturen und die nachgelesenen CrazyGames-Anforderungen (alle Fenstergrößen, Basic Launch, Einreichung).
+
 ## Entscheidungen (freigegeben am 28.09.2026)
 
-1. **Merge-Ablauf:** nacheinander. Ein Schritt beginnt erst nach dem Merge des vorigen PRs.
+1. **Merge-Ablauf:** in der Reihenfolge der Schritte; ab 3a als gestapelte PRs (siehe Arbeitsweise).
 2. **GitHub Actions (CI):** ja.
 3. **Netzwerk:** Der Nutzer hat den Zugang für die CrazyGames-Doku freigegeben.
 4. **Plan im Repo:** ja, dazu eine Verweiszeile in CLAUDE.md.
 5. **Lizenzdatei:** keine, solange der Nutzer keine wünscht. Das Repo ist öffentlich.
-6. **Zielwerte** (Balance, Offline-Grenze, Anzeigen-Abstand) werden in den Schritten 2, 4 und 5 festgelegt.
+6. **Zielwerte** (Balance, Offline-Grenze, Anzeigen-Abstand) werden in den Schritten 2, 3b, 4 und 5 festgelegt.
