@@ -6,7 +6,7 @@ Browser-Idle-Spiel, Thema 1: Kaffeerösterei. Reines HTML, CSS und JavaScript (E
 - Umsetzungsplan: [docs/umsetzungsplan.md](docs/umsetzungsplan.md)
 - Themenformat, Formeln und Balance-Simulator: [docs/themenformat.md](docs/themenformat.md)
 
-Stand: Schritt 3b (Speicherstand und Offline-Ertrag). Das Spiel ist spielbar und speichert im Browser. Die Inhalte sind noch vorläufig (IDs `g1` … `g8` statt Namen); die echten kommen in Schritt 5.
+Stand: Schritt 4 (Werbe-Adapter). Das Spiel ist spielbar, speichert im Browser und hat Belohnungen per Werbung, bisher nur simuliert. Die Inhalte sind noch vorläufig (IDs `g1` … `g8` statt Namen); die echten kommen in Schritt 5.
 
 ## Voraussetzungen
 
@@ -62,6 +62,15 @@ Zugangsdaten, Schlüssel und Publisher-IDs gehören nicht ins Repository, auch n
 - **Ohne Speicher**, etwa im privaten Fenster: Das Spiel läuft weiter und weist darauf hin.
 - **Unlesbarer Speicherstand:** Er wird unter `<Thema>.save:unreadable` beiseitegelegt, danach startet das Spiel neu.
 - **Neues Speicherformat:** `SAVE_VERSION` in `src/core/save.js` erhöhen und eine Migration ergänzen.
+
+## Werbung
+
+- **Schnittstelle:** Werbung läuft nur über `src/ads/index.js`, mit den Funktionen `init`, `canShowRewarded`, `showRewarded` und `showInterstitial`. Welcher Adapter geladen wird, bestimmt `ads.adapter` im Ziel; ins Paket kommt nur dieser Adapter.
+- **Adapter:**
+  - `none`: kein Werbenetz. Mit `simulate: true` (nur in der Entwicklung) spielt er eine Anzeige von 0,8 s vor.
+  - `crazygames`: Platzhalter für den Basic Launch, ohne SDK.
+- **Wann Werbung erscheint** (`src/core/adflow.js`): Belohnungen nur auf Wunsch des Spielers, eine Zwischenanzeige nur nach einem Prestige und höchstens alle 5 Minuten. Solange eine Anzeige läuft, ist die Oberfläche gesperrt.
+- **CrazyGames:** Anforderungen und SDK-Notizen stehen in [docs/crazygames-sdk.md](docs/crazygames-sdk.md).
 
 ## Regeln für ausgelieferte Dateien
 

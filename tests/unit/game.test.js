@@ -102,3 +102,11 @@ test('reset starts over and tells listeners', () => {
   assert.deepEqual(game.state, createEconomy(mini).createState());
   assert.deepEqual(events, [{ type: 'reset' }]);
 });
+
+test('time away runs down a boost and pays offline earnings without it', () => {
+  const { game, events } = startGame({ generators: { ga: 2, gb: 1 }, boostSeconds: 60 });
+  game.update(600_000);
+  const offline = events.find((event) => event.type === 'offline');
+  assert.equal(offline.amount, 12 * 600 * 0.5); // the boost does not double offline earnings
+  assert.equal(game.state.boostSeconds, 0);
+});

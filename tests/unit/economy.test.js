@@ -270,10 +270,52 @@ test('invalid themes are rejected', () => {
     ['missing offline', (t) => delete t.offline],
     ['offline rate above 1', (t) => (t.offline.rate = 1.5)],
     ['no offline hours', (t) => (t.offline.maxHours = 0)],
+    ['boost factor of 1', (t) => (t.boost.factor = 1)],
+    ['missing boost', (t) => delete t.boost],
+    ['no boost price', (t) => (t.boost.priceSeconds = 0)],
   ];
   for (const [name, breakIt] of broken) {
     const theme = structuredClone(mini);
     breakIt(theme);
     assert.throws(() => createEconomy(theme), /Invalid theme/, name);
   }
+});
+
+test('a boost doubles production and clicks while it lasts', () => {
+  const base = stateWith({ generators: { ga: 2, gb: 1 } }); // 12 per second
+  const boosted = eco.activateBoost(base);
+  assert.equal(boosted.boostSeconds, 60);
+  assert.equal(eco.productionPerSecond(boosted), 24);
+  assert.equal(eco.baseProductionPerSecond(boosted), 12);
+  assert.equal(eco.clickValue(boosted), 2);
+  assert.equal(eco.activateBoost(boosted), null); // one at a time
+});
+
+test('a boost ending within a tick only counts for the covered part', () => {
+  const boosted = eco.activateBoost(stateWith({ generators: { ga: 2, gb: 1 } }));
+  const partly = eco.tick(boosted, 100); // 60 s boosted, 40 s normal
+  assert.equal(partly.currency, 12 * 60 * 2 + 12 * 40);
+  assert.equal(partly.boostSeconds, 0);
+  const inside = eco.tick(boosted, 10);
+  assert.equal(inside.currency, 240);
+  assert.equal(inside.boostSeconds, 50);
+});
+
+test('the boost runs down even without production, and survives prestige', () => {
+  const idle = eco.tick(eco.activateBoost(eco.createState()), 15);
+  assert.equal(idle.boostSeconds, 45);
+  assert.equal(eco.consumeBoost(idle, 100).boostSeconds, 0);
+  const reborn = eco.prestige({ ...idle, runEarned: 1000 });
+  assert.equal(reborn.boostSeconds, 45);
+});
+
+test('the boost can be bought for the production of priceSeconds', () => {
+  const producing = stateWith({ currency: 400, generators: { ga: 2, gb: 1 } }); // 12 per second, 30 s
+  assert.equal(eco.boostPrice(producing), 360);
+  const bought = eco.buyBoost(producing);
+  assert.equal(bought.currency, 40);
+  assert.equal(bought.boostSeconds, 60);
+  assert.equal(eco.buyBoost(bought), null); // already active
+  assert.equal(eco.buyBoost({ ...producing, currency: 359 }), null);
+  assert.equal(eco.buyBoost(stateWith({ currency: 1000 })), null); // nothing produced, nothing to boost
 });

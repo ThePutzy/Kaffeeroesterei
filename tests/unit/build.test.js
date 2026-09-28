@@ -44,6 +44,18 @@ test('packages contain only index.html, src/ and their own theme', async (t) => 
   }
 });
 
+test('each package ships only its own ads adapter', async (t) => {
+  const outDir = await tempDir(t);
+  const targets = await loadTargets();
+  await build({ outDir });
+  for (const [name, target] of Object.entries(targets)) {
+    const dir = join(outDir, name, 'src', 'ads');
+    const files = (await listFiles(dir)).map((file) => relative(dir, file)).sort();
+    assert.deepEqual(files, [`${target.runtime.ads.adapter}.js`, 'index.js'].sort(), name);
+  }
+  await assert.rejects(buildTarget('bad', { runtime: { theme: 'kaffeeroesterei', ads: { adapter: 'nope' } } }, { outDir }), /adapter/);
+});
+
 test('build of selected targets only builds those', async (t) => {
   const outDir = await tempDir(t);
   const built = await build({ outDir, names: ['web'] });

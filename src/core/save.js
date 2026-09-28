@@ -79,9 +79,13 @@ function sanitizeState(saved, economy) {
   const knownAchievements = new Set((economy.theme.achievements ?? []).map((achievement) => achievement.id));
   const keep = (list, known) => [...new Set(Array.isArray(list) ? list : [])].filter((id) => known.has(id));
 
+  // Optional: saves from before the boost existed have no boostSeconds.
+  const boostSeconds = isCount(saved.boostSeconds) ? Math.min(saved.boostSeconds, economy.theme.boost.seconds) : 0;
+
   return {
     ...fresh,
     ...Object.fromEntries(numbers.map((field) => [field, saved[field]])),
+    boostSeconds,
     generators,
     upgrades: keep(saved.upgrades, knownUpgrades),
     achievements: keep(saved.achievements, knownAchievements),

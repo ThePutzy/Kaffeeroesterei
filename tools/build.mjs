@@ -2,7 +2,7 @@
 // Usage: node tools/build.mjs [target ...]   (default: all targets)
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { basename, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 export const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -28,11 +28,22 @@ export async function buildTarget(name, target, { root = ROOT, outDir = join(roo
   const themeDir = join(root, 'themes', theme);
   if (!existsSync(themeDir)) throw new Error(`Target "${name}": theme folder themes/${theme} not found`);
 
+  // Only the target's own ads adapter goes into the package.
+  const adsDir = join(root, 'src', 'ads');
+  const adapter = runtime.ads?.adapter ?? 'none';
+  if (!SAFE_NAME.test(adapter) || !existsSync(join(adsDir, `${adapter}.js`))) {
+    throw new Error(`Target "${name}": ads adapter "${adapter}" not found in src/ads`);
+  }
+  const shippedAds = new Set(['index.js', `${adapter}.js`]);
+
   const dest = join(outDir, name);
   await rm(dest, { recursive: true, force: true });
   await mkdir(dest, { recursive: true });
 
-  const filter = (src) => !SKIPPED_FILES.has(basename(src));
+  const filter = (src) => {
+    if (SKIPPED_FILES.has(basename(src))) return false;
+    return dirname(src) !== adsDir || shippedAds.has(basename(src));
+  };
   await cp(join(root, 'index.html'), join(dest, 'index.html'));
   await cp(join(root, 'src'), join(dest, 'src'), { recursive: true, filter });
   await cp(themeDir, join(dest, 'themes', theme), { recursive: true, filter });

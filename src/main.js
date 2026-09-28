@@ -1,4 +1,6 @@
 import { config } from './config.js';
+import { loadAds } from './ads/index.js';
+import { createAdFlow } from './core/adflow.js';
 import { createEconomy } from './core/economy.js';
 import { createGame } from './core/game.js';
 import { LANGUAGES, createI18n, detectLanguage, mergeTexts } from './core/i18n.js';
@@ -28,6 +30,7 @@ async function start() {
     loadTexts(`../themes/${config.theme}/locales`),
   ]);
   const economy = createEconomy(theme);
+  const adFlow = createAdFlow({ ads: await loadAds(config.ads) });
   const store = createStore(`${theme.id}.save`);
   const save = store.available ? loadSave(store, economy) : null;
   const settings = { ...save?.settings };
@@ -53,6 +56,7 @@ async function start() {
     root: app,
     game,
     i18n,
+    adFlow,
     storageAvailable: store.available,
     onLanguageChange(next) {
       settings.language = next;
@@ -65,7 +69,9 @@ async function start() {
   });
 
   game.on((event) => {
-    if (event.type === 'prestige') persist();
+    if (event.type !== 'prestige') return;
+    persist();
+    adFlow.breakAfterPrestige(); // a natural break; never in the middle of play
   });
   // Pay out the time since the last save right away, not only on the first frame.
   game.update(Date.now());
