@@ -41,3 +41,24 @@ test('percentages follow the locale', () => {
   assert.equal(formatPercent(0.1, 'en'), '10%');
   assert.equal(formatPercent(1.5, 'de'), `150${NBSP}%`);
 });
+
+test('balances can be rounded down and prices up', () => {
+  const floor = { rounding: 'floor' };
+  const ceil = { rounding: 'ceil' };
+  assert.equal(formatNumber(19.96, 'en'), '20');
+  assert.equal(formatNumber(19.96, 'en', floor), '19.9'); // the 20-bean pan is not affordable yet
+  assert.equal(formatNumber(22.81, 'en', ceil), '22.9');
+  assert.equal(formatNumber(1234.9, 'de', floor), '1.234');
+  assert.equal(formatNumber(1234.1, 'de', ceil), '1.235');
+  assert.equal(formatNumber(1_239_999, 'en', ceil), '1.24M');
+});
+
+test('the notation follows the rounded number', () => {
+  assert.equal(formatNumber(999_999.4, 'en'), '999,999');
+  assert.equal(formatNumber(999_999.5, 'en'), '1M');
+  assert.equal(formatNumber(999_999.5, 'de'), `1${NBSP}Mio.`); // not "999.999,5"
+  assert.equal(formatNumber(999_999.2, 'de', { rounding: 'ceil' }), `1${NBSP}Mio.`);
+  assert.equal(formatNumber(999_999.6, 'en', { rounding: 'floor' }), '999,999');
+  assert.equal(formatNumber(999.994e12, 'en'), '999.99T');
+  assert.equal(formatNumber(999.995e12, 'en'), '1E15'); // not "1000T"
+});

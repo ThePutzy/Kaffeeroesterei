@@ -36,10 +36,10 @@ function markup(theme, upgrades, achievements) {
         <li class="row generator" data-id="${id}">
           ${artImage(theme, icon, 'row-icon', 40)}
           <div class="row-main">
-            <div class="row-title"><span data-field="name"></span> <span class="count" data-field="owned"></span></div>
+            <div class="row-title" id="generator-${id}-title"><span data-field="name"></span> <span class="count" data-field="owned"></span></div>
             <div class="row-detail" data-field="production"></div>
           </div>
-          <button type="button" class="buy" data-action="buy-generator" data-id="${id}">
+          <button type="button" class="buy" data-action="buy-generator" data-id="${id}" aria-describedby="generator-${id}-title">
             <span class="buy-label" data-field="buyLabel"></span>
             <span class="price" data-field="price"></span>
           </button>
@@ -51,10 +51,10 @@ function markup(theme, upgrades, achievements) {
       ({ id }) => `
         <li class="row upgrade" data-id="${id}" hidden>
           <div class="row-main">
-            <div class="row-title" data-field="name"></div>
-            <div class="row-detail" data-field="effect"></div>
+            <div class="row-title" id="upgrade-${id}-name" data-field="name"></div>
+            <div class="row-detail" id="upgrade-${id}-effect" data-field="effect"></div>
           </div>
-          <button type="button" class="buy" data-action="buy-upgrade" data-id="${id}">
+          <button type="button" class="buy" data-action="buy-upgrade" data-id="${id}" aria-describedby="upgrade-${id}-name upgrade-${id}-effect">
             <span class="price" data-field="price"></span>
           </button>
         </li>`,
@@ -235,6 +235,8 @@ export function createUi({
   let activeTab = 'generators';
   let buyAmount = '1';
   let offlineShown = null; // time away and earnings shown in the open dialog, if any
+  const shownUpgrades = new Set(); // upgrades visible in the last render
+  let rendered = false;
 
   root.innerHTML = markup(theme, upgrades, achievements);
   const refs = Object.fromEntries([...root.querySelectorAll('[data-ref]')].map((node) => [node.dataset.ref, node]));
@@ -245,7 +247,8 @@ export function createUi({
   const panels = [...root.querySelectorAll('[role="tabpanel"]')];
   const amountButtons = [...root.querySelectorAll('[data-action="set-amount"]')];
 
-  const format = (value) => formatNumber(value, i18n.language);
+  // rounding: see formatNumber; 'floor' for amounts the player has, 'ceil' for prices.
+  const format = (value, rounding) => formatNumber(value, i18n.language, { rounding });
   const name = (kind, id, fallback = id) => i18n.t(`${kind}.${id}.name`, {}, fallback);
 
   function describeEffect(effect) {
@@ -289,7 +292,7 @@ export function createUi({
       }),
     );
     setHidden(refs.offlineDouble, offlineShown.doubled || !adFlow?.canOfferReward());
-    if (!refs.offline.open) refs.offline.showModal();
+    openDialog(refs.offline);
   }
 
   function formatClock(seconds) {
@@ -297,9 +300,9 @@ export function createUi({
     return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
   }
 
-  function watchAd(grant) {
+  function watchAd(grant, onUnavailable = () => toast(i18n.t('ads.unavailable'))) {
     adFlow?.reward(grant).then((watched) => {
-      if (!watched) toast(i18n.t('ads.unavailable'));
+      if (!watched) onUnavailable();
       render();
     });
   }
@@ -344,13 +347,17 @@ export function createUi({
 
   function selectAmount(amount) {
     buyAmount = amount;
-    for (const button of amountButtons) button.setAttribute('aria-checked', String(button.dataset.amount === amount));
+    for (const button of amountButtons) {
+      const checked = button.dataset.amount === amount;
+      button.setAttribute('aria-checked', String(checked));
+      button.tabIndex = checked ? 0 : -1;
+    }
   }
 
   // Everything that changes while playing.
   function render() {
     const { state } = game;
-    setText(refs.currency, i18n.t('currency.amount', { value: format(state.currency) }));
+    setText(refs.currency, i18n.t('currency.amount', { value: format(state.currency, 'floor') }));
     setText(refs.rate, i18n.t('stats.perSecond', { value: format(economy.productionPerSecond(state)) }));
     setText(refs.clickValue, i18n.t('click.value', { value: format(economy.clickValue(state)) }));
 
@@ -368,7 +375,7 @@ export function createUi({
       setText(fields.owned, i18n.t('generator.owned', { value: format(state.generators[id]) }));
       setText(fields.production, i18n.t('generator.production', { value: format(production.get(id)) }));
       setText(fields.buyLabel, i18n.t('buy.label', { amount: format(amount) }));
-      setText(fields.price, format(price));
+      setText(fields.price, format(price, 'ceil'));
       setDisabled(button, !(price <= state.currency));
     });
     setHidden(refs.generatorsHint, lastOwned + 1 >= theme.generators.length - 1);
@@ -378,8 +385,13 @@ export function createUi({
       const { row, button, fields } = upgradeRows.get(upgrade.id);
       const visible = economy.isUpgradeAvailable(state, upgrade.id);
       if (visible) available += 1;
+      // Upgrades that appear while playing go to the end of the list; sorted
+      // in by price they would push the row under the pointer down.
+      if (visible && !shownUpgrades.has(upgrade.id) && rendered) row.parentElement.append(row);
+      if (visible) shownUpgrades.add(upgrade.id);
+      else shownUpgrades.delete(upgrade.id);
       setHidden(row, !visible);
-      setText(fields.price, format(upgrade.cost));
+      setText(fields.price, format(upgrade.cost, 'ceil'));
       setDisabled(button, !(upgrade.cost <= state.currency));
     }
     setHidden(refs.upgradesEmpty, available > 0);
@@ -401,7 +413,7 @@ export function createUi({
       refs.prestigeGain,
       gain >= 1
         ? i18n.t('prestige.gain', { value: format(gain) })
-        : i18n.t('prestige.notYet', { value: format(theme.prestige.threshold), current: format(state.runEarned) }),
+        : i18n.t('prestige.notYet', { value: format(theme.prestige.threshold), current: format(state.runEarned, 'floor') }),
     );
     setDisabled(refs.prestigeButton, gain < 1);
 
@@ -422,16 +434,37 @@ export function createUi({
     const visibility = boostActive ? 'hidden' : '';
     if (refs.boostActions.style.visibility !== visibility) refs.boostActions.style.visibility = visibility;
     setHidden(refs.boostAd, !adFlow?.canOfferReward());
-    setText(refs.boostBuy, i18n.t('boost.buy', { price: format(price) }));
+    setText(refs.boostBuy, i18n.t('boost.buy', { price: format(price, 'ceil') }));
     setDisabled(refs.boostBuy, !(price > 0 && price <= state.currency));
+    rendered = true;
   }
 
-  function toast(text) {
+  // Notices wait while a dialog is open: behind its backdrop they are hard to
+  // see and hidden from screen readers. Notices already on screen when a
+  // dialog opens come back once it is closed.
+  const pendingToasts = [];
+  const dialogOpen = () => root.querySelector('dialog[open]') !== null;
+
+  function showToast(text) {
     const node = document.createElement('div');
     node.className = 'toast';
     node.textContent = text;
     refs.toasts.append(node);
     setTimeout(() => node.remove(), TOAST_MS);
+  }
+
+  function toast(text) {
+    if (dialogOpen()) pendingToasts.push(text);
+    else showToast(text);
+  }
+
+  function openDialog(dialog) {
+    if (dialog.open) return;
+    for (const node of [...refs.toasts.children]) {
+      pendingToasts.push(node.textContent);
+      node.remove();
+    }
+    dialog.showModal();
   }
 
   function spawnFloater() {
@@ -447,7 +480,7 @@ export function createUi({
   function openPrestigeConfirm() {
     setText(refs.confirmPrestigeBody, i18n.t('prestige.confirm.body', { points: format(economy.prestigeGain(game.state)) }));
     refs.confirmPrestige.returnValue = '';
-    refs.confirmPrestige.showModal();
+    openDialog(refs.confirmPrestige);
   }
 
   root.addEventListener('click', (event) => {
@@ -466,13 +499,13 @@ export function createUi({
     } else if (action === 'select-tab') {
       selectTab(target.dataset.tab);
     } else if (action === 'open-settings') {
-      refs.settings.showModal();
+      openDialog(refs.settings);
     } else if (action === 'prestige') {
       openPrestigeConfirm();
     } else if (action === 'reset') {
       refs.settings.close();
       refs.confirmReset.returnValue = '';
-      refs.confirmReset.showModal();
+      openDialog(refs.confirmReset);
     } else if (action === 'boost-buy') {
       game.buyBoost();
     } else if (action === 'boost-ad') {
@@ -482,15 +515,33 @@ export function createUi({
     } else if (action === 'offline-double' && offlineShown && !offlineShown.doubled) {
       const shown = offlineShown;
       const bonus = shown.amount;
-      watchAd(() => {
-        game.grant(bonus);
-        shown.doubled = true;
-        if (offlineShown !== shown) return; // the dialog was closed meanwhile
-        setHidden(refs.offlineDouble, true);
-        setText(refs.offlineNote, i18n.t('offline.doubled', { amount: format(bonus) }));
-      });
+      watchAd(
+        () => {
+          game.grant(bonus);
+          shown.doubled = true;
+          if (offlineShown !== shown) return; // the dialog was closed meanwhile
+          setHidden(refs.offlineDouble, true);
+          setText(refs.offlineNote, i18n.t('offline.doubled', { amount: format(bonus) }));
+        },
+        () => {
+          // Said in the dialog itself: a notice would wait until it is closed.
+          if (offlineShown === shown) setText(refs.offlineNote, i18n.t('ads.unavailable'));
+          else toast(i18n.t('ads.unavailable'));
+        },
+      );
     }
     render();
+  });
+
+  // Arrow keys move between the buy amounts, as in other radio groups.
+  root.querySelector('.segmented').addEventListener('keydown', (event) => {
+    const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+    if (!step) return;
+    const next = BUY_AMOUNTS[(BUY_AMOUNTS.indexOf(buyAmount) + step + BUY_AMOUNTS.length) % BUY_AMOUNTS.length];
+    selectAmount(next);
+    root.querySelector(`[data-action="set-amount"][data-amount="${next}"]`).focus();
+    render();
+    event.preventDefault();
   });
 
   // Arrow keys move between tabs, as in other tab lists.
@@ -554,14 +605,14 @@ export function createUi({
   function keepOpen(dialog, isNeeded) {
     dialog.addEventListener('cancel', (event) => event.preventDefault());
     dialog.addEventListener('close', () => {
-      if (isNeeded()) dialog.showModal();
+      if (isNeeded()) openDialog(dialog);
     });
   }
 
   adFlow?.on((type) => {
     adRunning = type === 'start';
     updateBlocked();
-    if (adRunning && !refs.adOverlay.open) refs.adOverlay.showModal();
+    if (adRunning) openDialog(refs.adOverlay);
     if (!adRunning && refs.adOverlay.open) refs.adOverlay.close();
   });
   keepOpen(refs.adOverlay, () => adFlow?.busy);
@@ -571,9 +622,18 @@ export function createUi({
   function showOtherTab() {
     otherTab = true;
     updateBlocked();
-    if (!refs.otherTab.open) refs.otherTab.showModal();
+    openDialog(refs.otherTab);
   }
   keepOpen(refs.otherTab, () => otherTab);
+
+  for (const dialog of root.querySelectorAll('dialog')) {
+    dialog.addEventListener('close', () =>
+      // After the other close handlers, which may open the next dialog.
+      setTimeout(() => {
+        if (!dialogOpen()) for (const text of pendingToasts.splice(0)) showToast(text);
+      }),
+    );
+  }
 
   function showStorageProblem(kind) {
     const key = STORAGE_TEXTS[kind];

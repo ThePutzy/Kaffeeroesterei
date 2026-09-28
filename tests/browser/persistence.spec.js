@@ -166,6 +166,8 @@ test('a save that fails later on is reported', async ({ page }) => {
   });
   await page.getByRole('button', { name: 'Settings' }).click();
   await page.getByLabel('Language').selectOption('de'); // saving the choice fails
-  await expect(page.locator('.toast').last()).toContainText('Speichern ist fehlgeschlagen');
-  await expect(page.getByRole('dialog', { name: 'Einstellungen' })).toContainText('Speichern ist fehlgeschlagen');
+  const settings = page.getByRole('dialog', { name: 'Einstellungen' });
+  await expect(settings).toContainText('Speichern ist fehlgeschlagen');
+  await settings.getByRole('button', { name: 'Schließen' }).click();
+  await expect(page.locator('.toast').last()).toContainText('Speichern ist fehlgeschlagen'); // after the dialog
 });

@@ -1,4 +1,4 @@
-import { expect, openGame, openPausedGame, readNumber, seedSave, test } from './helpers.js';
+import { START, expect, openGame, openPausedGame, readNumber, seedSave, test } from './helpers.js';
 
 async function clickTimes(page, times) {
   const button = page.locator('.click-button');
@@ -157,5 +157,62 @@ test.describe('on a touch screen', () => {
     await page.locator('.click-button').tap();
     await page.locator('.click-button').tap();
     await expect(balance(page)).toHaveText('2');
+  });
+});
+
+test.describe('while playing, nothing jumps or hides', () => {
+  test('an upgrade that appears goes to the end of the list, the rows above stay put', async ({ page }) => {
+    await seedSave(page, { currency: 1000, clicks: 29, generators: { pan: 10 } }); // "Wooden Spatula" is available
+    await openPausedGame(page);
+    await page.getByRole('tab', { name: 'Upgrades' }).click();
+    const spatula = page.locator('.upgrade[data-id="pan_1"]');
+    const before = await spatula.boundingBox();
+
+    await page.locator('.click-button').click(); // the 30th click unlocks "Steady Hand", which is cheaper
+    const steadyHand = page.locator('.upgrade[data-id="click_1"]');
+    await expect(steadyHand).toBeVisible();
+    expect((await spatula.boundingBox()).y).toBe(before.y);
+    expect((await steadyHand.boundingBox()).y).toBeGreaterThan(before.y);
+  });
+
+  test('notices wait until the "Welcome back!" dialog is closed', async ({ page }) => {
+    await seedSave(page, { generators: { pan: 10 } }, { savedAt: START.getTime() - 2 * 3600 * 1000 });
+    await openPausedGame(page);
+    const dialog = page.getByRole('dialog', { name: 'Welcome back!' });
+    await expect(dialog).toBeVisible();
+    await expect(page.locator('.toast')).toHaveCount(0); // the achievements earned while away wait
+    await dialog.getByRole('button', { name: 'Continue' }).click();
+    await page.clock.runFor(100); // the waiting notices follow right after the dialog
+    await expect(page.locator('.toast').first()).toContainText('Achievement unlocked');
+  });
+
+  test('the balance is rounded down and prices up', async ({ page }) => {
+    await seedSave(page, { currency: 19.96 });
+    await openPausedGame(page);
+    await expect(page.locator('.balance-amount')).toHaveText('19.9'); // not "20", which would look affordable
+    await expect(page.locator('.generator[data-id="pan"] .price')).toHaveText('20');
+    await expect(page.locator('.generator[data-id="pan"] .buy')).toBeDisabled();
+  });
+});
+
+test.describe('keyboard and screen readers', () => {
+  test('arrow keys move between the buy amounts', async ({ page }) => {
+    await openGame(page);
+    const one = page.getByRole('radio', { name: '×1', exact: true });
+    await one.focus();
+    await page.keyboard.press('ArrowRight');
+    const ten = page.getByRole('radio', { name: '×10', exact: true });
+    await expect(ten).toBeFocused();
+    await expect(ten).toHaveAttribute('aria-checked', 'true');
+    await expect(one).toHaveAttribute('tabindex', '-1');
+    await expect(page.locator('.generator[data-id="pan"] .buy-label')).toHaveText('Buy ×10');
+  });
+
+  test('buy buttons say what they buy', async ({ page }) => {
+    await seedSave(page, { currency: 1000, generators: { pan: 10 } });
+    await openGame(page);
+    await expect(page.locator('.generator[data-id="pan"] .buy')).toHaveAccessibleDescription('Roasting Pan ×10');
+    await page.getByRole('tab', { name: 'Upgrades' }).click();
+    await expect(page.locator('.upgrade[data-id="pan_1"] .buy')).toHaveAccessibleDescription(/^Wooden Spatula /);
   });
 });
