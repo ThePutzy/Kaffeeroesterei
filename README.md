@@ -5,6 +5,7 @@ Browser-Idle-Spiel, Thema 1: Kaffeerösterei. Reines HTML, CSS und JavaScript (E
 - Projektkontext und Regeln: [CLAUDE.md](CLAUDE.md)
 - Umsetzungsplan: [docs/umsetzungsplan.md](docs/umsetzungsplan.md)
 - Themenformat, Formeln und Balance-Simulator: [docs/themenformat.md](docs/themenformat.md)
+- Entwürfe für die eigene Seite (Anleitung, Über uns, Datenschutz, Impressum): [docs/entwuerfe/](docs/entwuerfe/README.md)
 
 Stand: Schritt 5 (Inhalte der Kaffeerösterei). Das Spiel ist mit eigenen Texten (Englisch und Deutsch) und eigenen SVG-Grafiken spielbar, speichert im Browser und hat Belohnungen per Werbung, bisher nur simuliert. Arbeitstitel: **Roast & Rise**; er ist noch nicht auf Markenrechte geprüft.
 
