@@ -2,7 +2,7 @@
 
 export const TEXTS = {
   de: {
-    title: 'Rösterei – Prototyp',
+    title: 'Full Roast Ahead – Prototyp',
     perMinute: '{value} pro Minute',
     sound: 'Ton an oder aus',
     language: 'English',
@@ -90,7 +90,7 @@ export const TEXTS = {
     },
   },
   en: {
-    title: 'Roastery – prototype',
+    title: 'Full Roast Ahead – prototype',
     perMinute: '{value} per minute',
     sound: 'Sound on or off',
     language: 'Deutsch',
