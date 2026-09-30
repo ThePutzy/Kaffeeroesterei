@@ -2,6 +2,8 @@
 
 Stand: 28.09.2026 (Schritt 6 des Umsetzungsplans). Das sind **Entwürfe**, noch keine fertigen Seiten.
 
+> **Zurückgestellt (30.09.2026):** Die eigene Seite kommt vorerst nicht. Anleitung und Über uns beschreiben das Spiel vor der Neuausrichtung; bevor die Seite kommt, müssen sie an das neue Spiel angepasst werden. Nur der Titel ist schon auf „Full Roast Ahead“ umgestellt.
+
 - **Datenschutz und Impressum** sind keine Rechtsberatung. Du prüfst sie, am besten mit einem Datenschutz-Generator oder einer Fachperson.
 - **Persönliche Angaben** stehen nur als Platzhalter in `[eckigen Klammern]`, weil das Repository öffentlich ist. Echte Angaben kommen erst beim Einbau in die Seite dazu, nicht ins Repository.
 - **Ausgeliefert** wird nichts davon: Die Dateien liegen unter `docs/`, das in keinem Paket landet. In `dist/web` kommen sie erst, wenn du sie freigegeben hast und die Domain ansteht.
@@ -36,4 +38,4 @@ Eine englische Fassung von Datenschutz und Impressum ergänze ich, wenn die deut
 3. Welches Einwilligungstool du nutzt; dessen Angaben kommen in die Datenschutzerklärung.
 4. Die zuständige Datenschutz-Aufsichtsbehörde; sie richtet sich nach deinem Bundesland.
 5. Ob „Über uns“ erwähnen soll, dass das Spiel mit Hilfe von KI entwickelt wurde. Ein Satz dazu ist im Entwurf als Option markiert.
-6. Den Spieltitel: Arbeitstitel „Roast & Rise“, siehe PR zu Schritt 5.
+6. Den Spieltitel: vorläufig „Full Roast Ahead“, nicht markenrechtlich geprüft, siehe [Titelrecherche](../recherche/spieltitel.md).

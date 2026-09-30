@@ -1,6 +1,6 @@
-# Anleitung: So spielst du Roast & Rise
+# Anleitung: So spielst du Full Roast Ahead
 
-> Entwurf, Stand 28.09.2026, passend zum Spielstand nach Schritt 5. „Roast & Rise“ ist der Arbeitstitel. Die Zahlen stammen aus `themes/kaffeeroesterei/theme.json`; ein Test gleicht die wichtigsten davon mit dem Spiel ab (Schwelle und Bonus des Ansehens, Offline-Ertrag, Dauer des Boosts).
+> Entwurf, Stand 28.09.2026, passend zum Spielstand nach Schritt 5. „Full Roast Ahead“ ist der vorläufige Titel (30.09.2026). Die Zahlen stammen aus `themes/kaffeeroesterei/theme.json`; ein Test gleicht die wichtigsten davon mit dem Spiel ab (Schwelle und Bonus des Ansehens, Offline-Ertrag, Dauer des Boosts).
 
 Du führst eine kleine Kaffeerösterei und baust sie zu einem Kaffee-Imperium aus. Deine Währung sind **Bohnen**.
 

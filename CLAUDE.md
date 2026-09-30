@@ -13,6 +13,10 @@ Ein Browser-Idle-Spiel, das hauptsächlich über Werbung Geld verdienen soll. Er
 - Technik: reines HTML, CSS und JavaScript (ES-Module), keine Spiel-Engine, kein Server. Das Ergebnis muss als statische Dateien auslieferbar sein.
 - Sprachen: Englisch (Pflicht, CrazyGames verlangt es) und Deutsch.
 - Thema 1: Kaffeerösterei. Weitere Themen kommen später.
+- Spieltitel, vorläufig (30.09.2026): **Full Roast Ahead**, vollständig „Full Roast Ahead: Idle Coffee Roastery“, deutsch „Full Roast Ahead: Idle-Kaffeerösterei“. Auf Titelbildern steht nur „Full Roast Ahead“.
+  - Nicht markenrechtlich geprüft; das übernimmt der Nutzer. Recherche: `docs/recherche/spieltitel.md`.
+  - Vor dem Basic Launch endgültig festlegen, denn CrazyGames ändert Namen nur, wenn es „totally necessary“ ist.
+  - „Roast & Rise“ ist verworfen, weil es ein gleichnamiges iOS-Spiel gibt. Titel nach dem Muster „Idle … Tycoon“ meiden, denn Kolibri Games hat „Idle Tycoon“ als Unionsmarke eingetragen.
 - Spielkern und Themendaten sauber trennen, den Baukasten aber nur so weit ausbauen, wie Thema 1 ihn braucht. Ob und wie weit er wiederverwendbar ist und wie mit dem Klon-Eindruck umzugehen ist, entscheiden wir nach Thema 1. Nicht vorab verallgemeinern.
 - Vertrieb: zuerst CrazyGames. Poki ist ausgeschlossen (Web-Exklusivität).
 - Eigene Domain (Cloudflare Pages mit AdSense H5 Games Ads und einem von Google zertifizierten Einwilligungstool): vorerst zurückgestellt (30.09.2026). Nicht daran arbeiten, bis der Nutzer sie wieder aufnimmt. Das Ziel `web` und die Entwürfe in `docs/entwuerfe/` bleiben, wie sie sind.
