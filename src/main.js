@@ -97,7 +97,6 @@ async function start() {
   game.on((event) => {
     if (event.type !== 'prestige') return;
     persist();
-    adFlow.breakAfterPrestige(); // a natural break; never in the middle of play
   });
   // Pay out the time since the last save right away, not only on the first frame.
   game.update(Date.now());

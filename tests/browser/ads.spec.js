@@ -130,23 +130,23 @@ test('if no ad is available for doubling, the dialog itself says so', async ({ p
   await expect(dialog).toContainText('No ad available right now. Please try again later.');
 });
 
-test('a prestige is followed by an ad break once the game has run for 5 minutes', async ({ page }) => {
+test('a prestige is not followed by an ad break', async ({ page }) => {
   await seedSave(page, { runEarned: 50_000, lifetimeEarned: 50_000 });
   await openPausedGame(page);
-  await page.clock.fastForward(5 * 60 * 1000); // no break in the first 5 minutes
+  await page.clock.fastForward(5 * 60 * 1000); // well into the game, not only right after the start
   await page.getByRole('tab', { name: 'Reputation' }).click();
   await page.locator('#panel-prestige .primary').click();
   await page.getByRole('dialog', { name: 'Sell your roastery?' }).getByRole('button', { name: 'Sell and start over' }).click();
-  await expect(adOverlay(page)).toBeVisible();
-  await page.clock.fastForward(AD_MS);
-  await expect(adOverlay(page)).toBeHidden();
   await expect(page.locator('.prestige-points')).toHaveText('Reputation: 1');
+  // A break would still be running 100 ms later.
+  await page.clock.runFor(100);
+  await expect(adOverlay(page)).toBeHidden();
 });
 
 test('no ad appears on its own while playing', async ({ page }) => {
   await seedSave(page, { currency: 1_000_000, clicks: 30 }); // the first click upgrade is available
   await openPausedGame(page);
-  await page.clock.fastForward(5 * 60 * 1000); // past the first minutes, in which no break may come anyway
+  await page.clock.fastForward(5 * 60 * 1000); // well into the game, not only right after the start
   // A break caused by an action would still be running 100 ms later.
   const expectNoAd = async () => {
     await page.clock.runFor(100);

@@ -154,16 +154,12 @@ test('a failing listener neither blocks the game nor costs the reward', async (t
   assert.equal(flow.busy, false);
 });
 
-test('breaks after a prestige keep a minimum gap, also after the game starts', async () => {
-  let time = 0;
+test('the ad flow offers rewards only and never shows an interstitial', async () => {
   const ads = fakeAds();
-  const flow = createAdFlow({ ads: ads.adapter, now: () => time, minInterstitialGapMs: 1000 });
-  assert.equal(await flow.breakAfterPrestige(), false); // right after the start
-  time = 1000;
-  assert.equal(await flow.breakAfterPrestige(), true);
-  time = 1999;
-  assert.equal(await flow.breakAfterPrestige(), false);
-  time = 2000;
-  assert.equal(await flow.breakAfterPrestige(), true);
-  assert.equal(ads.calls.interstitial, 2);
+  const flow = createAdFlow({ ads: ads.adapter });
+  const pending = flow.reward(() => {});
+  ads.finish(true);
+  await pending;
+  assert.deepEqual(Object.keys(flow).sort(), ['busy', 'canOfferReward', 'on', 'reward']);
+  assert.equal(ads.calls.interstitial, 0);
 });
