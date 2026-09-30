@@ -144,7 +144,7 @@ test('the language can be switched in the settings', async ({ page }) => {
   await dialog.locator('select').selectOption('de');
   await expect(page.locator('html')).toHaveAttribute('lang', 'de');
   await expect(page.getByRole('tab', { name: 'Ausstattung' })).toBeVisible();
-  await expect(page).toHaveTitle('Roast & Rise: Idle-Kaffeerösterei');
+  await expect(page).toHaveTitle('Full Roast Ahead: Idle-Kaffeerösterei');
   await page.getByRole('dialog', { name: 'Einstellungen' }).getByRole('button', { name: 'Schließen' }).click();
   await expect(page.getByRole('dialog')).toBeHidden();
 });

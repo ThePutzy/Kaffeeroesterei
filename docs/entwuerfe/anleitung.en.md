@@ -1,6 +1,6 @@
-# How to play Roast & Rise
+# How to play Full Roast Ahead
 
-> Draft, 2026-09-28, matching the game after step 5. "Roast & Rise" is a working title. The numbers come from `themes/kaffeeroesterei/theme.json`; a test checks the most important ones against the game (reputation threshold and bonus, earnings while away, boost duration).
+> Draft, 2026-09-28, matching the game after step 5. "Full Roast Ahead" is a provisional title (2026-09-30). The numbers come from `themes/kaffeeroesterei/theme.json`; a test checks the most important ones against the game (reputation threshold and bonus, earnings while away, boost duration).
 
 You run a small coffee roastery and grow it into a coffee empire. Your currency is **beans**.
 

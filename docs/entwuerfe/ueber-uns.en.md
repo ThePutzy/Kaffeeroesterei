@@ -2,11 +2,11 @@
 
 > Draft, 2026-09-28. Placeholders are in `[square brackets]`. Notes in quote blocks are for you only.
 
-Roast & Rise is a small independent browser game by [name or studio name] from [place/region, Germany].
+Full Roast Ahead is a small independent browser game by [name or studio name] from [place/region, Germany].
 
 ## The idea
 
-We like games you can play in short breaks: drop in, make a few decisions and see later what came of them. Roast & Rise is one of them. You build a coffee roastery from the first pan to a cargo ship, at your own pace.
+We like games you can play in short breaks: drop in, make a few decisions and see later what came of them. Full Roast Ahead is one of them. You build a coffee roastery from the first pan to a cargo ship, at your own pace.
 
 ## How the game is made
 
