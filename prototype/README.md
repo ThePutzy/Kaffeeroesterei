@@ -48,7 +48,6 @@ Die Werte stammen aus `tests/unit/prototype.test.js` mit einem gescripteten Spie
 
 - Speicherstand, Offline-Ertrag, Prestige, Werbung, Erfolge: Das gibt es im eigentlichen Spiel schon oder es kommt beim Einbau.
 - Inhalte nach dem Café. Nach dem letzten Ziel meldet sich der Prototyp und sagt, dass nichts Neues mehr kommt.
-- Der Titel. „Roast & Rise“ ist als Name schon von einem iOS-Spiel belegt (siehe Recherche), darum steht hier nur „Rösterei – Prototyp“.
 
 ## Worauf es beim Testen ankommt
 
