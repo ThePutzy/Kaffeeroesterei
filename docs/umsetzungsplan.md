@@ -2,6 +2,8 @@
 
 Der Nutzer hat den Plan am 28.09.2026 freigegeben. Ergänzungen, die nach der Freigabe dazukamen, sind mit *(Ergänzung)* markiert. Sie stammen aus den CrazyGames-Anforderungen, die ab Schritt 1 lesbar waren.
 
+> **Stand 30.09.2026:** Alle sechs Schritte sind umgesetzt und gemergt. Danach wurde das Spiel neu ausgerichtet, und einige Entscheidungen haben sich geändert, etwa: vorerst keine Zwischenanzeigen, die eigene Domain zurückgestellt. Was jetzt gilt, steht in [CLAUDE.md](../CLAUDE.md). Der Plan darunter ist ein Protokoll und wird nicht mehr nachgeführt.
+
 ## Kontext
 
 Ziel ist ein Browser-Idle-Spiel aus statischen Dateien (HTML, CSS, JS-Module), das zuerst auf CrazyGames erscheint und später auf einer eigenen Domain. Die Umsetzung läuft in 6 Schritten, jeder mit eigenem Branch und eigenem PR, in dieser Reihenfolge. Projektregeln: [CLAUDE.md](../CLAUDE.md).

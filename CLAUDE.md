@@ -1,12 +1,12 @@
 # Projekt: Idle-Spiel "Kaffeerösterei" (Thema 1)
 
-Stand der Entscheidungen: 28.09.2026. Diese Datei ist der Kontext für jede Sitzung. Du siehst das Gespräch nicht, in dem der Plan entstanden ist; verlasse dich auf diese Datei.
+Stand der Entscheidungen: 30.09.2026. Diese Datei ist der Kontext für jede Sitzung. Du siehst das Gespräch nicht, in dem der Plan entstanden ist; verlasse dich auf diese Datei.
 
-Der freigegebene Umsetzungsplan (Schritte, Branches, Prüfungen) steht in `docs/umsetzungsplan.md`.
+Der freigegebene Umsetzungsplan (Schritte, Branches, Prüfungen) steht in `docs/umsetzungsplan.md`. Seine sechs Schritte sind umgesetzt und gemergt. Danach hat der Nutzer das Spiel neu ausgerichtet, siehe „Neuausrichtung“.
 
 ## Ziel
 
-Ein Browser-Idle-Spiel, das hauptsächlich über Werbung Geld verdienen soll. Erst auf einem Spieleportal (CrazyGames) veröffentlichen, danach auf einer eigenen Domain. Kein festes Einnahmeziel, möglichst geringe Kosten, so viel wie möglich soll über Claude Code laufen.
+Ein Browser-Idle-Spiel, das hauptsächlich über Werbung Geld verdienen soll. Erst auf einem Spieleportal (CrazyGames) veröffentlichen, danach auf einer eigenen Domain (vorerst zurückgestellt, siehe Entscheidungen). Kein festes Einnahmeziel, möglichst geringe Kosten, so viel wie möglich soll über Claude Code laufen.
 
 ## Entscheidungen
 
@@ -14,8 +14,19 @@ Ein Browser-Idle-Spiel, das hauptsächlich über Werbung Geld verdienen soll. Er
 - Sprachen: Englisch (Pflicht, CrazyGames verlangt es) und Deutsch.
 - Thema 1: Kaffeerösterei. Weitere Themen kommen später.
 - Spielkern und Themendaten sauber trennen, den Baukasten aber nur so weit ausbauen, wie Thema 1 ihn braucht. Ob und wie weit er wiederverwendbar ist und wie mit dem Klon-Eindruck umzugehen ist, entscheiden wir nach Thema 1. Nicht vorab verallgemeinern.
-- Vertrieb: zuerst CrazyGames. Danach eigene Domain (Cloudflare Pages) mit AdSense H5 Games Ads und einem von Google zertifizierten Einwilligungstool. Poki ist ausgeschlossen (Web-Exklusivität).
+- Vertrieb: zuerst CrazyGames. Poki ist ausgeschlossen (Web-Exklusivität).
+- Eigene Domain (Cloudflare Pages mit AdSense H5 Games Ads und einem von Google zertifizierten Einwilligungstool): vorerst zurückgestellt (30.09.2026). Nicht daran arbeiten, bis der Nutzer sie wieder aufnimmt. Das Ziel `web` und die Entwürfe in `docs/entwuerfe/` bleiben, wie sie sind.
 - Gewerbe und Steuer hat der Nutzer geklärt. Darum kümmerst du dich nicht.
+
+## Neuausrichtung (29.09.2026)
+
+- Der Nutzer fand das Spiel nach dem Umsetzungsplan (eine Klickfläche mit Erzeugerliste) sehr langweilig und nannte das Aussehen „ein großes Problem“.
+- Neue Richtung: eine sichtbare Rösterei. Man röstet selbst, bedient Kunden und automatisiert Schritt für Schritt mit Helfern und Maschinen. Ein Prototyp der ersten fünf Minuten liegt in PR #12 (Ordner `prototype/`); laut Nutzer „schaut [er] schon viel besser aus“.
+- Richtung laut Nutzer: ein Erfolg wie Idle Miner Tycoon und AdVenture Capitalist. Planbar ist das nicht, aber es gibt die Richtung vor.
+  - Übernehmen: eine kleine erste Fassung, die an der Rückkehrquote gemessen wird; eine sichtbare Kette mit Engpass; frühe Automatik; ehrliche Belohnungsanzeigen; ein eigener Ton.
+  - Nicht übernehmen: ihr Aussehen, ihre Figuren, Namen und Zahlen. CrazyGames zahlt nur für Spiele, die sich von bestehenden unterscheiden.
+- Berichte dazu: `docs/recherche/`.
+- Offen: ob der Prototyp die technische Grundlage des neuen Spiels wird und dafür die Technik aus `src/` übernimmt (Speicherstand, Offline-Ertrag, Werbe-Adapter, Texte, Build, Tests). Das schlägt Claude vor; der Nutzer hat es noch nicht entschieden.
 
 ## Spielumfang Thema 1 (erste Version)
 
@@ -23,8 +34,16 @@ Ein Browser-Idle-Spiel, das hauptsächlich über Werbung Geld verdienen soll. Er
 - Offline-Ertrag und Speicherstand im Browser. Speicher darf ausfallen (Inkognito): immer mit try/catch, das Spiel läuft trotzdem.
 - Bedienbar auf Handy und Desktop.
 - Werbung, nur über den Werbe-Adapter:
-  - Belohnungs-Anzeige, nur nach ausdrücklicher Entscheidung des Spielers (zum Beispiel 10 Minuten doppelte Einnahmen, Offline-Ertrag verdoppeln). Die Belohnung darf keinen Wert außerhalb des Spiels haben.
-  - Zwischenanzeige nur an natürlichen Pausen (zum Beispiel nach einem Prestige). Nie mitten im Spiel, nie nach jeder Aktion.
+  - Belohnungs-Anzeige, nur nach ausdrücklicher Entscheidung des Spielers. Die Belohnung darf keinen Wert außerhalb des Spiels haben. Jede Belohnung gibt es auch ohne Werbung, als Kauf mit Spielwährung; CrazyGames verlangt eine Alternative.
+    - Boost (30.09.2026): doppelte Einnahmen für 10 Minuten je Anzeige.
+      - Die Restzeit läuft nur, solange das Spiel sichtbar ist.
+      - Kein Stapeln: Solange ein Boost läuft, ist das Angebot ausgeblendet.
+      - Höchstens 6 Boosts per Anzeige pro Kalendertag.
+      - Kauf ohne Werbung für so viel, wie das Spiel in 5 Minuten einnimmt.
+      - Das Angebot steht in einem eigenen Bereich, nicht in der Spielszene.
+    - Offline-Ertrag verdoppeln (30.09.2026): im Willkommen-Dialog, einmal je Rückkehr. Kauf ohne Werbung für die Hälfte des Offline-Ertrags.
+    - Begründung und was davon im Code schon umgesetzt ist: `docs/crazygames-sdk.md`.
+  - Zwischenanzeigen: vorerst keine (Entscheidung des Nutzers, 30.09.2026). `showInterstitial` bleibt in der Schnittstelle, das Spiel ruft es nicht auf. Kommen sie später, dann nur an natürlichen Pausen (zum Beispiel nach einem Prestige), nie mitten im Spiel, nie nach jeder Aktion.
 
 ## Struktur
 
@@ -33,6 +52,8 @@ Ein Browser-Idle-Spiel, das hauptsächlich über Werbung Geld verdienen soll. Er
 - `themes/<name>/`: `theme.json`, Texte `en` und `de`, eigene SVG-Grafiken
 - `tools/`: Balance-Simulator, Größen-Check
 - `tests/`: Browser-Test
+- `docs/recherche/`: Recherche-Berichte (Vergleichsspiele, Vorbilder)
+- `prototype/`: Prototyp der neuen Richtung (kommt mit PR #12)
 - Build: ein Paket pro Ziel, zum Beispiel `dist/crazygames` und `dist/web`
 
 ## Regeln
@@ -48,17 +69,23 @@ Ein Browser-Idle-Spiel, das hauptsächlich über Werbung Geld verdienen soll. Er
 - Im Pull Request immer benennen, was geändert wurde und was nicht geprüft werden konnte. Nichts erfinden.
 - Code und Kommentare Englisch, Dokumentation Deutsch.
 
-## Was bekannt ist über CrazyGames (Quelle: docs.crazygames.com/faq, Stand 28.09.2026)
+## Was bekannt ist über CrazyGames (Quellen: docs.crazygames.com und die Developer-Terms, Stand 30.09.2026)
 
 - Erst Basic Launch (ohne SDK, ohne Werbung), dann Full Launch mit SDK.
 - Nur Werbung über deren SDK, keine externen Anzeigen.
 - Ablehnungsgründe unter anderem: fehlendes Englisch, unoriginale Inhalte (Klone), Themen, die sich an Kinder richten, PEGI-12 nicht eingehalten.
-- Die Developer-Terms wurden noch nicht gelesen.
+- Developer-Terms, Fassung vom 18.08.2025, am 29.09.2026 von Claude gelesen. Keine Rechtsberatung; der Nutzer liest sie vor der Zustimmung selbst. Ausführlich in `docs/recherche/idle-miner-und-adventure-capitalist.md`.
+  - Geld gibt es erst im Full Launch. Einen Prozentsatz nennen die Bedingungen nicht; die Zahlung richtet sich nach den Besuchern und der Leistung der Werbung.
+  - Voraussetzungen für die Zahlung: kein Branding eines anderen Portals, das SDK in der aktuellen Version, keine Werbung außerhalb des SDK und genug Originalität, um sich von bestehenden Spielen zu unterscheiden.
+  - 50 % mehr, wenn das Spiel in den zwei Monaten nach dem Full Launch im Browser nur auf CrazyGames erscheint. Steam und App-Stores zählen dabei nicht. Ob eine eigene Domain zählt, klären die gelesenen Stellen nicht.
+  - Updates spätestens gleichzeitig mit anderen Plattformen; wesentliche Fehler umgehend beheben.
+  - CrazyGames darf das Spiel jederzeit ohne Ankündigung entfernen.
+  - Laufzeit ein Jahr ab dem Full Launch. Sie verlängert sich automatisch, wenn niemand mindestens einen Monat vorher kündigt. Nach dem Ende darf CrazyGames das Spiel noch bis zu einem Jahr zeigen.
 
 ## Nicht deine Aufgabe
 
-Konten anlegen, Einreichung bei CrazyGames, AdSense-Bewerbung, Domain, Zahlungen. Rechtstexte (Datenschutz, Impressum) nur als Entwurf, der Nutzer prüft sie.
+Konten anlegen, Einreichung bei CrazyGames, AdSense-Bewerbung, Domain, Zahlungen, die markenrechtliche Prüfung von Titel und Namen. Rechtstexte (Datenschutz, Impressum) nur als Entwurf, der Nutzer prüft sie.
 
 ## Später auf der eigenen Seite
 
-Anleitung, Über uns, Datenschutz und Impressum als eigene Seiten, auch als Inhalt für Suchmaschinen.
+Vorerst zurückgestellt (30.09.2026). Wenn sie kommt: Anleitung, Über uns, Datenschutz und Impressum als eigene Seiten, auch als Inhalt für Suchmaschinen.

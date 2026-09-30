@@ -73,7 +73,7 @@ Zugangsdaten, Schlüssel und Publisher-IDs gehören nicht ins Repository, auch n
 - **Adapter:**
   - `none`: kein Werbenetz. Mit `simulate: true` (nur in der Entwicklung) spielt er eine Anzeige von 0,8 s vor.
   - `crazygames`: Platzhalter für den Basic Launch, ohne SDK.
-- **Wann Werbung erscheint** (`src/core/adflow.js`): Belohnungen nur auf Wunsch des Spielers, eine Zwischenanzeige nur nach einem Prestige, höchstens alle 5 Minuten und nicht in den ersten 5 Minuten nach dem Start. Solange eine Anzeige läuft, ist die Oberfläche gesperrt; ein Adapter, der nicht antwortet, gilt nach 2 Minuten als fertig.
+- **Wann Werbung erscheint** (`src/core/adflow.js`): nur als Belohnung auf Wunsch des Spielers. Zwischenanzeigen gibt es vorerst keine (Entscheidung vom 30.09.2026, siehe [CLAUDE.md](CLAUDE.md)); `showInterstitial` bleibt in der Schnittstelle, das Spiel ruft es aber nicht auf. Solange eine Anzeige läuft, ist die Oberfläche gesperrt; ein Adapter, der nicht antwortet, gilt nach 2 Minuten als fertig.
 - **CrazyGames:** Anforderungen und SDK-Notizen stehen in [docs/crazygames-sdk.md](docs/crazygames-sdk.md).
 
 ## Regeln für ausgelieferte Dateien
