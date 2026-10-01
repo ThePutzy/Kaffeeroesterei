@@ -252,6 +252,8 @@ export function createApp({
       }
       case 'move':
         audio.play('goal');
+        // Notes from the old roastery ("First crack!") would float over the new one.
+        ref('fx').replaceChildren();
         banner(t(`locations.${event.location}.banner`));
         knownItems = new Set();
         lastItemsKey = '';
