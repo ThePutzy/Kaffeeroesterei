@@ -31,7 +31,9 @@ Ein Browser-Idle-Spiel, das hauptsächlich über Werbung Geld verdienen soll. Er
   - Nicht übernehmen: ihr Aussehen, ihre Figuren, Namen und Zahlen. CrazyGames zahlt nur für Spiele, die sich von bestehenden unterscheiden.
 - Berichte dazu: `docs/recherche/`.
 - Entschieden (01.10.2026): Der Prototyp ist die Grundlage des neuen Spiels. Die Technik aus `src/` wird übernommen: Speicherstand, Offline-Ertrag, Werbe-Adapter, Texte, Build, Tests. Plan: `docs/umsetzungsplan-neues-spiel.md`.
-- Design: Board in Claude Design „Full Roast Ahead – Design“ (01.10.2026) mit drei Logo-Richtungen, den drei CrazyGames-Covern und der Spielansicht mit eigenem Boost-Bereich. Welches Logo und welche Details gelten, entscheidet der Nutzer.
+- Design: Board in Claude Design „Full Roast Ahead – Design“ (01.10.2026) mit drei Logo-Richtungen, den drei CrazyGames-Covern und der Spielansicht mit eigenem Boost-Bereich. Welche Details gelten, entscheidet der Nutzer.
+  - Logo: A „Röstetikett“, gewählt vom Nutzer (01.10.2026). Im Spiel steht es während des Ladens in der Mitte und dient als Symbol im Browser-Tab; die Spielansicht selbst bleibt wie auf dem Board ohne Logo.
+  - Cover und Vorschauvideos für die Einreichung: `media/crazygames/`, erzeugt mit `npm run media`.
 
 ## Spielumfang Thema 1 (erste Version)
 
@@ -55,9 +57,10 @@ Ein Browser-Idle-Spiel, das hauptsächlich über Werbung Geld verdienen soll. Er
 - `src/core/`: Spielregeln (`model.js`), Oberfläche, Ton, Texte, Speicherstand, Werbe-Ablauf
 - `src/ads/`: Schnittstelle mit `showRewarded` und `showInterstitial`. Adapter: `none` (Entwicklung und Tests), `crazygames`, später `adsense-h5`
 - `themes/<name>/`: `theme.json` (alle Zahlen), Texte `en` und `de`, die Szene als SVG-Code (`scene.js`), Farben. Format: `docs/themenformat.md`
-- `tools/`: Balance-Simulator, Größen-Check
+- `tools/`: Balance-Simulator, Größen-Check, Cover und Vorschauvideos (`media.mjs`), Logo aus der Schrift (`logo/`)
 - `tests/`: Browser-Test
 - `docs/recherche/`: Recherche-Berichte (Vergleichsspiele, Vorbilder)
+- `media/crazygames/`: Cover und Vorschauvideos für die Einreichung
 - Build: ein Paket pro Ziel, zum Beispiel `dist/crazygames` und `dist/web`
 
 ## Regeln

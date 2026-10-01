@@ -8,9 +8,11 @@ Browser-Idle-Spiel, Thema 1: Kaffeerösterei. Reines HTML, CSS und JavaScript (E
 - Themenformat, Formeln und Balance-Simulator: [docs/themenformat.md](docs/themenformat.md)
 - Entwürfe für die eigene Seite (Anleitung, Über uns, Datenschutz, Impressum): [docs/entwuerfe/](docs/entwuerfe/README.md)
 
-Stand: Schritt 4b des [Plans für das neue Spiel](docs/umsetzungsplan-neues-spiel.md). Das Spiel ist die sichtbare Rösterei aus dem Prototyp: rösten, beim ersten Crack auswerfen, Gäste am Wagen bedienen, mit Helferin und Trommelröstern automatisieren. Englisch und Deutsch, Handy und Desktop.
+Stand: Schritt 5b des [Plans für das neue Spiel](docs/umsetzungsplan-neues-spiel.md). Das Spiel ist die sichtbare Rösterei aus dem Prototyp: rösten, beim ersten Crack auswerfen, Gäste am Wagen bedienen, mit Helferin und Trommelröstern automatisieren. Englisch und Deutsch, Handy und Desktop.
 - **Ausbau:** Nach dem Café kommen Kundenstopper, Espressomaschine, Lastenrad, Gasbrenner und Röstkurs.
 - **Umzug (Prestige):** Danach kann man ins Hafenviertel umziehen, laut Simulator nach etwa 15 Minuten aktivem Spiel. Der Durchgang beginnt neu, die Gäste zahlen dort das Doppelte. Das Spiel speichert im Browser, zahlt einen Offline-Ertrag und bietet Boost und Offline-Verdopplung an, per Werbung oder als Kauf.
+- **Logo:** Logo A „Röstetikett“ vom Design-Board. Es steht in der Mitte, solange das Spiel lädt, und dient als Symbol im Browser-Tab.
+- **Einreichung:** Die drei Cover und die zwei Vorschauvideos für CrazyGames liegen in `media/crazygames/` (siehe „Cover und Vorschauvideos“).
 
 Titel, vorläufig: **Full Roast Ahead**; er ist nicht markenrechtlich geprüft ([Titelrecherche](docs/recherche/spieltitel.md)). Entwürfe für Anleitung, Über uns, Datenschutz und Impressum liegen in `docs/entwuerfe/`; sie beschreiben noch das Spiel vor der Neuausrichtung.
 
@@ -19,6 +21,7 @@ Titel, vorläufig: **Full Roast Ahead**; er ist nicht markenrechtlich geprüft (
 - Node.js 22 oder neuer
 - Einmalig `npm install`
 - Für den Browser-Test auf dem eigenen Rechner einmalig `npx playwright install chromium`
+- Nur für `npm run media`: ffmpeg mit libx264
 
 ## Befehle
 
@@ -31,6 +34,7 @@ Titel, vorläufig: **Full Roast Ahead**; er ist nicht markenrechtlich geprüft (
 | `npm run check:size` | Prüft jedes Paket: unter 2.000.000 Bytes, keine externen URLs (auch `ws://`, `wss://`, `ftp://`) und keine Symlinks |
 | `npm run test:browser` | Browser-Test mit Playwright; baut vorher neu |
 | `npm run check` | Führt alles nacheinander aus |
+| `npm run media` | Erzeugt Cover und Vorschauvideos für CrazyGames nach `media/crazygames/`; braucht ein gebautes Paket und ffmpeg, dauert einige Minuten. Mit `-- --only covers` nur die Cover. |
 
 ES-Module laden nicht über `file://`. Zum Ausprobieren darum immer `npm run dev` nutzen, nicht die HTML-Datei direkt öffnen.
 
@@ -56,8 +60,9 @@ Zugangsdaten, Schlüssel und Publisher-IDs gehören nicht ins Repository, auch n
 | `src/core/` | Spielregeln (`model.js`), Oberfläche (`ui/app.js`), Ton (`audio.js`), Texte (`i18n.js`, `locales/`), Zahlenformat (`format.js`), Speicherstand (`save.js`), Offline-Ertrag (`offline.js`), Werbe-Ablauf (`adflow.js`) |
 | `src/main.js` | Start: lädt Thema und Spielstand, erzeugt Regeln, Szene und Oberfläche, speichert und rechnet die Zeit ohne Bilder nach |
 | `src/ads/` | Werbe-Schnittstelle und Adapter |
-| `themes/kaffeeroesterei/` | Zahlen (`theme.json`), Texte (`locales/`), Szene als SVG-Code mit den Symbolen (`scene.js`), Farben (`theme.css`); Format: [docs/themenformat.md](docs/themenformat.md) |
-| `tools/` | Build, lokaler Server, Größen-Check, Balance-Simulator |
+| `themes/kaffeeroesterei/` | Zahlen (`theme.json`), Texte (`locales/`), Szene als SVG-Code mit den Symbolen (`scene.js`), Farben (`theme.css`), Logo und Symbol (`logo.svg`, `icon.svg`); Format: [docs/themenformat.md](docs/themenformat.md) |
+| `tools/` | Build, lokaler Server, Größen-Check, Balance-Simulator, Cover und Vorschauvideos (`media.mjs`), Logo aus der Schrift (`logo/`) |
+| `media/crazygames/` | Cover und Vorschauvideos für die Einreichung bei CrazyGames |
 | `tests/unit/` | Unit-Tests (`*.test.js`) |
 | `tests/browser/` | Browser-Tests (`*.spec.js`) |
 | `config/` | Ziel-Konfiguration |
@@ -110,6 +115,22 @@ Die Zeit, in der das Spiel nicht läuft, rechnet `src/main.js` nach: beim Start 
 - Nur relative Pfade. CrazyGames verlangt das, und der Browser-Test lädt die Pakete deshalb aus einem Unterordner.
 - Keine URLs zu fremden Servern. Ausnahmen gibt es nur über `allowedUrls` des Ziels. Weil der Build nicht minifiziert, zählen auch Links in Kommentaren; Doku-Links gehören darum nach `docs/`.
 - Das Startpaket muss unter 2.000.000 Bytes bleiben.
+
+## Cover und Vorschauvideos
+
+CrazyGames verlangt bei der Einreichung drei Cover und zwei Vorschauvideos. `npm run media` erzeugt sie aus dem gebauten Paket `dist/crazygames` und legt sie in `media/crazygames/` ab:
+
+| Datei | Inhalt |
+| --- | --- |
+| `cover-1920x1080.png`, `cover-800x1200.png`, `cover-800x800.png` | die Szene des Spiels mit dem Logo oben, ohne weiteren Text |
+| `preview-1920x1080.mp4`, `preview-1080x1620.mp4` | 16:9 und 2:3, je 1080p, 30 Bilder pro Sekunde, H.264 ohne Tonspur. Erst das Cover, dann vier Szenen in echter Geschwindigkeit: von Hand rösten und die Helferin einstellen, die volle Rösterei kauft den Röstkurs, der Umzug ins Hafenviertel, das Hafenviertel am Abend. |
+
+Das Werkzeug spielt jede Szene aus einem eigenen Spielstand. Es nimmt Bild für Bild auf, mit der falschen Uhr von Playwright und allen Animationen auf derselben Zeit; so laufen die Videos immer in echter Geschwindigkeit, und jeder Lauf ergibt dieselben Bilder. Wo der Spieler tippt, zeigt ein heller Ring, statt eines Mauszeigers. Ist ein Video kürzer als 15 oder länger als 20 Sekunden, hat es eine Tonspur oder nicht 1080p, meldet das Werkzeug das und endet mit einem Fehler. Was CrazyGames verlangt und was dabei unsicher ist: [docs/crazygames-sdk.md](docs/crazygames-sdk.md#einreichung-was-dafür-gebraucht-wird).
+
+**Logo:** `themes/kaffeeroesterei/logo.svg` ist Logo A vom Design-Board, die Buchstaben als Pfade der Schrift Alfa Slab One (SIL Open Font License 1.1). Das Spiel liefert darum keine Schriftdatei aus. Neu erzeugen, etwa nach einer Änderung des Titels in `tools/logo/label.html`:
+1. Die Schrift `AlfaSlabOne-Regular.ttf` aus dem Repository google/fonts (Ordner `ofl/alfaslabone`) herunterladen.
+2. `node tools/logo/measure.mjs AlfaSlabOne-Regular.ttf > layout.json` misst das Logo im Browser.
+3. `python3 tools/logo/outline.py AlfaSlabOne-Regular.ttf layout.json > themes/kaffeeroesterei/logo.svg` setzt die Buchstaben als Pfade; dafür braucht Python das Paket `fonttools`.
 
 ## Pakete herunterladen
 
