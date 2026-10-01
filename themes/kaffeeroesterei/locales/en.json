@@ -62,5 +62,6 @@
   "banners.helper": "Your helper is here!",
   "banners.drum": "A drum roaster!",
   "banners.cafe": "The café is open!",
-  "banners.sign": "The sign is up!"
+  "banners.sign": "The sign is up!",
+  "offline.body": "You were away for {duration}. Your roastery kept going and earned:"
 }

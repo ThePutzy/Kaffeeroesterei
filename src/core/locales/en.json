@@ -16,5 +16,18 @@
   "shop.title": "Upgrades",
   "shop.buyLabel": "Buy {name} for {price}",
   "shop.allBought": "Everything bought. More is coming soon.",
-  "shop.lockedAfter": "After: {name}"
+  "shop.lockedAfter": "After: {name}",
+  "offline.title": "Welcome back!",
+  "offline.body": "You were away for {duration}. In the meantime you earned:",
+  "offline.note": "While you're away, everything that runs by itself earns {rate} of its usual income, for up to {hours} hours.",
+  "offline.continue": "Continue",
+  "duration.minutes": "{minutes} min",
+  "duration.hoursMinutes": "{hours} h {minutes} min",
+  "duration.daysHours": "{days} d {hours} h",
+  "save.unavailable": "Progress can't be saved in this browser, for example in a private window. You can still play.",
+  "save.newer": "This save comes from a newer version of the game. To keep it safe, this version does not save. Please reload the page.",
+  "save.failed": "Saving failed, for example because the browser's storage is full. Your latest progress may not be saved.",
+  "tab.title": "Open in another tab",
+  "tab.body": "The game is also open in another tab or window, and only one of them can save. Continue here to load the latest progress.",
+  "tab.continue": "Continue here"
 }

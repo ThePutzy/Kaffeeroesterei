@@ -51,9 +51,15 @@ test('broken or foreign data is not a save', () => {
     JSON.stringify({ version: SAVE_VERSION + 1, state: played }), // newer game version
     serialize({ state: { ...played, money: -1 } }),
     serialize({ state: { ...played, money: 'lots' } }),
-    serialize({ state: null }),
+    JSON.stringify({ version: SAVE_VERSION, state: 'garbage' }),
   ];
   for (const text of broken) assert.equal(parseSave(text, sanitize), null, text);
+});
+
+test('a save without a game keeps the settings, e.g. after starting over', () => {
+  const text = serialize({ state: null, savedAt: 7, settings: { muted: true } });
+  assert.deepEqual(parseSave(text, sanitize), { state: null, savedAt: 7, settings: { muted: true } });
+  assert.equal(parseSave(serialize({ settings: { language: 'de' } }), sanitize).state, null);
 });
 
 test("the game's check decides what is kept; odd times and settings are ignored", () => {
@@ -75,15 +81,27 @@ test('a check that throws on odd data makes the save unreadable instead of throw
 });
 
 test('older saves go through the migrations', () => {
-  const oldText = JSON.stringify({ version: 0, savedAt: 5, coins: 99, state: played });
-  const migrations = { 0: (data) => ({ ...data, state: { ...data.state, money: data.coins } }) };
+  const previous = SAVE_VERSION - 1;
+  const oldText = JSON.stringify({ version: previous, savedAt: 5, coins: 99, state: played });
+  const migrations = { [previous]: (data) => ({ ...data, state: { ...data.state, money: data.coins } }) };
   assert.equal(parseSave(oldText, sanitize, migrations).state.money, 99);
   assert.equal(parseSave(oldText, sanitize, {}), null); // no way to migrate
 });
 
+test('saves of the first game (version 1) have no migration and are set aside', () => {
+  const firstGame = JSON.stringify({ version: 1, savedAt: 5, state: played });
+  assert.equal(parseSave(firstGame, sanitize), null);
+  const storage = memoryStorage();
+  const store = createStore('game', storage);
+  store.write(firstGame);
+  assert.deepEqual(loadSave(store, sanitize), { save: null, readOnly: false });
+  assert.equal(storage.getItem('game:unreadable'), firstGame);
+});
+
 test('a migration that fails on odd data makes the save unreadable instead of throwing', () => {
-  const oldText = JSON.stringify({ version: 0, state: 'garbage' });
-  const migrations = { 0: (data) => ({ ...data, state: { ...data.state, money: data.state.wallet.coins } }) };
+  const previous = SAVE_VERSION - 1;
+  const oldText = JSON.stringify({ version: previous, state: 'garbage' });
+  const migrations = { [previous]: (data) => ({ ...data, state: { ...data.state, money: data.state.wallet.coins } }) };
   assert.equal(parseSave(oldText, sanitize, migrations), null);
 });
 
@@ -113,13 +131,13 @@ test('a throwing or missing storage never throws', () => {
 test('an unreadable save is kept aside before the game starts fresh', () => {
   const storage = memoryStorage();
   const store = createStore('game', storage);
-  store.write('{"version":1,"state":"garbage"}');
+  store.write(`{"version":${SAVE_VERSION},"state":"garbage"}`);
   assert.deepEqual(loadSave(store, sanitize), { save: null, readOnly: false });
-  assert.equal(storage.getItem('game:unreadable'), '{"version":1,"state":"garbage"}');
+  assert.equal(storage.getItem('game:unreadable'), `{"version":${SAVE_VERSION},"state":"garbage"}`);
 
-  store.write('{"version":1,"state":"more garbage"}');
+  store.write(`{"version":${SAVE_VERSION},"state":"more garbage"}`);
   loadSave(store, sanitize);
-  assert.equal(storage.getItem('game:unreadable'), '{"version":1,"state":"garbage"}'); // the first copy stays
+  assert.equal(storage.getItem('game:unreadable'), `{"version":${SAVE_VERSION},"state":"garbage"}`); // the first copy stays
 
   store.write(serialize({ state: played, savedAt: 1 }));
   assert.deepEqual(loadSave(store, sanitize).save.state, played);

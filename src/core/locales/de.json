@@ -16,5 +16,18 @@
   "shop.title": "Ausbau",
   "shop.buyLabel": "{name} kaufen für {price}",
   "shop.allBought": "Alles gekauft. Bald gibt es mehr.",
-  "shop.lockedAfter": "Nach: {name}"
+  "shop.lockedAfter": "Nach: {name}",
+  "offline.title": "Willkommen zurück!",
+  "offline.body": "Du warst {duration} weg. In der Zeit hast du verdient:",
+  "offline.note": "Während du weg bist, bringt alles, was von selbst läuft, {rate} des üblichen Ertrags, höchstens {hours} Stunden lang.",
+  "offline.continue": "Weiter",
+  "duration.minutes": "{minutes} Min.",
+  "duration.hoursMinutes": "{hours} Std. {minutes} Min.",
+  "duration.daysHours": "{days} Tg. {hours} Std.",
+  "save.unavailable": "Der Fortschritt kann in diesem Browser nicht gespeichert werden, zum Beispiel im privaten Fenster. Spielen kannst du trotzdem.",
+  "save.newer": "Dieser Spielstand stammt aus einer neueren Version des Spiels. Damit er erhalten bleibt, speichert diese Version nicht. Bitte lade die Seite neu.",
+  "save.failed": "Speichern ist fehlgeschlagen, zum Beispiel weil der Speicher des Browsers voll ist. Der neueste Fortschritt ist womöglich nicht gespeichert.",
+  "tab.title": "In einem anderen Tab geöffnet",
+  "tab.body": "Das Spiel ist auch in einem anderen Tab oder Fenster geöffnet, und nur eins davon kann speichern. Spiel hier weiter, um den neuesten Stand zu laden.",
+  "tab.continue": "Hier weiterspielen"
 }

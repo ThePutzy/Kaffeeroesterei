@@ -76,6 +76,7 @@
       </section>
 
       <aside class="side">
+        <p class="notice" data-ref="notice" role="status" hidden></p>
         <h2 data-ref="shop-title"></h2>
         <div class="items" data-ref="items"></div>
         <section class="stats">
@@ -105,6 +106,24 @@
         <div class="confirm-actions">
           <button type="button" class="btn secondary" data-action="restart-cancel" data-ref="restart-cancel"></button>
           <button type="button" class="btn" data-action="restart-confirm" data-ref="restart-confirm"></button>
+        </div>
+      </dialog>
+
+      <dialog class="confirm welcome" data-ref="welcome-dialog" aria-labelledby="welcome-title">
+        <h2 id="welcome-title" data-ref="welcome-title"></h2>
+        <p data-ref="welcome-body"></p>
+        <p class="welcome-amount" data-ref="welcome-amount"></p>
+        <p class="note" data-ref="welcome-note"></p>
+        <div class="confirm-actions">
+          <button type="button" class="btn" data-action="welcome-close" data-ref="welcome-close"></button>
+        </div>
+      </dialog>
+
+      <dialog class="confirm" data-ref="tab-dialog" aria-labelledby="tab-title">
+        <h2 id="tab-title" data-ref="tab-title"></h2>
+        <p data-ref="tab-body"></p>
+        <div class="confirm-actions">
+          <button type="button" class="btn" data-action="tab-continue" data-ref="tab-continue"></button>
         </div>
       </dialog>
     </div>

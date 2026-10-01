@@ -1,12 +1,34 @@
 // The game screen: connects the rules, the theme's scene, sounds and the
-// controls in index.html. src/main.js creates it once the theme is loaded and
-// calls frame() once per animation frame.
-import { formatNumber } from '../format.js';
+// controls in index.html. src/main.js creates it once the theme is loaded,
+// calls frame() once per animation frame and decides when the game saves.
+import { formatNumber, formatPercent } from '../format.js';
+
+// Why progress is not (or no longer) saved, and the text that says so.
+const NOTICE_TEXTS = {
+  unavailable: 'save.unavailable',
+  newer: 'save.newer',
+  failed: 'save.failed',
+};
 
 const LOCK_SVG =
   '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="8" rx="2" fill="currentColor"/><path d="M5 7V5a3 3 0 0 1 6 0v2" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>';
 
-export function createApp({ rules, state, scene, icons = {}, coinIcon = '', audio, i18n, onRestart }) {
+// Callbacks: onRestart after the player confirmed starting over, onReload when
+// the player continues in this tab after another one saved, onSettings with
+// the changed settings ({ language } or { muted }), onPurchase after a buy.
+export function createApp({
+  rules,
+  state,
+  scene,
+  icons = {},
+  coinIcon = '',
+  audio,
+  i18n,
+  onRestart,
+  onReload = () => {},
+  onSettings = () => {},
+  onPurchase = () => {},
+}) {
   const ref = (name) => document.querySelector(`[data-ref="${name}"]`);
   const t = (key, params) => i18n.t(key, params);
   const money = (value) => formatNumber(value, i18n.language, { rounding: 'floor' });
@@ -21,13 +43,16 @@ export function createApp({ rules, state, scene, icons = {}, coinIcon = '', audi
   flyLayer.style.zIndex = '4';
   document.querySelector('.game').appendChild(flyLayer);
 
-  let shownMoney = 0;
+  let shownMoney = state.money; // what the money pill shows while it counts up
   let lastGoalKey = '';
   let lastItemsKey = '';
   let knownItems = new Set();
   let lastFullNote = -Infinity;
   let lastLostNote = -Infinity;
   let lastWishKey = '';
+  let noticeKey = null;
+  let welcome = null; // time away and earnings in the open welcome dialog
+  let otherTab = false; // another tab saved; src/main.js stops this one
 
   // ---- Gauge, built from the theme's roast levels ----------------------------
 
@@ -73,6 +98,13 @@ export function createApp({ rules, state, scene, icons = {}, coinIcon = '', audi
     ref('restart-body').textContent = t('restart.body');
     ref('restart-cancel').textContent = t('restart.cancel');
     ref('restart-confirm').textContent = t('restart.confirm');
+    ref('welcome-title').textContent = t('offline.title');
+    ref('welcome-close').textContent = t('offline.continue');
+    ref('tab-title').textContent = t('tab.title');
+    ref('tab-body').textContent = t('tab.body');
+    ref('tab-continue').textContent = t('tab.continue');
+    if (noticeKey) ref('notice').textContent = t(noticeKey);
+    renderWelcome();
     lastGoalKey = '';
     lastItemsKey = '';
     lastWishKey = '';
@@ -451,6 +483,66 @@ export function createApp({ rules, state, scene, icons = {}, coinIcon = '', audi
     renderData();
   }
 
+  // ---- Welcome back, other tab, save notice ----------------------------------------
+
+  function describeDuration(seconds) {
+    const minutes = Math.max(1, Math.round(seconds / 60));
+    const days = Math.floor(minutes / 1440);
+    const hours = Math.floor((minutes % 1440) / 60);
+    if (days > 0) return t('duration.daysHours', { days, hours });
+    if (hours > 0) return t('duration.hoursMinutes', { hours, minutes: minutes % 60 });
+    return t('duration.minutes', { minutes });
+  }
+
+  function renderWelcome() {
+    if (!welcome) return;
+    const { offline } = rules.theme;
+    ref('welcome-body').textContent = t('offline.body', { duration: describeDuration(welcome.awaySeconds) });
+    const amountNode = ref('welcome-amount');
+    amountNode.innerHTML = coinIcon;
+    amountNode.append(t('goal.reward', { value: money(welcome.amount) }));
+    ref('welcome-note').textContent = t('offline.note', {
+      rate: formatPercent(offline.rate, i18n.language),
+      hours: formatNumber(offline.maxHours, i18n.language),
+    });
+  }
+
+  const welcomeDialog = ref('welcome-dialog');
+  welcomeDialog.addEventListener('close', () => {
+    welcome = null;
+  });
+
+  // Shows what the roastery earned while the player was away. Gaps while the
+  // dialog is open (e.g. another switch of tabs) add up.
+  function showWelcome({ awaySeconds, amount }) {
+    welcome ??= { awaySeconds: 0, amount: 0 };
+    welcome.awaySeconds += awaySeconds;
+    welcome.amount += amount;
+    renderWelcome();
+    if (!welcomeDialog.open && typeof welcomeDialog.showModal === 'function') welcomeDialog.showModal();
+  }
+
+  // Another tab saved: this one no longer saves or runs (src/main.js) and
+  // offers to continue with the newer save. Browsers may close a modal dialog
+  // after repeated Escape presses even if "cancel" is prevented, so it reopens.
+  const tabDialog = ref('tab-dialog');
+  tabDialog.addEventListener('cancel', (event) => event.preventDefault());
+  tabDialog.addEventListener('close', () => {
+    if (otherTab) tabDialog.showModal();
+  });
+
+  function showOtherTab() {
+    otherTab = true;
+    if (!tabDialog.open && typeof tabDialog.showModal === 'function') tabDialog.showModal();
+  }
+
+  function showNotice(kind) {
+    noticeKey = NOTICE_TEXTS[kind];
+    const node = ref('notice');
+    node.textContent = t(noticeKey);
+    node.hidden = false;
+  }
+
   // ---- Input -------------------------------------------------------------------
 
   function unlockAudio() {
@@ -478,14 +570,17 @@ export function createApp({ rules, state, scene, icons = {}, coinIcon = '', audi
     const action = button.dataset.action;
     if (action === 'stir') rules.tapPan(state);
     else if (action === 'eject') rules.eject(state, 'pan');
-    else if (action === 'buy') rules.buyItem(state, button.dataset.id);
-    else if (action === 'sound') {
+    else if (action === 'buy') {
+      if (rules.buyItem(state, button.dataset.id)) onPurchase(button.dataset.id);
+    } else if (action === 'sound') {
       audio.setMuted(!audio.isMuted());
       ref('sound').classList.toggle('muted', audio.isMuted());
+      onSettings({ muted: audio.isMuted() });
     } else if (action === 'language') {
       i18n.setLanguage(i18n.language === 'de' ? 'en' : 'de');
       applyTexts();
       render(0);
+      onSettings({ language: i18n.language });
     } else if (action === 'restart') {
       if (typeof restartDialog.showModal === 'function') restartDialog.showModal();
     } else if (action === 'restart-cancel') {
@@ -493,6 +588,10 @@ export function createApp({ rules, state, scene, icons = {}, coinIcon = '', audi
     } else if (action === 'restart-confirm') {
       restartDialog.close();
       onRestart();
+    } else if (action === 'welcome-close') {
+      welcomeDialog.close();
+    } else if (action === 'tab-continue') {
+      onReload();
     }
   });
 
@@ -516,10 +615,19 @@ export function createApp({ rules, state, scene, icons = {}, coinIcon = '', audi
     render(dt);
   }
 
+  // Plays a short gap on (e.g. some seconds in a hidden tab) without sounds
+  // and effects for what happened meanwhile.
+  function skip(seconds) {
+    rules.advance(state, seconds);
+    rules.drainEvents(state);
+    scene.update(state, 0);
+    render(0);
+  }
+
   ref('sound').classList.toggle('muted', audio.isMuted());
   applyTexts();
   scene.update(state, 0);
   render(0);
 
-  return { frame, applyTexts };
+  return { frame, skip, applyTexts, showWelcome, showOtherTab, showNotice };
 }

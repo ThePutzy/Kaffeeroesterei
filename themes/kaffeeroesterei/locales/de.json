@@ -62,5 +62,6 @@
   "banners.helper": "Deine Helferin ist da!",
   "banners.drum": "Ein Trommelröster!",
   "banners.cafe": "Das Café ist eröffnet!",
-  "banners.sign": "Das Schild hängt!"
+  "banners.sign": "Das Schild hängt!",
+  "offline.body": "Du warst {duration} weg. Deine Rösterei hat weitergearbeitet und eingenommen:"
 }

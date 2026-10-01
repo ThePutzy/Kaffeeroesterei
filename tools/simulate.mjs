@@ -1,5 +1,6 @@
 // Balance simulator: plays a theme with scripted players and reports when
-// they reach each milestone.
+// they reach each milestone, and what the automation earns at the end (the
+// base of the offline earnings, see src/core/offline.js).
 // Usage: node tools/simulate.mjs [theme]   (default: kaffeeroesterei)
 // Hard failures (invalid numbers, stalls, an invalid theme) exit with code 1.
 // Missed pacing targets from theme.json ("simulation.targets") are warnings.
@@ -91,7 +92,11 @@ export function simulate(theme) {
         errors.push(`${kind}, seed ${run.seed}: no progress for ${formatDuration(run.longestWait)} (allowed: ${formatDuration(maxWait)})`);
       }
     }
-    players[kind] = { times, longestWait: Math.max(...runs.map((run) => run.longestWait)) };
+    players[kind] = {
+      times,
+      longestWait: Math.max(...runs.map((run) => run.longestWait)),
+      automaticPerMinute: runs.map((run) => rules.automaticIncomePerMinute(run.s)),
+    };
     const targets = settings.targets?.[kind] ?? {};
     for (const [name, [min, max]] of Object.entries(targets)) {
       for (const [index, value] of (times[name] ?? []).entries()) {
@@ -101,7 +106,7 @@ export function simulate(theme) {
       }
     }
   }
-  return { seeds, seconds, milestones, players, errors, warnings };
+  return { seeds, seconds, milestones, players, errors, warnings, offline: theme.offline };
 }
 
 export function formatDuration(seconds) {
@@ -111,6 +116,11 @@ export function formatDuration(seconds) {
   const m = Math.floor((whole % 3600) / 60);
   const s = String(whole % 60).padStart(2, '0');
   return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`;
+}
+
+function numberSpread(values) {
+  const sorted = values.map(Math.round).sort((a, b) => a - b);
+  return sorted[0] === sorted.at(-1) ? String(sorted[0]) : `${sorted[0]}–${sorted.at(-1)}`;
 }
 
 function spread(values) {
@@ -129,6 +139,13 @@ export function formatReport(themeId, result) {
     lines.push([name.padEnd(width), ...PLAYERS.map((kind) => spread(result.players[kind].times[name]).padEnd(16))].join(''));
   }
   lines.push(['longest wait'.padEnd(width), ...PLAYERS.map((kind) => formatDuration(result.players[kind].longestWait).padEnd(16))].join(''));
+  // What the automation earns per minute without the player at the end of
+  // the run, and the offline earnings for the longest time that pays.
+  const { rate, maxHours } = result.offline;
+  const offline = (kind) => result.players[kind].automaticPerMinute.map((perMinute) => perMinute * 60 * maxHours * rate);
+  lines.push('');
+  lines.push(['auto per min'.padEnd(width), ...PLAYERS.map((kind) => numberSpread(result.players[kind].automaticPerMinute).padEnd(16))].join(''));
+  lines.push([`offline ${maxHours} h`.padEnd(width), ...PLAYERS.map((kind) => numberSpread(offline(kind)).padEnd(16))].join(''));
   return lines.join('\n');
 }
 

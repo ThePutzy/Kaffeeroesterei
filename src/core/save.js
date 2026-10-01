@@ -1,9 +1,10 @@
 // Saving and loading. Storage can be missing or throw on every access
 // (private windows, blocked site data, some iframes), so every access is
 // wrapped and the game keeps running without it. What a usable game state is
-// decides the caller (see parseSave); the new game wires this up in step 2
-// of docs/umsetzungsplan-neues-spiel.md.
-export const SAVE_VERSION = 1;
+// decides the caller (see parseSave).
+// Version 2 is the visible roastery; version-1 saves of the first game have
+// no migration and are set aside as unreadable.
+export const SAVE_VERSION = 2;
 
 // MIGRATIONS[n] turns a version-n save into a version-(n + 1) save.
 // When the save format changes: raise SAVE_VERSION and add a migration.
@@ -58,13 +59,14 @@ export function createStore(key, storage = browserStorage()) {
   };
 }
 
-export function serialize({ state, savedAt, settings = {} }) {
+export function serialize({ state = null, savedAt, settings = {} }) {
   return JSON.stringify({ version: SAVE_VERSION, savedAt, settings, state });
 }
 
 // Returns { state, savedAt, settings } or null if the text is not a usable save.
 // sanitize(state) is the game's own check of a saved state: it returns a
-// usable copy, or null if the state cannot be used.
+// usable copy, or null if the state cannot be used. A save with the state
+// null holds only the settings, e.g. after starting over.
 export function parseSave(text, sanitize, migrations = MIGRATIONS) {
   let data;
   try {
@@ -84,13 +86,15 @@ export function parseSave(text, sanitize, migrations = MIGRATIONS) {
   }
   if (data.version !== SAVE_VERSION) return null; // written by a newer game version
 
-  let state;
-  try {
-    state = sanitize(data.state);
-  } catch {
-    return null; // a check that fails on odd data must not stop the game
+  let state = null;
+  if (data.state !== null) {
+    try {
+      state = sanitize(data.state);
+    } catch {
+      return null; // a check that fails on odd data must not stop the game
+    }
+    if (!state) return null;
   }
-  if (!state) return null;
   return {
     state,
     savedAt: Number.isFinite(data.savedAt) ? data.savedAt : null,

@@ -19,7 +19,7 @@ Quellen:
 
 ## Stand im Spiel
 
-> **Seit Schritt 1 des Plans für das neue Spiel (01.10.2026):** Das Spiel speichert nichts und bietet keine Belohnungen an. Speicherstand und Offline-Ertrag kommen mit Schritt 2 zurück, Boost und Offline-Verdopplung mit Schritt 3. Wo diese Datei unten vom Boost, von „Kaufen für …“ oder vom Speicherstand spricht, beschreibt sie das Spiel davor.
+> **Stand Schritt 2 des Plans für das neue Spiel (01.10.2026):** Das Spiel speichert wieder im `localStorage` und zahlt einen Offline-Ertrag, bietet aber noch keine Belohnungen an. Boost und Offline-Verdopplung kommen mit Schritt 3. Wo diese Datei unten vom Boost oder von „Kaufen für …“ spricht, beschreibt sie das Spiel vor der Neuausrichtung. Das Datenmodul des SDK (siehe „Speichern“) nutzt das Spiel noch nicht; das gehört zur SDK-Anbindung für den Full Launch.
 
 - **Basic Launch:** Das Paket `dist/crazygames` nutzt den Platzhalter-Adapter `src/ads/crazygames.js`. Er lädt kein SDK, macht keine Anfragen und zeigt keine Werbung.
   - Laut CrazyGames ist Werbung im Basic Launch ohnehin abgeschaltet.

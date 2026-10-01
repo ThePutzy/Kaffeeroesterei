@@ -709,6 +709,42 @@ button {
   gap: 10px;
 }
 
+.confirm .note {
+  font-size: 13px;
+}
+
+.welcome-amount {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 30px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.confirm .welcome-amount {
+  margin: 0 0 12px;
+  color: var(--gold);
+}
+
+.welcome-amount svg {
+  flex: none;
+  width: 1.2em;
+  height: 1.2em;
+}
+
+/* Why progress is not saved; stays visible while it is true. */
+.notice {
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--ember);
+  border-radius: 12px;
+  background: rgb(224 102 79 / 0.14);
+  color: var(--ui-text);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
 .btn.secondary {
   background: var(--ui-card-hi);
   color: var(--ui-text);

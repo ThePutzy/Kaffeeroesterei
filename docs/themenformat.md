@@ -1,12 +1,12 @@
 # Themenformat und Balancing
 
-Das beschreibt, woraus ein Thema besteht, wie die Spielregeln (`src/core/model.js`) seine Zahlen nutzen und wie der Balance-Simulator (`tools/simulate.mjs`) das Tempo prüft. Stand: 01.10.2026, Schritt 1 des [Plans für das neue Spiel](umsetzungsplan-neues-spiel.md).
+Das beschreibt, woraus ein Thema besteht, wie die Spielregeln (`src/core/model.js`) seine Zahlen nutzen und wie der Balance-Simulator (`tools/simulate.mjs`) das Tempo prüft. Stand: 01.10.2026, Schritt 2 des [Plans für das neue Spiel](umsetzungsplan-neues-spiel.md).
 
 ## Was zu einem Thema gehört
 
 | Datei im Themenordner | Inhalt |
 | --- | --- |
-| `theme.json` | alle Zahlen: Röstgrade, Röster, Preise, Gäste, Sonderlieferung, Ausbau, Ziele, Simulator-Einstellungen |
+| `theme.json` | alle Zahlen: Röstgrade, Röster, Preise, Gäste, Sonderlieferung, Ausbau, Ziele, Offline-Ertrag, Simulator-Einstellungen |
 | `locales/en.json`, `locales/de.json` | die Texte des Themas. Sie überschreiben gleichnamige Kerntexte aus `src/core/locales/`. |
 | `scene.js` | die Szene als SVG-Code, dazu die Symbole für den Ausbau (`ITEM_ICONS`) und die Münze (`COIN_ICON`). Die Szene importiert nichts; das Spiel übergibt ihr den ersten Crack, die Plätze der Gäste und die Röstgrade mit ihren Farben. |
 | `theme.css` | die Farben als CSS-Variablen (`--ui-*`, `--gold`, `--teal` …). Das Stylesheet des Spiels (`src/styles.css`) benutzt nur diese Variablen. |
@@ -29,6 +29,7 @@ Die Mechanik selbst gehört zum Spielkern: Röstcharge, erster und zweiter Crack
 | `items[]` | Ausbau: `id`, `cost` (Preise der Reihe nach; nur Röster gibt es mehrmals), optional `reveal` (Bedingung, ab der man ihn sieht), `effects` |
 | `goals[]` | Ziele in Reihenfolge: `id`, `reward`, `done` (Bedingung) |
 | `goalPauseSeconds` | Pause zwischen zwei Zielen, in der „Geschafft!“ steht |
+| `offline` | Offline-Ertrag: `rate` (Anteil, über 0 bis 1), `maxHours` (Obergrenze), `minAwaySeconds` (kürzere Pausen laufen als normales Spiel nach, statt Offline-Ertrag zu zahlen), `warmupSeconds` und `sampleSeconds` (wie lange die Spielregeln eine Kopie des Spielstands ohne Spieler einschwingen lassen und dann messen, siehe unten) |
 | `simulation` | Einstellungen des Simulators, siehe unten |
 
 **Effekte des Ausbaus** (gelten, sobald man das Teil mindestens einmal besitzt):
@@ -48,6 +49,12 @@ Die Mechanik selbst gehört zum Spielkern: Röstcharge, erster und zweiter Crack
 - `{ "owned": "helper" }`: so viele Stück dieses Ausbaus.
 
 `validateTheme()` in `src/core/model.js` prüft das alles beim Start. Ein Fehler stoppt das Spiel mit einer Meldung, statt mit falschen Zahlen zu laufen.
+
+## Speicherstand und Offline-Ertrag
+
+- **Speicherstand:** `serializeState()` schreibt Zeit, Geld, Zufallszahl, Ausbau, Säcke im Wagen, Statistiken, Ziel und die nächste Sonderlieferung. `sanitizeState()` prüft einen geladenen Stand und gibt `null` zurück, wenn er nicht passt. Unbekannte Teile des Ausbaus und Röstgrade fallen weg; Mengen werden auf das begrenzt, was das Thema zulässt (Käufe je Teil, Plätze im Wagen, Zahl der Ziele). Gäste und laufende Chargen beginnen nach dem Laden neu.
+- **Offline-Ertrag:** `automaticIncomePerMinute()` spielt eine Kopie des Spielstands ohne Eingaben, erst `offline.warmupSeconds`, dann `offline.sampleSeconds`, und misst die Einnahmen der zweiten Phase. `src/core/offline.js` zahlt davon `offline.rate` für die Zeit weg, höchstens `offline.maxHours` Stunden.
+- **Spielstand bei Abwesenheit:** Er läuft in dieser Zeit nicht weiter; Gäste, Röster und Sonderlieferung stehen danach dort, wo sie waren.
 
 ## Texte
 
@@ -69,7 +76,10 @@ Die Mechanik selbst gehört zum Spielkern: Röstcharge, erster und zweiter Crack
 
 Beide kaufen, was das aktuelle Ziel verlangt, danach alles, was sie sich leisten können, und tippen auf die Sonderlieferung. Das sind Annahmen, keine Messungen echter Spieler.
 
-**Ausgabe:** je Spieler der früheste und späteste Zeitpunkt über alle Seeds für den ersten Verkauf, jeden Ausbau und das Ende der Ziele, dazu die längste Wartezeit ohne Fortschritt.
+**Ausgabe:**
+- je Spieler der früheste und späteste Zeitpunkt über alle Seeds für den ersten Verkauf, jeden Ausbau und das Ende der Ziele
+- die längste Wartezeit ohne Fortschritt
+- was die Automatik am Ende ohne Spieler pro Minute einbringt (`auto per min`) und was das als Offline-Ertrag für die volle Obergrenze ergibt (`offline 8 h`)
 
 **Harte Fehler** beenden mit Code 1:
 - Geld wird ungültig oder negativ.
@@ -82,3 +92,4 @@ Beide kaufen, was das aktuelle Ziel verlangt, danach alles, was sie sich leisten
 - aktiv: Café nach 4:11 bis 4:24
 - gemütlich: Café nach 5:01 bis 5:24
 - keine Warnungen
+- Automatik am Ende: 343 bis 361 pro Minute, also etwa 82.000 bis 87.000 für 8 Stunden offline. Das ist weit mehr als der teuerste Ausbau (400). Solange das Spiel nach dem Café endet, fällt das nicht ins Gewicht; Schritt 4 muss Preise und Offline-Ertrag zusammen einstellen.
