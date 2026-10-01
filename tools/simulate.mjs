@@ -12,6 +12,10 @@ import { ROOT } from './build.mjs';
 import { createRules } from '../src/core/model.js';
 
 const STEP_SECONDS = 0.1;
+// Idle: a window of this many seconds in which the cart stood full at least
+// half the time and no guest ever waited for a bag. Roasting by hand changes
+// nothing then; the player can only wait for the next upgrade.
+const IDLE_WINDOW_SECONDS = 15;
 
 // Scripted players. Assumptions, not player data:
 // - "active" stirs three times a second and ejects when the roast matches the
@@ -36,6 +40,9 @@ export function play(rules, kind, seed, until) {
   let sinceTap = 0;
   let lastProgress = 0;
   let longestWait = 0;
+  const idle = { steps: 0, full: 0, starved: 0, windows: 0, idleWindows: 0, run: 0, longest: 0 };
+  let sales = 0;
+  let lost = 0;
   while (s.t < until) {
     const pan = s.pan;
     const wish = rules.levelTarget(rules.queue(s)[0]?.order ?? rules.theme.roast.defaultLevel);
@@ -66,7 +73,11 @@ export function play(rules, kind, seed, until) {
     if (s.delivery?.phase === 'wait') rules.tapDelivery(s);
     rules.step(s, STEP_SECONDS);
     for (const event of rules.drainEvents(s)) {
-      if (event.type === 'sale') mark('firstSale');
+      if (event.type === 'lost') lost += 1;
+      if (event.type === 'sale') {
+        sales += 1;
+        mark('firstSale');
+      }
       if (event.type === 'goal') {
         lastProgress = s.t;
         if (event.id === rules.goals.at(-1).id) mark('allGoals');
@@ -82,8 +93,26 @@ export function play(rules, kind, seed, until) {
       rules.currentGoal(s) !== null || rules.visibleItems(s).some((item) => rules.itemPrice(s, item) !== undefined) || rules.moveOffered(s);
     if (open) longestWait = Math.max(longestWait, s.t - lastProgress);
     else lastProgress = s.t;
+    if (open) countIdle(rules, s, idle);
   }
-  return { s, times, longestWait, problems };
+  const idleShare = idle.windows > 0 ? idle.idleWindows / idle.windows : 0;
+  const lostShare = sales + lost > 0 ? lost / (sales + lost) : 0;
+  return { s, times, longestWait, longestIdle: idle.longest, idleShare, lostShare, problems };
+}
+
+function countIdle(rules, s, idle) {
+  idle.steps += 1;
+  if (s.stock.length >= rules.capacity(s)) idle.full += 1;
+  if (s.stock.length === 0 && rules.queue(s).some((guest) => guest.phase === 'queue')) idle.starved += 1;
+  if (idle.steps * STEP_SECONDS < IDLE_WINDOW_SECONDS - 1e-9) return;
+  const wasIdle = idle.full >= idle.steps / 2 && idle.starved === 0;
+  idle.windows += 1;
+  if (wasIdle) idle.idleWindows += 1;
+  idle.run = wasIdle ? idle.run + IDLE_WINDOW_SECONDS : 0;
+  idle.longest = Math.max(idle.longest, idle.run);
+  idle.steps = 0;
+  idle.full = 0;
+  idle.starved = 0;
 }
 
 // Runs every player with every seed; returns milestones per player plus
@@ -94,6 +123,7 @@ export function simulate(theme) {
   const seeds = settings.seeds ?? [1, 2, 3];
   const seconds = settings.seconds ?? 600;
   const maxWait = settings.maxSecondsWithoutProgress ?? 120;
+  const maxIdle = settings.maxIdleSeconds ?? Infinity;
   const run = ['firstSale', ...rules.items.map((item) => item.id), ...(rules.goals.length > 0 ? ['allGoals'] : [])];
   const milestones = rules.locations.length > 1 ? [...run, 'move', ...run.map((name) => `2:${name}`)] : run;
   const errors = [];
@@ -107,10 +137,16 @@ export function simulate(theme) {
       if (run.longestWait > maxWait) {
         errors.push(`${kind}, seed ${run.seed}: no progress for ${formatDuration(run.longestWait)} (allowed: ${formatDuration(maxWait)})`);
       }
+      if (run.longestIdle > maxIdle) {
+        warnings.push(`${kind}, seed ${run.seed}: idle for ${formatDuration(run.longestIdle)} in a row, target at most ${formatDuration(maxIdle)}`);
+      }
     }
     players[kind] = {
       times,
       longestWait: Math.max(...runs.map((run) => run.longestWait)),
+      longestIdle: Math.max(...runs.map((run) => run.longestIdle)),
+      idleShare: runs.reduce((sum, run) => sum + run.idleShare, 0) / runs.length,
+      lostShare: runs.reduce((sum, run) => sum + run.lostShare, 0) / runs.length,
       automaticPerMinute: runs.map((run) => rules.automaticIncomePerMinute(run.s)),
     };
     const targets = settings.targets?.[kind] ?? {};
@@ -155,6 +191,12 @@ export function formatReport(themeId, result) {
     lines.push([name.padEnd(width), ...PLAYERS.map((kind) => spread(result.players[kind].times[name]).padEnd(16))].join(''));
   }
   lines.push(['longest wait'.padEnd(width), ...PLAYERS.map((kind) => formatDuration(result.players[kind].longestWait).padEnd(16))].join(''));
+  // Idle (see IDLE_WINDOW_SECONDS): the longest stretch and the share of the
+  // time while something was still open; and the guests who turned away.
+  const percent = (value) => `${Math.round(value * 100)}%`;
+  lines.push(['longest idle'.padEnd(width), ...PLAYERS.map((kind) => formatDuration(result.players[kind].longestIdle).padEnd(16))].join(''));
+  lines.push(['idle share'.padEnd(width), ...PLAYERS.map((kind) => percent(result.players[kind].idleShare).padEnd(16))].join(''));
+  lines.push(['guests lost'.padEnd(width), ...PLAYERS.map((kind) => percent(result.players[kind].lostShare).padEnd(16))].join(''));
   // What the automation earns per minute without the player at the end of
   // the run, and the offline earnings for the longest time that pays.
   const { rate, maxHours } = result.offline;
