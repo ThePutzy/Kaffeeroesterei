@@ -3,13 +3,14 @@
 Browser-Idle-Spiel, Thema 1: Kaffeerösterei. Reines HTML, CSS und JavaScript (ES-Module), ohne Spiel-Engine und ohne Server. Das Ergebnis sind statische Dateien, ein Paket pro Ziel.
 
 - Projektkontext und Regeln: [CLAUDE.md](CLAUDE.md)
-- Umsetzungsplan: [docs/umsetzungsplan.md](docs/umsetzungsplan.md)
+- Umsetzungsplan: [docs/umsetzungsplan.md](docs/umsetzungsplan.md) (abgeschlossen)
+- Plan für das neue Spiel: [docs/umsetzungsplan-neues-spiel.md](docs/umsetzungsplan-neues-spiel.md)
 - Themenformat, Formeln und Balance-Simulator: [docs/themenformat.md](docs/themenformat.md)
 - Entwürfe für die eigene Seite (Anleitung, Über uns, Datenschutz, Impressum): [docs/entwuerfe/](docs/entwuerfe/README.md)
 
 Stand: Alle sechs Schritte des Umsetzungsplans sind umgesetzt. Das Spiel ist mit eigenen Texten (Englisch und Deutsch) und eigenen SVG-Grafiken spielbar, speichert im Browser und hat Belohnungen per Werbung, bisher nur simuliert. Titel, vorläufig: **Full Roast Ahead**; er ist nicht markenrechtlich geprüft ([Titelrecherche](docs/recherche/spieltitel.md)). Danach wurde das Spiel neu ausgerichtet, siehe [CLAUDE.md](CLAUDE.md). Entwürfe für Anleitung, Über uns, Datenschutz und Impressum liegen in `docs/entwuerfe/`.
 
-**Neue Richtung, noch zum Testen:** Ein getrennter Prototyp der ersten fünf Minuten liegt in [`prototype/`](prototype/README.md). Er zeigt eine sichtbare Rösterei und das Rösten als Kernmechanik. Er ist nicht Teil der Pakete unter `dist/`.
+**Neue Richtung:** Der Prototyp der ersten fünf Minuten in [`prototype/`](prototype/README.md) zeigt eine sichtbare Rösterei und das Rösten als Kernmechanik. Er ist die Grundlage des neuen Spiels, siehe [Plan für das neue Spiel](docs/umsetzungsplan-neues-spiel.md). Noch ist er nicht Teil der Pakete unter `dist/`.
 
 ## Voraussetzungen
 
