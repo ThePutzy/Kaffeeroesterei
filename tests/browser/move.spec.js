@@ -68,6 +68,26 @@ test('moving starts over at the harbor, where guests pay twice as much', async (
   await expect(html(page)).toHaveAttribute('data-location', 'harbor');
 });
 
+test('notes from the old roastery do not float over the new one', async ({ page }) => {
+  await seedSave(page, saveText({ state: FINISHED }));
+  await openAt(page, 'seed=1&debug');
+  await page.evaluate(() => {
+    const { pan } = window.roastery.state;
+    pan.phase = 'roasting';
+    pan.p = 0.39;
+  });
+  await page.clock.runFor(1000);
+  const notes = page.locator('[data-ref="fx"] .floater');
+  await expect(notes).toHaveText(['First crack!']);
+  // Held still, so that the note cannot end on its own before the move.
+  await page.evaluate(() => document.getAnimations().forEach((animation) => animation.pause()));
+  await moveCard(page).getByRole('button').click();
+  await page.getByRole('dialog', { name: 'Move to the harbor district?' }).getByRole('button', { name: 'Move' }).click();
+  await page.clock.runFor(100);
+  await expect(html(page)).toHaveAttribute('data-location', 'harbor');
+  await expect(notes).toHaveCount(0);
+});
+
 test.describe('in German at 800x450', () => {
   test.use({ locale: 'de-DE', viewport: { width: 800, height: 450 } });
 
