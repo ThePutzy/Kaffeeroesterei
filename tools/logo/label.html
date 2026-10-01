@@ -1,0 +1,47 @@
+<!doctype html>
+<!-- Logo A ("Roestetikett") from the design board "Full Roast Ahead – Design",
+     at a font size of 96 px. tools/logo/measure.mjs fills in the font. -->
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      @font-face {
+        font-family: 'Alfa Slab One';
+        src: url('font.ttf');
+      }
+      body {
+        margin: 0;
+      }
+      .card {
+        position: absolute;
+        left: 40px;
+        top: 40px;
+        display: inline-flex;
+        font-family: 'Alfa Slab One';
+        font-size: 96px;
+        line-height: 1;
+        padding: 0.3em 0.5em 0.34em 0.36em;
+        border-radius: 0.26em;
+      }
+      .mark {
+        display: inline-block;
+        width: 0;
+        height: 0;
+        vertical-align: baseline;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card" id="card">
+      <div style="display: flex; align-items: center; gap: 0.3em">
+        <svg id="emblem" viewBox="0 0 48 48" style="width: 1.5em; height: 1.5em; flex-shrink: 0"></svg>
+        <div style="display: flex; flex-direction: column; gap: 0.08em">
+          <span id="line1" style="letter-spacing: 0.02em; white-space: nowrap"><span class="t">FULL ROAST</span><span class="mark"></span></span>
+          <span id="line2" style="display: flex; align-items: center; gap: 0.3em; font-size: 0.6em; letter-spacing: 0.24em; white-space: nowrap"
+            ><span><span class="t">AHEAD</span><span class="mark"></span></span><svg id="chevrons" viewBox="0 0 60 24" style="width: 2.2em; height: 0.9em"></svg
+          ></span>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
