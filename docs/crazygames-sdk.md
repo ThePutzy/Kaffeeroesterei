@@ -1,6 +1,6 @@
 # CrazyGames: Anforderungen und SDK (Notizen)
 
-Direkt gelesen am 28.09.2026 auf docs.crazygames.com. Vor der Anbindung des SDK (Full Launch) erneut lesen; die Doku kann sich ändern.
+Direkt gelesen am 28.09.2026 auf docs.crazygames.com, die Anforderungen erneut am 01.10.2026 (Abschnitt „Nachgelesen am 01.10.2026“). Vor der Anbindung des SDK (Full Launch) erneut lesen; die Doku kann sich ändern.
 
 Quellen:
 - https://docs.crazygames.com/requirements/intro/
@@ -126,6 +126,43 @@ Diese Regeln gelten für die Neuausrichtung des Spiels (siehe `CLAUDE.md`). Alle
 - **Pause während einer Anzeige:** Seit Schritt 3 steht das ganze Spiel still, solange eine Anzeige läuft, auch die Automatik; die frühere offene Auslegung ist damit erledigt. Beim echten Adapter prüfen, dass `showRewarded()` erst nach `adFinished` oder `adError` endet, sonst läuft das Spiel zu früh weiter.
 - **Nicht geprüft:** Das Overlay ist ein modaler `<dialog>` und liegt damit über allem anderen auf der Seite. Zeichnet ein Werbe-SDK seine Anzeige im Spiel selbst, etwa mit hohem `z-index`, könnte das Overlay sie verdecken. Beim Bau eines echten Adapters prüfen und das Overlay notfalls ausblenden, sobald die Anzeige startet.
 - **Developer-Terms:** Die Fassung vom 18.08.2025 ist in `CLAUDE.md` zusammengefasst, ausführlicher in [docs/recherche/idle-miner-und-adventure-capitalist.md](recherche/idle-miner-und-adventure-capitalist.md). Das ist keine Rechtsberatung; vor der Zustimmung liest der Nutzer die Bedingungen selbst.
+
+## Nachgelesen am 01.10.2026
+
+Gelesen: Anforderungen (Einführung, Technik, Gameplay, Werbung, Qualität, Cover), „Basic Launch Metrics“ und die Seite zur CrazyGames-App. Neu oder bisher nicht erfasst:
+
+- **Vorschauvideos sind Pflicht** bei der Einreichung, zusätzlich zu den drei Covern:
+  - Querformat 1080p (16:9) und Hochformat 1080p (2:3)
+  - 15 bis 20 Sekunden, höchstens 50 MB, ohne Ton
+  - ohne schwarze Überblendungen, schwarze Balken, Standard-Mauszeiger, „Play Now“ oder App-Symbole
+  - Das erste Bild soll das Cover sein.
+  - Gehört zu Schritt 5, zusammen mit Logo und Covern.
+- **Cover:** 1920×1080, 800×1200 und 800×800.
+  - Kein Rahmen, kein Text außer dem Titel, keine Store-Logos.
+  - Ein reiner Screenshot wird nicht empfohlen.
+- **Basic Launch:** Er dauert mindestens 7 Tage und 500 Spiele, höchstens 21 Tage. CrazyGames schaut auf drei Werte:
+  - **Spielzeit:** Erfolgreiche Spiele haben oft 10 Minuten oder mehr im Schnitt.
+  - **Rückkehr am nächsten Tag:** oft 10 bis 15 %; empfohlen werden tägliche Anreize wie ein Login-Bonus oder tägliche Aufgaben.
+  - **Konversion:** Anteil der Spieler mit mindestens einer Minute Spielzeit, gute Spiele haben 80 % oder mehr. Dazu gehören Laden unter 10 Sekunden und weniger als 20 MB.
+  - **Stand:** Einen täglichen Anreiz hat das Spiel noch nicht. Das Paket ist rund 0,2 MB groß.
+- **CrazyGames-App (iOS und Android):** Spiele laufen dort im Vollbild bis an den Rand. Kerben und runde Ecken dürfen keine Bedienelemente verdecken; empfohlen ist `env(safe-area-inset-*)`. **Umgesetzt** (01.10.2026): Das ganze Spiel hält diesen Abstand ein; auf Geräten ohne solche Ränder ist er 0.
+- **Ton auf iOS:** iOS unterbricht den Audio-Kontext im Hintergrund, und nur ein Tipp oder Klick darf ihn wieder starten. **Umgesetzt** (01.10.2026):
+  - Der Ton startet jetzt auch bei `touchend` und `click`, nicht nur bei `pointerdown`; auf Touch-Geräten zählt `pointerdown` nicht als Freigabe.
+  - Ein unterbrochener Kontext (`interrupted`) wird wieder gestartet.
+- **Ton während einer Anzeige:** Erst stumm schalten, wenn die Anzeige wirklich läuft, nicht schon bei der Anfrage. Gibt es keine Anzeige, wäre stumm und laut ohne sichtbaren Grund verwirrend.
+  - Der simulierte Adapter kennt diesen Unterschied nicht.
+  - Beim echten Adapter das Stummschalten an `adStarted` hängen; das Overlay und die Pause bleiben ab der Anfrage.
+- **Tasten:** Escape beendet den Vollbildmodus. Das Spiel nutzt Escape nur, um Dialoge zu schließen; gespielt wird mit Leertaste, E und Enter.
+- **Unverändert gegenüber dem 28.09.2026** und erfüllt:
+  - Lesbarkeit in den iframe-Größen
+  - Englisch
+  - kein eigener Vollbild-Knopf
+  - keine Querverweise
+  - PEGI 12
+  - gleiche Physik bei jeder Bildwiederholrate
+  - Textauswahl auf dem Handy abgeschaltet (`user-select: none`)
+  - nur relative Pfade
+  - Größe weit unter den Grenzen
 
 ## Weitere Anforderungen, nachgelesen am 28.09.2026 (Auszug)
 
