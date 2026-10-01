@@ -98,6 +98,8 @@
         <section class="stats">
           <h3 data-ref="stats-title"></h3>
           <dl>
+            <dt data-ref="stats-location-label"></dt>
+            <dd data-ref="stats-location"></dd>
             <dt data-ref="stats-cart-label"></dt>
             <dd data-ref="stats-cart"></dd>
             <dt data-ref="stats-guests-label"></dt>
@@ -122,6 +124,15 @@
         <div class="confirm-actions">
           <button type="button" class="btn secondary" data-action="restart-cancel" data-ref="restart-cancel"></button>
           <button type="button" class="btn" data-action="restart-confirm" data-ref="restart-confirm"></button>
+        </div>
+      </dialog>
+
+      <dialog class="confirm" data-ref="move-dialog" aria-labelledby="move-title">
+        <h2 id="move-title" data-ref="move-title"></h2>
+        <p data-ref="move-body"></p>
+        <div class="confirm-actions">
+          <button type="button" class="btn secondary" data-action="move-cancel" data-ref="move-cancel"></button>
+          <button type="button" class="btn" data-action="move-confirm" data-ref="move-confirm"></button>
         </div>
       </dialog>
 

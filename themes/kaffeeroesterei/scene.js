@@ -87,6 +87,8 @@ const DEFS = `
 <linearGradient id="g-kraft" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DDBA88"/><stop offset="1" stop-color="#BF955F"/></linearGradient>
 <linearGradient id="g-cafe-window" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE7B8"/><stop offset="1" stop-color="#F2B46B"/></linearGradient>
 <linearGradient id="g-shaft" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF8E6" stop-opacity=".35"/><stop offset="1" stop-color="#FFF8E6" stop-opacity="0"/></linearGradient>
+<linearGradient id="g-sky-harbor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4E4F7C"/><stop offset=".5" stop-color="#C77A7A"/><stop offset="1" stop-color="#FFC98E"/></linearGradient>
+<radialGradient id="g-sun-harbor"><stop offset="0" stop-color="#FFE3A0"/><stop offset=".4" stop-color="#FFC77E" stop-opacity=".75"/><stop offset="1" stop-color="#FFB46E" stop-opacity="0"/></radialGradient>
 `;
 
 function windowsGrid(x0, y0, cols, rows, w, h, dx, dy, fill, frame) {
@@ -127,6 +129,56 @@ const STREET = `
 <rect x="600" y="660" width="1300" height="9" fill="#BBB0A2"/>
 <rect x="600" y="669" width="1300" height="200" fill="#62666E"/>
 <path d="M660 690H720M780 690H840M900 690H960M1020 690H1080" stroke="#E8E2D6" stroke-width="5" stroke-linecap="round" opacity=".7"/>
+`;
+
+// Arched warehouse windows; every third one is lit in the evening.
+function archWindows(x0, y0, cols, rows, w, h, dx, dy, frame) {
+  let out = '';
+  for (let r = 0; r < rows; r += 1) {
+    for (let c = 0; c < cols; c += 1) {
+      const x = x0 + c * dx;
+      const y = y0 + r * dy;
+      const glass = (r * cols + c + x0) % 3 === 0 ? '#FFD98A' : '#4F4560';
+      out += `<path d="M${x} ${y + h}V${y + w / 2}A${w / 2} ${w / 2} 0 0 1 ${x + w} ${y + w / 2}V${y + h}Z" fill="${glass}" stroke="${frame}" stroke-width="4"/>`;
+    }
+  }
+  return out;
+}
+
+// The second location: brick warehouses at the harbor in the evening, a crane
+// behind them. It covers the sky and houses of the street; pavement and road
+// stay.
+const HARBOR = `
+<rect x="600" y="-600" width="1300" height="1210" fill="url(#g-sky-harbor)"/>
+<circle cx="1010" cy="300" r="170" fill="url(#g-sun-harbor)"/>
+<g fill="none" stroke="#5E5873" stroke-linejoin="round" opacity=".85">
+  <path d="M1210 620V150M1250 620V150" stroke-width="7"/>
+  <path d="M1210 600L1250 560L1210 520L1250 480L1210 440L1250 400L1210 360L1250 320L1210 280L1250 240L1210 200L1250 160" stroke-width="3"/>
+  <path d="M1040 150H1400M1040 150L1230 100L1400 150M1230 100V150" stroke-width="6"/>
+  <path d="M1080 150V300" stroke-width="2"/>
+</g>
+<rect x="1066" y="300" width="28" height="18" rx="2" fill="#5E5873" opacity=".85"/>
+<g data-ref="harbor-buildings">
+  <path d="M650 620V250H668V232H686V214H704V196H736V214H754V232H772V250H790V620Z" fill="#B4553E"/>
+  ${archWindows(668, 270, 3, 4, 26, 44, 40, 80, '#EBD7B5')}
+  <rect x="786" y="168" width="148" height="452" fill="#93432F"/>
+  <rect x="781" y="160" width="158" height="12" rx="2" fill="#E3CDA9"/>
+  <path d="M860 150V128H900" stroke="#3A2A2A" stroke-width="6" fill="none"/>
+  <path d="M896 128V176" stroke="#3A2A2A" stroke-width="2"/>
+  ${archWindows(804, 196, 3, 5, 26, 44, 42, 80, '#E3CDA9')}
+  <path d="M934 620V240L1012 196L1090 240V620Z" fill="#C06A4B"/>
+  <circle cx="1012" cy="236" r="14" fill="#FFD98A" stroke="#EBD7B5" stroke-width="4"/>
+  ${archWindows(952, 280, 3, 4, 28, 46, 44, 80, '#EBD7B5')}
+  <rect x="1090" y="214" width="260" height="406" fill="#8C3F31"/>
+  <rect x="1085" y="206" width="270" height="12" rx="2" fill="#E3CDA9"/>
+  ${archWindows(1110, 240, 5, 4, 28, 46, 46, 82, '#E3CDA9')}
+</g>
+<path d="M600 340Q700 372 790 344Q862 368 934 348Q1010 374 1090 350Q1200 376 1330 352" stroke="#3A2A2A" stroke-width="1.5" fill="none"/>
+<g fill="#FFE29A">
+  <circle cx="640" cy="352" r="4"/><circle cx="690" cy="360" r="4"/><circle cx="740" cy="356" r="4"/><circle cx="830" cy="356" r="4"/>
+  <circle cx="880" cy="360" r="4"/><circle cx="975" cy="360" r="4"/><circle cx="1030" cy="362" r="4"/><circle cx="1140" cy="364" r="4"/>
+  <circle cx="1200" cy="368" r="4"/><circle cx="1270" cy="362" r="4"/>
+</g>
 `;
 
 const CAFE = `
@@ -492,6 +544,7 @@ export function createScene(svg, { firstCrack, slots, levels }) {
   el('defs', {}, svg).innerHTML = DEFS;
 
   group(svg, STREET);
+  const harbor = group(svg, HARBOR, { class: 'harbor hidden' });
   const cafe = group(svg, CAFE, { class: 'cafe hidden' });
   group(svg, ROOM);
   group(svg, WALL);
@@ -527,6 +580,7 @@ export function createScene(svg, { firstCrack, slots, levels }) {
   const fxLayer = group(svg, '', { class: 'fx' });
 
   const buildings = svg.querySelector('[data-ref="buildings"]');
+  const harborBuildings = svg.querySelector('[data-ref="harbor-buildings"]');
   const panBeans = [...pan.querySelectorAll('.bean')];
   const sieveBeans = sieve.querySelector('[data-ref="sieve-beans"]');
   const guestNodes = new Map();
@@ -701,6 +755,9 @@ export function createScene(svg, { firstCrack, slots, levels }) {
 
     cafe.classList.toggle('hidden', !(s.owned.cafe > 0));
     buildings.classList.toggle('hidden', s.owned.cafe > 0);
+    // Every location after the first one is at the harbor.
+    harbor.classList.toggle('hidden', !(s.location > 0));
+    harborBuildings.classList.toggle('hidden', s.owned.cafe > 0);
     sign.classList.toggle('hidden', !(s.owned.sign > 0));
     renderStock(s.stock);
     syncGuests(s.customers, dt);
@@ -790,6 +847,12 @@ export function createScene(svg, { firstCrack, slots, levels }) {
     hits: { pan: panHit, bike: bikeHit },
   };
 }
+
+// Icons for the next locations in the upgrade list, keyed by location id.
+export const LOCATION_ICONS = {
+  harbor:
+    '<svg viewBox="0 0 40 40"><path d="M5 36V15L20 6L35 15V36Z" fill="#B4553E"/><path d="M3 16L20 5L37 16" stroke="#8C3F31" stroke-width="3" fill="none" stroke-linejoin="round"/><path d="M14 36V25A6 6 0 0 1 26 25V36Z" fill="#FFD98A" stroke="#EBD7B5" stroke-width="2"/><circle cx="20" cy="15" r="3" fill="#FFD98A" stroke="#EBD7B5" stroke-width="1.5"/></svg>',
+};
 
 // Icons for the upgrade list, keyed by item id, and the currency.
 export const ITEM_ICONS = {

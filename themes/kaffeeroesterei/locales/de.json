@@ -63,5 +63,14 @@
   "banners.drum": "Ein Trommelröster!",
   "banners.cafe": "Das Café ist eröffnet!",
   "banners.sign": "Das Schild hängt!",
-  "offline.body": "Du warst {duration} weg. Deine Rösterei hat weitergearbeitet und eingenommen:"
+  "offline.body": "Du warst {duration} weg. Deine Rösterei hat weitergearbeitet und eingenommen:",
+  "stats.location": "Standort",
+  "locations.oldTown.name": "Altstadt",
+  "locations.harbor.name": "Hafenviertel",
+  "locations.harbor.move": "Umzug ins Hafenviertel",
+  "locations.harbor.effect": "Gäste zahlen dort das Doppelte",
+  "locations.harbor.moveTitle": "Ins Hafenviertel umziehen?",
+  "locations.harbor.moveBody": "Du fängst dort neu an: Geld, Ausbau und Säcke bleiben hier. Dafür zahlen die Gäste im Hafenviertel für immer das Doppelte.",
+  "locations.harbor.banner": "Willkommen im Hafenviertel!",
+  "locations.harbor.goal": "Spar für den Umzug ins Hafenviertel."
 }

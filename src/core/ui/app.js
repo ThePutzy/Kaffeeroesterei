@@ -42,6 +42,7 @@ export function createApp({
   state,
   scene,
   icons = {},
+  locationIcons = {},
   coinIcon = '',
   audio,
   i18n,
@@ -115,6 +116,7 @@ export function createApp({
     ref('stats-guests-label').textContent = t('stats.guests');
     ref('stats-price-label').textContent = t('stats.price');
     ref('stats-lost-label').textContent = t('stats.lost');
+    ref('stats-location-label').textContent = t('stats.location');
     ref('language').textContent = t('settings.languageShort');
     ref('language').setAttribute('aria-label', t('settings.language'));
     ref('sound').setAttribute('aria-label', t('settings.sound'));
@@ -129,6 +131,9 @@ export function createApp({
     ref('tab-title').textContent = t('tab.title');
     ref('tab-body').textContent = t('tab.body');
     ref('tab-continue').textContent = t('tab.continue');
+    ref('move-cancel').textContent = t('move.cancel');
+    ref('move-confirm').textContent = t('move.confirm');
+    renderMoveDialog();
     if (noticeKey) ref('notice').textContent = t(noticeKey);
     renderWelcome();
     boostKey = '';
@@ -245,6 +250,13 @@ export function createApp({
         flyCoins({ x: box.right - 30, y: box.top + box.height / 2 }, 3);
         break;
       }
+      case 'move':
+        audio.play('goal');
+        banner(t(`locations.${event.location}.banner`));
+        knownItems = new Set();
+        lastItemsKey = '';
+        lastGoalKey = '';
+        break;
       case 'boost':
         audio.play('purchase');
         banner(t('boost.started', { minutes: formatNumber(rules.theme.boost.seconds / 60, i18n.language) }));
@@ -326,13 +338,15 @@ export function createApp({
 
   function renderGoal() {
     const goal = rules.currentGoal(state);
-    const key = goal ? `${goal.id}:${goal.done}:${i18n.language}` : `end:${i18n.language}`;
+    const key = goal ? `${goal.id}:${goal.done}:${i18n.language}` : `end:${state.location}:${rules.moveOffered(state)}:${i18n.language}`;
     if (key === lastGoalKey) return;
     lastGoalKey = key;
     const node = ref('goal');
     node.classList.toggle('done', Boolean(goal?.done));
     node.classList.toggle('all-done', !goal);
-    let text = t('goal.allDone');
+    // After the last goal: save up for the move, or more is coming soon.
+    const next = rules.moveOffered(state) ? rules.nextLocation(state) : null;
+    let text = next ? t(`locations.${next.id}.goal`) : t('goal.allDone');
     if (goal) text = goal.done ? `${t('goal.done')} ${t(`goals.${goal.id}`)}` : t(`goals.${goal.id}`);
     ref('goal-text').textContent = text;
     ref('goal-reward').textContent = goal ? t('goal.reward', { value: money(goal.reward) }) : '';
@@ -451,10 +465,53 @@ export function createApp({
     return card;
   }
 
+  // The move to the next location, at the end of the upgrades: locked until
+  // its condition is met, then with its cost like an upgrade.
+  function moveNode(next, locked) {
+    const card = document.createElement('div');
+    card.className = locked ? 'item move locked' : 'item move';
+    card.dataset.item = 'move';
+    const icon = document.createElement('div');
+    icon.className = 'item-icon';
+    icon.innerHTML = locationIcons[next.id] ?? '';
+    const info = document.createElement('div');
+    const name = document.createElement('div');
+    name.className = 'item-name';
+    name.textContent = t(`locations.${next.id}.move`);
+    info.append(name);
+    if (locked) {
+      const note = document.createElement('div');
+      note.className = 'lock-note';
+      note.innerHTML = LOCK_SVG;
+      const after = next.reveal?.owned;
+      note.append(after ? t('shop.lockedAfter', { name: t(`items.${after}.name`) }) : t('shop.lockedFirst'));
+      info.append(note);
+      card.append(icon, info);
+      return card;
+    }
+    const effect = document.createElement('div');
+    effect.className = 'item-effect';
+    effect.textContent = t(`locations.${next.id}.effect`);
+    info.append(effect);
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'item-buy';
+    button.dataset.action = 'move';
+    const cost = rules.moveCost(state);
+    button.innerHTML = `${coinIcon}<span></span><span class="progress"></span>`;
+    button.querySelector('span').textContent = amount(cost);
+    button.setAttribute('aria-label', t('move.label', { name: t(`locations.${next.id}.move`), price: amount(cost) }));
+    card.append(icon, info, button);
+    return card;
+  }
+
   function renderItems() {
     const visible = rules.visibleItems(state).filter((item) => rules.itemPrice(state, item) !== undefined);
     const locked = rules.lockedItems(state).slice(0, 2);
-    const key = `${visible.map((item) => `${item.id}:${rules.itemPrice(state, item)}`).join('|')}|${locked.map((item) => item.id)}|${i18n.language}`;
+    const next = rules.nextLocation(state);
+    const offered = rules.moveOffered(state);
+    const showMove = next !== null && (offered || locked.length < 2);
+    const key = `${visible.map((item) => `${item.id}:${rules.itemPrice(state, item)}`).join('|')}|${locked.map((item) => item.id)}|${state.location}:${showMove}:${offered}|${i18n.language}`;
     const list = ref('items');
     if (key !== lastItemsKey) {
       lastItemsKey = key;
@@ -465,6 +522,7 @@ export function createApp({
       });
       knownItems = new Set(visible.map((item) => item.id));
       nodes.push(...locked.map(lockedNode));
+      if (showMove) nodes.push(moveNode(next, !offered));
       if (nodes.length === 0) {
         const done = document.createElement('div');
         done.className = 'teaser';
@@ -475,7 +533,7 @@ export function createApp({
     }
     for (const card of list.querySelectorAll('.item:not(.locked)')) {
       const item = rules.items.find((candidate) => candidate.id === card.dataset.item);
-      const price = rules.itemPrice(state, item);
+      const price = item ? rules.itemPrice(state, item) : rules.moveCost(state);
       const affordable = price !== undefined && state.money >= price;
       card.classList.toggle('affordable', affordable);
       const buy = card.querySelector('.item-buy');
@@ -485,6 +543,7 @@ export function createApp({
   }
 
   function renderStats() {
+    ref('stats-location').textContent = t(`locations.${rules.locationOf(state).id}.name`);
     const cart = ref('stats-cart');
     cart.textContent = t('stats.cartValue', { count: state.stock.length, capacity: rules.capacity(state) });
     cart.classList.toggle('warn', state.stock.length >= rules.capacity(state));
@@ -509,6 +568,12 @@ export function createApp({
     if (state.delivery?.phase === 'wait' && !state.delivery.caught) {
       const point = sceneClient(scene.points.bike(state.delivery.x));
       placeHand(point.x, point.y);
+      return;
+    }
+    const moveButton = document.querySelector('.item-buy[data-action="move"]');
+    if (!goal && moveButton && !moveButton.disabled) {
+      const box = moveButton.getBoundingClientRect();
+      placeHand(box.left + box.width / 2, box.top + 6);
       return;
     }
     if (!goal || goal.done) {
@@ -546,6 +611,7 @@ export function createApp({
   function renderData() {
     const root = document.documentElement.dataset;
     root.goal = rules.currentGoal(state)?.id ?? 'end';
+    root.location = rules.locationOf(state).id;
     root.pan = state.pan.phase;
     root.money = String(Math.floor(state.money));
   }
@@ -696,6 +762,15 @@ export function createApp({
     onPurchase();
   }
 
+  // Asks before the move: what stays behind and what the new location gives.
+  const moveDialog = ref('move-dialog');
+  function renderMoveDialog() {
+    const next = rules.nextLocation(state);
+    if (!next) return;
+    ref('move-title').textContent = t(`locations.${next.id}.moveTitle`);
+    ref('move-body').textContent = t(`locations.${next.id}.moveBody`);
+  }
+
   function showNotice(kind) {
     noticeKey = NOTICE_TEXTS[kind];
     const node = ref('notice');
@@ -750,6 +825,14 @@ export function createApp({
       onRestart();
     } else if (action === 'welcome-close') {
       welcomeDialog.close();
+    } else if (action === 'move') {
+      renderMoveDialog();
+      if (typeof moveDialog.showModal === 'function') moveDialog.showModal();
+    } else if (action === 'move-cancel') {
+      moveDialog.close();
+    } else if (action === 'move-confirm') {
+      moveDialog.close();
+      if (rules.move(state)) onPurchase();
     } else if (action === 'boost-ad') {
       watchBoostAd();
     } else if (action === 'boost-buy') {

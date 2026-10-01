@@ -100,6 +100,7 @@ export function validateTheme(theme) {
     check(typeof goal?.id === 'string' && goal.id !== '', 'every goal needs an id');
     check(isCount(goal?.reward), `goal "${goal?.id}": reward must be 0 or more`);
     condition(goal?.done, `goal "${goal?.id}".done`);
+    if (goal?.tutorial !== undefined) check(typeof goal.tutorial === 'boolean', `goal "${goal?.id}": tutorial must be true or false`);
   }
   check(isCount(theme?.goalPauseSeconds), 'goalPauseSeconds must be 0 or more');
 
@@ -117,6 +118,19 @@ export function validateTheme(theme) {
   check(isPositive(boost.priceSeconds), 'boost.priceSeconds must be above 0');
   check(Number.isInteger(boost.adsPerDay) && boost.adsPerDay >= 0, 'boost.adsPerDay must be a whole number of 0 or more');
   if (boost.reveal !== undefined) condition(boost.reveal, 'boost.reveal');
+
+  const locations = Array.isArray(theme?.locations) ? theme.locations : [];
+  check(locations.length > 0, 'locations must list at least the starting location');
+  check(new Set(locations.map((location) => location?.id)).size === locations.length, 'location ids must be unique');
+  for (const [index, location] of locations.entries()) {
+    const name = `location "${location?.id}"`;
+    check(typeof location?.id === 'string' && location.id !== '', 'every location needs an id');
+    for (const key of ['priceFactor', 'arrivalFactor']) {
+      if (location?.[key] !== undefined) check(isPositive(location[key]), `${name}: ${key} must be above 0`);
+    }
+    if (index > 0) check(isPositive(location?.moveCost), `${name}: moveCost must be above 0`);
+    if (location?.reveal !== undefined) condition(location.reveal, `${name}.reveal`);
+  }
   return problems;
 }
 
@@ -138,6 +152,7 @@ export function createRules(theme) {
   const SLOTS = guests.slots;
   const ITEMS = theme.items;
   const GOALS = theme.goals;
+  const LOCATIONS = theme.locations;
 
   function levelAt(p) {
     if (p < FIRST_CRACK) return null;
@@ -219,6 +234,7 @@ export function createRules(theme) {
       sales: [],
       stockFullFor: 0,
       stats: { ...Object.fromEntries(STATS.map((stat) => [stat, 0])), lostAt: -Infinity },
+      location: 0, // index in theme.locations
       boost: 0, // seconds left of a running boost
       adBoosts: { day: null, count: 0 }, // boosts by ad on that calendar day
       events: [],
@@ -245,8 +261,11 @@ export function createRules(theme) {
     return largest(s, 'capacity', sales.capacity);
   }
 
+  // The location and the boost multiply the rounded price, so "twice as much"
+  // is exactly twice as much.
   function price(s, matched) {
-    return Math.round(sales.basePrice * product(s, 'priceFactor') * (matched ? sales.matchFactor : 1)) * boostFactor(s);
+    const local = Math.round(sales.basePrice * product(s, 'priceFactor') * (matched ? sales.matchFactor : 1));
+    return Math.round(local * (locationOf(s).priceFactor ?? 1)) * boostFactor(s);
   }
 
   function incomePerMinute(s) {
@@ -457,7 +476,7 @@ export function createRules(theme) {
   }
 
   function arrivalInterval(s) {
-    return guests.arrivalSeconds * product(s, 'arrivalFactor');
+    return guests.arrivalSeconds * product(s, 'arrivalFactor') * (locationOf(s).arrivalFactor ?? 1);
   }
 
   function arrive(s) {
@@ -618,12 +637,12 @@ export function createRules(theme) {
   }
 
   // What the boost costs: boost.priceSeconds of the automation's income. It
-  // depends only on what the player owns, measured on a fresh copy, so it
-  // stays the same until the next purchase.
+  // depends only on the location and what the player owns, measured on a
+  // fresh copy, so it stays the same until the next purchase or move.
   function boostPrice(s) {
-    const key = ITEMS.map((item) => itemCount(s, item.id)).join(',');
+    const key = `${s.location}:${ITEMS.map((item) => itemCount(s, item.id)).join(',')}`;
     if (!boostPrices.has(key)) {
-      const sample = sanitizeState({ t: 0, money: 0, rng: 1, owned: s.owned });
+      const sample = sanitizeState({ t: 0, money: 0, rng: 1, owned: s.owned, location: s.location });
       boostPrices.set(key, Math.ceil((automaticIncomePerMinute(sample) * BOOST.priceSeconds) / 60));
     }
     return boostPrices.get(key);
@@ -647,6 +666,67 @@ export function createRules(theme) {
     s.boost = boost;
   }
 
+  // ---- Locations (prestige) ----------------------------------------------------------
+  //
+  // The roastery starts at locations[0]. Moving to the next location costs its
+  // moveCost and starts the run over: money, purchases, cart, guests, goals and
+  // the run's stats reset. What stays for good is the new location with its
+  // priceFactor and arrivalFactor; a running boost and the day's ads stay too.
+
+  function locationOf(s) {
+    return LOCATIONS[s.location];
+  }
+
+  function nextLocation(s) {
+    return LOCATIONS[s.location + 1] ?? null;
+  }
+
+  function moveOffered(s) {
+    const next = nextLocation(s);
+    return next !== null && (next.reveal === undefined || meets(s, next.reveal));
+  }
+
+  function moveCost(s) {
+    return nextLocation(s)?.moveCost;
+  }
+
+  function canMove(s) {
+    return moveOffered(s) && s.money >= moveCost(s);
+  }
+
+  // After a move the tutorial goals are skipped; the player knows them.
+  function firstGoal(location) {
+    if (location === 0) return 0;
+    const index = GOALS.findIndex((goal) => !goal.tutorial);
+    return index < 0 ? GOALS.length : index;
+  }
+
+  // Changes s in place, so the view keeps its reference.
+  function move(s) {
+    if (!canMove(s)) return false;
+    const kept = {
+      t: s.t,
+      rng: s.rng,
+      nextId: s.nextId,
+      location: s.location + 1,
+      boost: s.boost,
+      adBoosts: s.adBoosts,
+      events: s.events,
+    };
+    const fresh = createState(1);
+    for (const key of Object.keys(s)) delete s[key];
+    Object.assign(s, fresh, kept);
+    // Guest ids keep counting, so the scene never mixes up old and new guests.
+    for (const guest of s.customers) {
+      guest.id = s.nextId;
+      s.nextId += 1;
+    }
+    s.nextDeliveryAt = s.t + delivery.firstAt;
+    s.goal.index = firstGoal(s.location);
+    emit(s, 'move', { location: locationOf(s).id });
+    return true;
+  }
+
   // ---- Saving --------------------------------------------------------------------
 
   // What a save keeps: money, purchases, progress and the cart. Batches in
@@ -664,6 +744,7 @@ export function createRules(theme) {
       nextDeliveryAt: s.nextDeliveryAt,
       boost: s.boost,
       adBoosts: { ...s.adBoosts },
+      location: s.location,
     };
   }
 
@@ -695,6 +776,10 @@ export function createRules(theme) {
     if (!Number.isInteger(goal) || goal < 0) return null;
     s.goal.index = Math.min(goal, GOALS.length);
     s.nextDeliveryAt = Number.isFinite(saved.nextDeliveryAt) ? Math.max(saved.nextDeliveryAt, s.t + guests.firstArrival) : s.t + delivery.firstAt;
+    // Saves from before the locations have no location: the first one.
+    const location = saved.location ?? 0;
+    if (!Number.isInteger(location) || location < 0) return null;
+    s.location = Math.min(location, LOCATIONS.length - 1);
     // Saves from before the boost have neither field.
     s.boost = isCount(saved.boost) ? Math.min(saved.boost, BOOST.seconds) : 0;
     const ads = saved.adBoosts;
@@ -767,5 +852,12 @@ export function createRules(theme) {
     boostPrice,
     buyBoost,
     advanceUnseen,
+    locations: LOCATIONS,
+    locationOf,
+    nextLocation,
+    moveOffered,
+    moveCost,
+    canMove,
+    move,
   };
 }

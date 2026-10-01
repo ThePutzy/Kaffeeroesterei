@@ -109,6 +109,7 @@ async function start() {
     state,
     scene,
     icons: sceneModule.ITEM_ICONS,
+    locationIcons: sceneModule.LOCATION_ICONS,
     coinIcon: sceneModule.COIN_ICON,
     audio: createAudio({ muted: settings.muted === true }),
     i18n,

@@ -103,6 +103,10 @@ Branch `claude/neues-spiel-3-werbung`
 
 Branch `claude/neues-spiel-4-standorte`
 
+Aufgeteilt in zwei Pull Requests, weil einer zu groß würde (01.10.2026):
+- **4a:** der Umzug selbst. Standorte in `theme.json`, Umzug mit Bonus und Zurücksetzen, das Hafenviertel als zweiter Standort, Simulator mit zweitem Durchgang. Der Umzug kommt vorerst kurz nach dem Café.
+- **4b:** Inhalt zwischen Café und Umzug, Ziele bis dahin und das Balancing auf die Zielwerte unten.
+
 - **Inhalt:** ab Minute fünf bis zum Umzug an einen neuen Standort, mit Zielen bis dahin.
 - **Prestige:** ein Bonus, der den nächsten Durchgang spürbar schneller macht.
 - **Balancing:** mit dem Simulator.

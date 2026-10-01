@@ -46,5 +46,8 @@
   "boost.adsUsedUp": "Werbung für heute aufgebraucht, morgen wieder",
   "boost.started": "{minutes} Minuten doppelte Einnahmen!",
   "ads.playing": "Die Werbung läuft …",
-  "ads.unavailable": "Gerade ist keine Werbung verfügbar. Versuch es später noch einmal."
+  "ads.unavailable": "Gerade ist keine Werbung verfügbar. Versuch es später noch einmal.",
+  "move.confirm": "Umziehen",
+  "move.cancel": "Abbrechen",
+  "move.label": "{name}: ab {price}"
 }

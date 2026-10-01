@@ -48,9 +48,9 @@
     { "id": "cafe", "cost": [320], "reveal": { "owned": "profile" }, "effects": { "capacity": 12, "priceFactor": 1.5, "arrivalFactor": 0.62 } }
   ],
   "goals": [
-    { "id": "stir", "reward": 2, "done": { "stat": "taps" } },
-    { "id": "eject", "reward": 3, "done": { "stat": "manualEjects" } },
-    { "id": "sell", "reward": 3, "done": { "stat": "sales" } },
+    { "id": "stir", "reward": 2, "done": { "stat": "taps" }, "tutorial": true },
+    { "id": "eject", "reward": 3, "done": { "stat": "manualEjects" }, "tutorial": true },
+    { "id": "sell", "reward": 3, "done": { "stat": "sales" }, "tutorial": true },
     { "id": "biggerPan", "reward": 5, "done": { "owned": "biggerPan" } },
     { "id": "match", "reward": 5, "done": { "stat": "matched" } },
     { "id": "sign", "reward": 10, "done": { "owned": "sign" } },
@@ -62,13 +62,17 @@
   "goalPauseSeconds": 1.2,
   "offline": { "rate": 0.5, "maxHours": 8, "minAwaySeconds": 60, "warmupSeconds": 30, "sampleSeconds": 120, "doublePriceShare": 0.5 },
   "boost": { "factor": 2, "seconds": 600, "priceSeconds": 300, "adsPerDay": 6, "reveal": { "owned": "helper" } },
+  "locations": [
+    { "id": "oldTown" },
+    { "id": "harbor", "moveCost": 600, "reveal": { "owned": "cafe" }, "priceFactor": 2 }
+  ],
   "simulation": {
     "seeds": [1, 2, 3, 4, 5],
-    "seconds": 420,
+    "seconds": 900,
     "maxSecondsWithoutProgress": 120,
     "targets": {
-      "active": { "firstSale": [0, 15], "biggerPan": [0, 20], "helper": [25, 75], "drum": [0, 150], "cafe": [0, 300] },
-      "casual": { "helper": [0, 90], "cafe": [0, 360] }
+      "active": { "firstSale": [0, 15], "biggerPan": [0, 20], "helper": [25, 75], "drum": [0, 150], "cafe": [0, 300], "move": [0, 480], "2:cafe": [0, 200] },
+      "casual": { "helper": [0, 90], "cafe": [0, 360], "move": [0, 600], "2:cafe": [0, 260] }
     }
   }
 }
