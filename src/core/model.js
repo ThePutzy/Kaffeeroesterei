@@ -102,6 +102,13 @@ export function validateTheme(theme) {
     condition(goal?.done, `goal "${goal?.id}".done`);
   }
   check(isCount(theme?.goalPauseSeconds), 'goalPauseSeconds must be 0 or more');
+
+  const offline = theme?.offline ?? {};
+  check(offline.rate > 0 && offline.rate <= 1, 'offline.rate must be above 0 and at most 1');
+  check(isPositive(offline.maxHours), 'offline.maxHours must be above 0');
+  check(isCount(offline.minAwaySeconds), 'offline.minAwaySeconds must be 0 or more');
+  check(isCount(offline.warmupSeconds), 'offline.warmupSeconds must be 0 or more');
+  check(isPositive(offline.sampleSeconds), 'offline.sampleSeconds must be above 0');
   return problems;
 }
 
@@ -554,6 +561,72 @@ export function createRules(theme) {
     }
   }
 
+  // ---- Saving --------------------------------------------------------------------
+
+  // What a save keeps: money, purchases, progress and the cart. Batches in
+  // progress, guests on the street and the delivery start fresh on loading.
+  // A goal in its pause after "Done!" has paid its reward and counts as passed.
+  function serializeState(s) {
+    return {
+      t: s.t,
+      money: s.money,
+      rng: s.rng,
+      owned: { ...s.owned },
+      stock: [...s.stock],
+      stats: { ...s.stats, lostAt: Number.isFinite(s.stats.lostAt) ? s.stats.lostAt : null },
+      goal: s.goal.doneTimer > 0 ? s.goal.index + 1 : s.goal.index,
+      nextDeliveryAt: s.nextDeliveryAt,
+    };
+  }
+
+  // Checks a saved state and builds a game from it, or returns null if the
+  // save cannot be used. Unknown items and roast levels (e.g. from an older
+  // theme) are dropped; broken numbers make the whole save unusable.
+  function sanitizeState(saved) {
+    if (!saved || typeof saved !== 'object') return null;
+    const s = createState(1);
+    if (!isCount(saved.t) || !isCount(saved.money) || !Number.isInteger(saved.rng)) return null;
+    s.t = saved.t;
+    s.money = saved.money;
+    s.rng = saved.rng >>> 0 || 1;
+    for (const item of ITEMS) {
+      const count = saved.owned?.[item.id] ?? 0;
+      if (!Number.isInteger(count) || count < 0) return null;
+      s.owned[item.id] = Math.min(count, item.cost.length);
+      if (item.effects?.roaster) for (let i = 0; i < s.owned[item.id]; i += 1) s.drums.push(roaster(item.effects.roaster));
+    }
+    for (const stat of STATS) {
+      const value = saved.stats?.[stat] ?? 0;
+      if (!isCount(value)) return null;
+      s.stats[stat] = value;
+    }
+    s.stats.lostAt = Number.isFinite(saved.stats?.lostAt) ? saved.stats.lostAt : -Infinity;
+    const stock = Array.isArray(saved.stock) ? saved.stock.filter((level) => LEVELS.includes(level)) : [];
+    s.stock = stock.slice(0, capacity(s));
+    const goal = saved.goal ?? 0;
+    if (!Number.isInteger(goal) || goal < 0) return null;
+    s.goal.index = Math.min(goal, GOALS.length);
+    s.nextDeliveryAt = Number.isFinite(saved.nextDeliveryAt) ? Math.max(saved.nextDeliveryAt, s.t + guests.firstArrival) : s.t + delivery.firstAt;
+    // The street is empty after loading; the first guest comes soon.
+    s.customers = [];
+    s.arrivalTimer = guests.firstArrival;
+    return s;
+  }
+
+  // ---- Income without the player ----------------------------------------------------
+
+  // What the roastery earns per minute when nobody plays: a copy runs on its
+  // own (the pan only if it is automatic) and only sales count, no goal
+  // rewards and no deliveries. The copy's random numbers do not touch the game.
+  function automaticIncomePerMinute(s) {
+    const copy = structuredClone(s);
+    copy.events = [];
+    advance(copy, theme.offline.warmupSeconds);
+    const before = copy.stats.revenue;
+    advance(copy, theme.offline.sampleSeconds);
+    return ((copy.stats.revenue - before) * 60) / theme.offline.sampleSeconds;
+  }
+
   return {
     theme,
     firstCrack: FIRST_CRACK,
@@ -588,5 +661,8 @@ export function createRules(theme) {
     ejectTarget,
     queue,
     currentGoal,
+    serializeState,
+    sanitizeState,
+    automaticIncomePerMinute,
   };
 }

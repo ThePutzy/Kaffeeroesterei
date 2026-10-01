@@ -1,14 +1,20 @@
 // Starts the game: loads the configured theme (numbers, texts, colors and the
-// scene), creates the rules and the screen and runs one frame per animation
-// frame. Saving, offline earnings and ads come back with steps 2 and 3 of
-// docs/umsetzungsplan-neues-spiel.md; until then a reload starts over.
+// scene) and the save, creates the rules and the screen, runs one frame per
+// animation frame and saves. Ads come back with step 3 of
+// docs/umsetzungsplan-neues-spiel.md.
 import { config } from './config.js';
 import { createAudio } from './core/audio.js';
 import { LANGUAGES, createI18n, detectLanguage, mergeTexts } from './core/i18n.js';
 import { createRules } from './core/model.js';
+import { offlineEarnings } from './core/offline.js';
+import { createStore, loadSave, serialize } from './core/save.js';
 import { createApp } from './core/ui/app.js';
 
 const MAX_FRAME_SECONDS = 0.25;
+const AUTOSAVE_INTERVAL_MS = 10_000;
+// Frames further apart than this (a hidden tab, a sleeping device) count as
+// time away; see catchUp().
+const GAP_SECONDS = 1;
 const root = document.documentElement;
 
 async function loadJson(path) {
@@ -53,7 +59,20 @@ async function start() {
     theme.stylesheet ? loadStylesheet(`${themeFolder}/${theme.stylesheet}`) : null,
   ]);
 
+  const store = createStore(`${theme.id}.save`);
+  const loaded = store.available ? loadSave(store, rules.sanitizeState) : { save: null, readOnly: false };
+  const { save } = loaded;
+  // Only what the player chose: { language, muted }.
+  const settings = { ...save?.settings };
+  // False for good once the save belongs to a newer version or another tab.
+  let saving = store.available && !loaded.readOnly;
+  let writeFailed = false;
+  // True once another tab saved: this one stops, so it neither pays offline
+  // earnings nor plays sounds next to the tab that is played.
+  let stopped = false;
+
   const language = detectLanguage({
+    saved: settings.language,
     detection: config.languageDetection,
     preferred: navigator.languages ?? [navigator.language],
   });
@@ -63,7 +82,20 @@ async function start() {
   });
   errorText = (message) => i18n.t('app.error', { message });
 
-  const state = rules.createState(readSeed());
+  const state = save?.state ?? rules.createState(readSeed());
+  // The wall-clock time up to which the state is played. Saves carry it, so
+  // the time in a closed or hidden tab counts as time away.
+  let playedUntil = (save?.state && save.savedAt) || Date.now();
+
+  function persist() {
+    if (!saving) return;
+    const written = store.write(serialize({ state: rules.serializeState(state), savedAt: playedUntil, settings }));
+    if (!written && !writeFailed) {
+      writeFailed = true; // e.g. storage full; told once, later saves still try
+      app.showNotice('failed');
+    }
+  }
+
   const scene = sceneModule.createScene(document.querySelector('[data-ref="scene"]'), {
     firstCrack: rules.firstCrack,
     slots: rules.slots,
@@ -75,21 +107,78 @@ async function start() {
     scene,
     icons: sceneModule.ITEM_ICONS,
     coinIcon: sceneModule.COIN_ICON,
-    audio: createAudio(),
+    audio: createAudio({ muted: settings.muted === true }),
     i18n,
-    onRestart: () => location.reload(),
+    onRestart() {
+      // Nothing may save the old game after this, also not on pagehide. The
+      // settings stay; if they cannot be written, the save goes.
+      const ownsSave = saving;
+      saving = false;
+      if (ownsSave && !store.write(serialize({ state: null, savedAt: Date.now(), settings }))) store.remove();
+      location.reload();
+    },
+    onReload: () => location.reload(),
+    onSettings(changes) {
+      Object.assign(settings, changes);
+      persist();
+    },
+    onPurchase: persist,
   });
+  if (!store.available) app.showNotice('unavailable');
+  else if (loaded.readOnly) app.showNotice('newer');
+
+  // Time without frames: a short gap plays on as if the tab had been open; a
+  // longer one pays the offline earnings (src/core/offline.js) and says so.
+  // A clock that went backwards pays nothing.
+  function catchUp(seconds) {
+    if (!(seconds > 0)) return;
+    if (seconds <= theme.offline.minAwaySeconds) {
+      app.skip(seconds);
+      return;
+    }
+    const earned = offlineEarnings(rules, state, seconds);
+    if (earned.amount <= 0) return;
+    state.money += earned.amount;
+    app.showWelcome({ awaySeconds: seconds, amount: earned.amount });
+    persist();
+  }
 
   // With ?debug in the address, tests and screenshots can reach the state.
   if (new URLSearchParams(location.search).has('debug')) window.roastery = { state, rules };
 
-  // A hidden tab gets no frames; that time is lost until offline earnings
-  // come with step 2.
+  // The time since the save, then claim the save: an older tab that sees
+  // this write stops saving and offers to continue with the newer save.
+  const startedAt = Date.now();
+  const awayAtStart = (startedAt - playedUntil) / 1000;
+  playedUntil = startedAt;
+  catchUp(awayAtStart);
+  persist();
+  window.addEventListener('storage', (event) => {
+    if (event.key !== store.key || !saving) return;
+    saving = false;
+    stopped = true;
+    app.showOtherTab();
+  });
+  // While the tab is hidden nothing runs; the time counts as time away.
+  setInterval(() => {
+    if (!document.hidden) persist();
+  }, AUTOSAVE_INTERVAL_MS);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) persist();
+  });
+  window.addEventListener('pagehide', persist);
+
+  // A hidden tab gets no frames; the next frame catches the time up.
   let last = performance.now();
   function frame(now) {
-    const dt = Math.min(MAX_FRAME_SECONDS, Math.max(0, (now - last) / 1000));
+    if (stopped) return;
+    const wall = Date.now();
+    const away = (wall - playedUntil) / 1000;
+    playedUntil = wall;
+    const dt = Math.max(0, (now - last) / 1000);
     last = now;
-    app.frame(dt);
+    if (away > GAP_SECONDS) catchUp(away);
+    else app.frame(Math.min(MAX_FRAME_SECONDS, dt));
     requestAnimationFrame(frame);
   }
   requestAnimationFrame((now) => {

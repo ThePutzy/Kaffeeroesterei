@@ -18,6 +18,16 @@ test('the simulator plays the theme with both players and finds no problems', ()
   assert.match(report, /cafe\s+\d:\d\d/);
 });
 
+test('the report says what the automation earns at the end and offline', () => {
+  const result = simulate(theme);
+  for (const kind of ['active', 'casual']) {
+    assert.ok(result.players[kind].automaticPerMinute.every((perMinute) => perMinute > 0), `${kind}: automation earns`);
+  }
+  const report = formatReport('kaffeeroesterei', result);
+  assert.match(report, /auto per min\s+\d+/);
+  assert.match(report, new RegExp(`offline ${theme.offline.maxHours} h\\s+\\d+`));
+});
+
 test('a goal nobody can reach is reported as a stall and a missed target', () => {
   const stuck = copy(theme);
   stuck.items.find((item) => item.id === 'cafe').cost = [1e9];

@@ -8,7 +8,7 @@ Browser-Idle-Spiel, Thema 1: Kaffeerösterei. Reines HTML, CSS und JavaScript (E
 - Themenformat, Formeln und Balance-Simulator: [docs/themenformat.md](docs/themenformat.md)
 - Entwürfe für die eigene Seite (Anleitung, Über uns, Datenschutz, Impressum): [docs/entwuerfe/](docs/entwuerfe/README.md)
 
-Stand: Schritt 1 des [Plans für das neue Spiel](docs/umsetzungsplan-neues-spiel.md). Das Spiel ist jetzt die sichtbare Rösterei aus dem Prototyp: rösten, beim ersten Crack auswerfen, Gäste am Wagen bedienen, mit Helferin und Trommelröstern automatisieren. Englisch und Deutsch, Handy und Desktop. Der Inhalt reicht bis zum Café, etwa fünf Minuten. **Noch nicht wieder dabei:** Speicherstand und Offline-Ertrag (Schritt 2) und Belohnungen per Werbung (Schritt 3); ein Neuladen beginnt von vorn.
+Stand: Schritt 2 des [Plans für das neue Spiel](docs/umsetzungsplan-neues-spiel.md). Das Spiel ist die sichtbare Rösterei aus dem Prototyp: rösten, beim ersten Crack auswerfen, Gäste am Wagen bedienen, mit Helferin und Trommelröstern automatisieren. Englisch und Deutsch, Handy und Desktop. Der Inhalt reicht bis zum Café, etwa fünf Minuten. Das Spiel speichert im Browser und zahlt einen Offline-Ertrag. **Noch nicht wieder dabei:** Belohnungen per Werbung (Schritt 3).
 
 Titel, vorläufig: **Full Roast Ahead**; er ist nicht markenrechtlich geprüft ([Titelrecherche](docs/recherche/spieltitel.md)). Entwürfe für Anleitung, Über uns, Datenschutz und Impressum liegen in `docs/entwuerfe/`; sie beschreiben noch das Spiel vor der Neuausrichtung.
 
@@ -51,8 +51,8 @@ Zugangsdaten, Schlüssel und Publisher-IDs gehören nicht ins Repository, auch n
 
 | Ordner | Inhalt |
 | --- | --- |
-| `src/core/` | Spielregeln (`model.js`), Oberfläche (`ui/app.js`), Ton (`audio.js`), Texte (`i18n.js`, `locales/`), Zahlenformat (`format.js`), Speicher-Grundlagen (`save.js`), Werbe-Ablauf (`adflow.js`) |
-| `src/main.js` | Start: lädt das Thema, erzeugt Regeln, Szene und Oberfläche |
+| `src/core/` | Spielregeln (`model.js`), Oberfläche (`ui/app.js`), Ton (`audio.js`), Texte (`i18n.js`, `locales/`), Zahlenformat (`format.js`), Speicherstand (`save.js`), Offline-Ertrag (`offline.js`), Werbe-Ablauf (`adflow.js`) |
+| `src/main.js` | Start: lädt Thema und Spielstand, erzeugt Regeln, Szene und Oberfläche, speichert und rechnet die Zeit ohne Bilder nach |
 | `src/ads/` | Werbe-Schnittstelle und Adapter |
 | `themes/kaffeeroesterei/` | Zahlen (`theme.json`), Texte (`locales/`), Szene als SVG-Code mit den Symbolen (`scene.js`), Farben (`theme.css`); Format: [docs/themenformat.md](docs/themenformat.md) |
 | `tools/` | Build, lokaler Server, Größen-Check, Balance-Simulator |
@@ -63,11 +63,28 @@ Zugangsdaten, Schlüssel und Publisher-IDs gehören nicht ins Repository, auch n
 
 ## Speicherstand
 
-Das Spiel speichert derzeit nichts; ein Neuladen beginnt von vorn. Schritt 2 des Plans bringt den Speicherstand zurück. Die Grundlagen dafür bleiben in `src/core/save.js`:
-- ein Speicherzugriff, der bei gesperrtem oder vollem Speicher nie abstürzt
-- Versionsnummer und Migrationen
-- Schutz vor dem Überschreiben eines Spielstands aus einer neueren Version
-- ein unlesbarer Spielstand wird beiseitegelegt
+- **Wo:** im `localStorage` des Browsers unter `kaffeeroesterei.save`. Gespeichert werden Geld, Ausbau, Säcke im Wagen, Statistiken, das aktuelle Ziel und die Einstellungen, die der Spieler gewählt hat (Sprache, Ton). Gäste auf der Straße und Chargen im Röster beginnen nach dem Laden neu.
+- **Wann:** beim Start, alle 10 Sekunden, solange das Spiel sichtbar ist, wenn der Tab verborgen oder geschlossen wird, nach jedem Kauf und nach dem Wechsel von Sprache oder Ton.
+- **Version 2:** Spielstände des ersten Spiels (Version 1) werden nicht übernommen, sondern unter `kaffeeroesterei.save:unreadable` beiseitegelegt.
+- **Neu starten:** löscht den Fortschritt, die Einstellungen bleiben.
+- **Fehlerfälle** (`src/core/save.js`):
+  - Gesperrter Speicher, etwa im privaten Fenster: Das Spiel läuft und sagt im Seitenbereich, dass es nicht speichert.
+  - Voller Speicher: ein Hinweis beim ersten Fehlschlag; das Spiel versucht es weiter.
+  - Spielstand aus einer neueren Version: Er bleibt unangetastet, diese Version speichert nicht und sagt das.
+  - Unlesbarer Spielstand: Er wird beiseitegelegt, das Spiel beginnt neu.
+  - Zweiter Tab: Der Tab, der zuletzt gespeichert hat, gehört der Spielstand. Der ältere Tab hält an, speichert nicht mehr und bietet „Hier weiterspielen“ an; das lädt den neuesten Stand.
+
+## Offline-Ertrag
+
+Die Zeit, in der das Spiel nicht läuft, rechnet `src/main.js` nach: beim Start ab dem gespeicherten Zeitpunkt, im laufenden Spiel, sobald nach einem verborgenen Tab oder einem schlafenden Gerät wieder Bilder kommen.
+
+- **Bis 60 Sekunden** (`offline.minAwaySeconds`): Das Spiel läuft diese Zeit ohne Ton und Effekte nach, als wäre der Tab offen gewesen.
+- **Länger:** Das Spiel zahlt einen Offline-Ertrag (`src/core/offline.js`) und zeigt „Willkommen zurück!“.
+  - Grundlage ist, was die Automatik ohne Spieler pro Minute einbringt: Die Spielregeln spielen dafür eine Kopie des Spielstands ohne Eingaben, erst 30 Sekunden zum Einschwingen, dann 120 Sekunden zum Messen.
+  - Davon gibt es 50 % (`offline.rate`), höchstens für 8 Stunden (`offline.maxHours`).
+  - Ohne Helferin oder Trommelröster bringt die Automatik nichts, dann erscheint auch kein Dialog.
+  - Eine zurückgestellte Uhr zahlt nichts.
+- **Der Spielstand selbst** läuft in dieser Zeit nicht weiter: Gäste, Röster und Sonderlieferung stehen danach dort, wo sie waren.
 
 ## Werbung
 

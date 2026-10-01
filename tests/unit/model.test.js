@@ -43,8 +43,9 @@ test('broken theme data is reported instead of played', () => {
   broken.items[1].effects = { magic: 2 };
   broken.goals[0].done = { stat: 'taps', owned: 'sign' };
   broken.sales.basePrice = 0;
+  broken.offline.rate = 2;
   const problems = validateTheme(broken);
-  for (const part of ['roast.levels[1].until', 'unknown item "teleporter"', 'unknown effect "magic"', 'either "stat" or "owned"', 'sales.basePrice']) {
+  for (const part of ['roast.levels[1].until', 'unknown item "teleporter"', 'unknown effect "magic"', 'either "stat" or "owned"', 'sales.basePrice', 'offline.rate']) {
     assert.ok(problems.some((problem) => problem.includes(part)), `expected a problem about ${part}, got ${problems.join(' | ')}`);
   }
   assert.throws(() => createRules(broken), /Invalid theme/);
@@ -241,4 +242,67 @@ test('the same seed plays the same game', () => {
   const b = play(rules, 'active', 7, 120).s;
   assert.equal(a.money, b.money);
   assert.deepEqual(a.stats, b.stats);
+});
+
+test('a saved game loads back with its money, purchases, cart and progress', () => {
+  const s = createState(3);
+  Object.assign(s.owned, { biggerPan: 1, sign: 1, helper: 1 });
+  s.money = 1000;
+  buyItem(s, 'drum');
+  s.stock.push('dark', 'light');
+  s.goal.index = 4;
+  s.stats.sales = 12;
+  advance(s, 5);
+  const saved = JSON.parse(JSON.stringify(rules.serializeState(s)));
+  const back = rules.sanitizeState(saved);
+  assert.equal(back.money, s.money);
+  assert.deepEqual(back.owned, s.owned);
+  assert.equal(back.drums.length, 1, 'one drum roaster stands again');
+  assert.deepEqual(back.stock, s.stock);
+  assert.equal(back.goal.index, 4);
+  assert.ok(back.stats.sales >= 12);
+  assert.deepEqual(back.stats, s.stats);
+  assert.equal(back.t, s.t);
+  assert.deepEqual(back.customers, [], 'the street starts empty');
+  assert.equal(back.pan.phase, 'empty', 'batches in progress start fresh');
+});
+
+test('a goal reached just before saving pays its reward once', () => {
+  const s = createState(1);
+  tapPan(s);
+  step(s, 0.05);
+  assert.equal(currentGoal(s).done, true, 'the goal shows "Done!" for a moment');
+  const money = s.money;
+  const back = rules.sanitizeState(copy(rules.serializeState(s)));
+  assert.equal(back.goal.index, 1, 'the next goal follows after loading');
+  advance(back, 1);
+  assert.equal(back.money, money, 'no second reward');
+});
+
+test('broken saves are refused, unknown and excess entries are dropped', () => {
+  const good = rules.serializeState(createState(1));
+  for (const broken of [null, 'save', { ...good, money: -1 }, { ...good, money: 'lots' }, { ...good, owned: { sign: 1.5 } }, { ...good, stats: { sales: -2 } }, { ...good, goal: -1 }, { ...good, rng: 'x' }]) {
+    assert.equal(rules.sanitizeState(broken), null, JSON.stringify(broken));
+  }
+  const odd = rules.sanitizeState({ ...good, owned: { teleporter: 3, drum: 9 }, stock: ['dark', 'burnt', ...Array(20).fill('light')], goal: 99 });
+  assert.equal(odd.owned.drum, 2, 'not more than can be bought');
+  assert.equal(odd.drums.length, 2);
+  assert.equal('teleporter' in odd.owned, false);
+  assert.equal(odd.stock.length, capacity(odd), 'the cart holds no more than it can');
+  assert.equal(odd.stock.includes('burnt'), false);
+  assert.equal(odd.goal.index, rules.goals.length);
+});
+
+test('without the player only automation earns money', () => {
+  const s = createState(1);
+  assert.equal(rules.automaticIncomePerMinute(s), 0, 'a pan without a helper waits');
+  Object.assign(s.owned, { biggerPan: 1, sign: 1, helper: 1 });
+  const withHelper = rules.automaticIncomePerMinute(s);
+  assert.ok(withHelper > 0);
+  s.money = 1000;
+  buyItem(s, 'drum');
+  assert.ok(rules.automaticIncomePerMinute(s) > withHelper, 'a drum roaster adds to it');
+  const before = JSON.stringify(s);
+  rules.automaticIncomePerMinute(s);
+  assert.equal(JSON.stringify(s), before, 'measuring does not change the game');
 });
