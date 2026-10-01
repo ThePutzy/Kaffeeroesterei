@@ -1,8 +1,8 @@
 # Projekt: Idle-Spiel "Kaffeerösterei" (Thema 1)
 
-Stand der Entscheidungen: 30.09.2026. Diese Datei ist der Kontext für jede Sitzung. Du siehst das Gespräch nicht, in dem der Plan entstanden ist; verlasse dich auf diese Datei.
+Stand der Entscheidungen: 01.10.2026. Diese Datei ist der Kontext für jede Sitzung. Du siehst das Gespräch nicht, in dem der Plan entstanden ist; verlasse dich auf diese Datei.
 
-Der freigegebene Umsetzungsplan (Schritte, Branches, Prüfungen) steht in `docs/umsetzungsplan.md`. Seine sechs Schritte sind umgesetzt und gemergt. Danach hat der Nutzer das Spiel neu ausgerichtet, siehe „Neuausrichtung“.
+Der freigegebene Umsetzungsplan (Schritte, Branches, Prüfungen) steht in `docs/umsetzungsplan.md`. Seine sechs Schritte sind umgesetzt und gemergt. Danach hat der Nutzer das Spiel neu ausgerichtet, siehe „Neuausrichtung“. Der Plan für das neue Spiel steht in `docs/umsetzungsplan-neues-spiel.md`.
 
 ## Ziel
 
@@ -25,12 +25,13 @@ Ein Browser-Idle-Spiel, das hauptsächlich über Werbung Geld verdienen soll. Er
 ## Neuausrichtung (29.09.2026)
 
 - Der Nutzer fand das Spiel nach dem Umsetzungsplan (eine Klickfläche mit Erzeugerliste) sehr langweilig und nannte das Aussehen „ein großes Problem“.
-- Neue Richtung: eine sichtbare Rösterei. Man röstet selbst, bedient Kunden und automatisiert Schritt für Schritt mit Helfern und Maschinen. Ein Prototyp der ersten fünf Minuten liegt in PR #12 (Ordner `prototype/`); laut Nutzer „schaut [er] schon viel besser aus“.
+- Neue Richtung: eine sichtbare Rösterei. Man röstet selbst, bedient Kunden und automatisiert Schritt für Schritt mit Helfern und Maschinen. Ein Prototyp der ersten fünf Minuten liegt in `prototype/`; laut Nutzer „schaut [er] schon viel besser aus“.
 - Richtung laut Nutzer: ein Erfolg wie Idle Miner Tycoon und AdVenture Capitalist. Planbar ist das nicht, aber es gibt die Richtung vor.
   - Übernehmen: eine kleine erste Fassung, die an der Rückkehrquote gemessen wird; eine sichtbare Kette mit Engpass; frühe Automatik; ehrliche Belohnungsanzeigen; ein eigener Ton.
   - Nicht übernehmen: ihr Aussehen, ihre Figuren, Namen und Zahlen. CrazyGames zahlt nur für Spiele, die sich von bestehenden unterscheiden.
 - Berichte dazu: `docs/recherche/`.
-- Offen: ob der Prototyp die technische Grundlage des neuen Spiels wird und dafür die Technik aus `src/` übernimmt (Speicherstand, Offline-Ertrag, Werbe-Adapter, Texte, Build, Tests). Das schlägt Claude vor; der Nutzer hat es noch nicht entschieden.
+- Entschieden (01.10.2026): Der Prototyp ist die Grundlage des neuen Spiels. Die Technik aus `src/` wird übernommen: Speicherstand, Offline-Ertrag, Werbe-Adapter, Texte, Build, Tests. Plan: `docs/umsetzungsplan-neues-spiel.md`.
+- Design: Board in Claude Design „Full Roast Ahead – Design“ (01.10.2026) mit drei Logo-Richtungen, den drei CrazyGames-Covern und der Spielansicht mit eigenem Boost-Bereich. Welches Logo und welche Details gelten, entscheidet der Nutzer.
 
 ## Spielumfang Thema 1 (erste Version)
 
@@ -57,7 +58,7 @@ Ein Browser-Idle-Spiel, das hauptsächlich über Werbung Geld verdienen soll. Er
 - `tools/`: Balance-Simulator, Größen-Check
 - `tests/`: Browser-Test
 - `docs/recherche/`: Recherche-Berichte (Vergleichsspiele, Vorbilder)
-- `prototype/`: Prototyp der neuen Richtung (kommt mit PR #12)
+- `prototype/`: Prototyp der neuen Richtung; Schritt 1 des neuen Plans löst ihn auf
 - Build: ein Paket pro Ziel, zum Beispiel `dist/crazygames` und `dist/web`
 
 ## Regeln
