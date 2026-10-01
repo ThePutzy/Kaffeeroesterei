@@ -46,6 +46,32 @@ test('missed targets are warnings, not errors', () => {
   assert.match(result.warnings[0], /active, seed 1: helper after 0:\d\d, target 0:00–0:05/);
 });
 
+test('the report says how long the roastery stood idle and how many guests turned away', () => {
+  const result = simulate(theme);
+  for (const kind of ['active', 'casual']) {
+    const player = result.players[kind];
+    assert.ok(player.longestIdle <= theme.simulation.maxIdleSeconds, `${kind}: idle for ${player.longestIdle} s`);
+    assert.ok(player.idleShare >= 0 && player.idleShare <= 1);
+    assert.ok(player.lostShare >= 0 && player.lostShare < 0.5, `${kind}: ${player.lostShare} of the guests lost`);
+  }
+  // Stirring pays: the active player loses fewer guests than the casual one.
+  assert.ok(result.players.active.lostShare < result.players.casual.lostShare);
+  const report = formatReport('kaffeeroesterei', result);
+  assert.match(report, /longest idle\s+\d:\d\d/);
+  assert.match(report, /idle share\s+\d+%/);
+  assert.match(report, /guests lost\s+\d+%/);
+});
+
+test('roasters far ahead of the guests are reported as idle', () => {
+  const crowded = copy(theme);
+  crowded.roasters.drum.bags = 12;
+  crowded.simulation = { ...crowded.simulation, seeds: [1], targets: {} };
+  const result = simulate(crowded);
+  assert.deepEqual(result.errors, []);
+  assert.ok(result.players.active.longestIdle > theme.simulation.maxIdleSeconds);
+  assert.ok(result.warnings.some((warning) => /active, seed 1: idle for \d+:\d\d in a row, target at most 1:00/.test(warning)), result.warnings.join(' | '));
+});
+
 test('an invalid theme is refused', () => {
   const broken = copy(theme);
   broken.roasters.pan.roastSeconds = -1;
