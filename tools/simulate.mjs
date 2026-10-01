@@ -18,13 +18,20 @@ const STEP_SECONDS = 0.1;
 //   first guest's wish;
 // - "casual" never stirs and stops ejecting by hand once a helper does it.
 // Both buy what the current goal asks for, later everything they can afford,
-// and tap the special delivery when it waits.
+// tap the special delivery when it waits and move to the next location as soon
+// as they can. Milestones after a move are reported as "2:<name>", counted
+// from the move.
 export const PLAYERS = ['active', 'casual'];
 
 export function play(rules, kind, seed, until) {
   const s = rules.createState(seed);
   const times = {};
   const problems = [];
+  let movedAt = null;
+  const mark = (name) => {
+    const key = movedAt === null ? name : `2:${name}`;
+    times[key] ??= movedAt === null ? s.t : s.t - movedAt;
+  };
   let sinceTap = 0;
   let lastProgress = 0;
   let longestWait = 0;
@@ -46,25 +53,32 @@ export function play(rules, kind, seed, until) {
     for (const item of wanted) {
       const cost = rules.itemPrice(s, item);
       if (cost !== undefined && s.money >= cost && rules.buyItem(s, item.id)) {
-        times[item.id] ??= s.t;
+        mark(item.id);
         lastProgress = s.t;
       }
+    }
+    if (movedAt === null && rules.canMove(s) && rules.move(s)) {
+      times.move = s.t;
+      movedAt = s.t;
+      lastProgress = s.t;
     }
     if (s.delivery?.phase === 'wait') rules.tapDelivery(s);
     rules.step(s, STEP_SECONDS);
     for (const event of rules.drainEvents(s)) {
-      if (event.type === 'sale') times.firstSale ??= s.t;
+      if (event.type === 'sale') mark('firstSale');
       if (event.type === 'goal') {
         lastProgress = s.t;
-        if (event.id === rules.goals.at(-1).id) times.allGoals ??= s.t;
+        if (event.id === rules.goals.at(-1).id) mark('allGoals');
       }
     }
     if (!Number.isFinite(s.money) || s.money < 0) {
       problems.push(`money is ${s.money} after ${formatDuration(s.t)}`);
       break;
     }
-    // Waiting only counts while there is still something to reach.
-    const open = rules.currentGoal(s) !== null || rules.visibleItems(s).some((item) => rules.itemPrice(s, item) !== undefined);
+    // Waiting only counts while there is still something to reach, saving for
+    // a move included.
+    const open =
+      rules.currentGoal(s) !== null || rules.visibleItems(s).some((item) => rules.itemPrice(s, item) !== undefined) || rules.moveOffered(s);
     if (open) longestWait = Math.max(longestWait, s.t - lastProgress);
     else lastProgress = s.t;
   }
@@ -79,7 +93,8 @@ export function simulate(theme) {
   const seeds = settings.seeds ?? [1, 2, 3];
   const seconds = settings.seconds ?? 600;
   const maxWait = settings.maxSecondsWithoutProgress ?? 120;
-  const milestones = ['firstSale', ...rules.items.map((item) => item.id), ...(rules.goals.length > 0 ? ['allGoals'] : [])];
+  const run = ['firstSale', ...rules.items.map((item) => item.id), ...(rules.goals.length > 0 ? ['allGoals'] : [])];
+  const milestones = rules.locations.length > 1 ? [...run, 'move', ...run.map((name) => `2:${name}`)] : run;
   const errors = [];
   const warnings = [];
   const players = {};

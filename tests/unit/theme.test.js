@@ -26,6 +26,10 @@ for (const themeId of themeIds) {
     ...theme.items.flatMap(({ id }) => [`items.${id}.name`, `items.${id}.effect`]),
     ...theme.goals.map(({ id }) => `goals.${id}`),
     ...theme.roast.levels.map(({ id }) => `levels.${id}`),
+    ...theme.locations.map(({ id }) => `locations.${id}.name`),
+    ...theme.locations
+      .slice(1)
+      .flatMap(({ id }) => ['move', 'effect', 'moveTitle', 'moveBody', 'banner', 'goal'].map((key) => `locations.${id}.${key}`)),
   ];
 
   test(`theme "${themeId}" is valid game data`, () => {
@@ -65,6 +69,11 @@ for (const themeId of themeIds) {
     const scene = readFileSync(new URL(theme.scene, folder), 'utf8');
     assert.doesNotMatch(scene, /^\s*import\s/m, 'the scene imports nothing, it gets what it needs from the game');
     assert.doesNotMatch(scene, /fetch\(|XMLHttpRequest|<image|href="http|src="http/i, 'the scene loads nothing');
+  });
+
+  test(`theme "${themeId}" draws an icon for every location one can move to`, async () => {
+    const scene = await import(new URL(theme.scene, folder).href);
+    for (const { id } of theme.locations.slice(1)) assert.match(scene.LOCATION_ICONS?.[id] ?? '', /^<svg /, `icon for ${id}`);
   });
 
   test(`theme "${themeId}" colors every roast level`, () => {

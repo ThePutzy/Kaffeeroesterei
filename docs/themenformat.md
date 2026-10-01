@@ -1,14 +1,14 @@
 # Themenformat und Balancing
 
-Das beschreibt, woraus ein Thema besteht, wie die Spielregeln (`src/core/model.js`) seine Zahlen nutzen und wie der Balance-Simulator (`tools/simulate.mjs`) das Tempo prüft. Stand: 01.10.2026, Schritt 3 des [Plans für das neue Spiel](umsetzungsplan-neues-spiel.md).
+Das beschreibt, woraus ein Thema besteht, wie die Spielregeln (`src/core/model.js`) seine Zahlen nutzen und wie der Balance-Simulator (`tools/simulate.mjs`) das Tempo prüft. Stand: 01.10.2026, Schritt 4a des [Plans für das neue Spiel](umsetzungsplan-neues-spiel.md).
 
 ## Was zu einem Thema gehört
 
 | Datei im Themenordner | Inhalt |
 | --- | --- |
-| `theme.json` | alle Zahlen: Röstgrade, Röster, Preise, Gäste, Sonderlieferung, Ausbau, Ziele, Offline-Ertrag, Boost, Simulator-Einstellungen |
+| `theme.json` | alle Zahlen: Röstgrade, Röster, Preise, Gäste, Sonderlieferung, Ausbau, Ziele, Offline-Ertrag, Boost, Standorte, Simulator-Einstellungen |
 | `locales/en.json`, `locales/de.json` | die Texte des Themas. Sie überschreiben gleichnamige Kerntexte aus `src/core/locales/`. |
-| `scene.js` | die Szene als SVG-Code, dazu die Symbole für den Ausbau (`ITEM_ICONS`) und die Münze (`COIN_ICON`). Die Szene importiert nichts; das Spiel übergibt ihr den ersten Crack, die Plätze der Gäste und die Röstgrade mit ihren Farben. |
+| `scene.js` | die Szene als SVG-Code, dazu die Symbole für den Ausbau (`ITEM_ICONS`), für die Standorte, in die man umziehen kann (`LOCATION_ICONS`), und für die Münze (`COIN_ICON`). Die Szene importiert nichts; das Spiel übergibt ihr den ersten Crack, die Plätze der Gäste und die Röstgrade mit ihren Farben. |
 | `theme.css` | die Farben als CSS-Variablen (`--ui-*`, `--gold`, `--teal` …). Das Stylesheet des Spiels (`src/styles.css`) benutzt nur diese Variablen. |
 
 Die Mechanik selbst gehört zum Spielkern: Röstcharge, erster und zweiter Crack, Abkühlen, Wagen, Schlange, Wünsche der Gäste, Automatik, Sonderlieferung und Ziele.
@@ -27,9 +27,10 @@ Die Mechanik selbst gehört zum Spielkern: Röstcharge, erster und zweiter Crack
 | `guests` | `firstArrival`, `arrivalSeconds` (mittlerer Abstand), `arrivalSpread` (Schwankung, 0,5 heißt ±25 %), `firstWish` (Wunsch des ersten Gasts, der schon wartet), `buySeconds`, `walkSpeed` sowie die Positionen in Szenen-Einheiten: `slots` (Plätze in der Schlange), `spawnX`, `turnX`, `exitX` |
 | `delivery` | Sonderlieferung: `firstAt`, `gapSeconds` ([kürzester, längster] Abstand), `waitSeconds`, `speed`, `stopX`, `offstageX`, `rewardIncomeSeconds` (Belohnung: so viele Sekunden des aktuellen Ertrags), `minReward` |
 | `items[]` | Ausbau: `id`, `cost` (Preise der Reihe nach; nur Röster gibt es mehrmals), optional `reveal` (Bedingung, ab der man ihn sieht), `effects` |
-| `goals[]` | Ziele in Reihenfolge: `id`, `reward`, `done` (Bedingung) |
+| `goals[]` | Ziele in Reihenfolge: `id`, `reward`, `done` (Bedingung), optional `tutorial: true` (nur im ersten Durchgang; nach einem Umzug übersprungen) |
 | `goalPauseSeconds` | Pause zwischen zwei Zielen, in der „Geschafft!“ steht |
 | `offline` | Offline-Ertrag: `rate` (Anteil, über 0 bis 1), `maxHours` (Obergrenze), `minAwaySeconds` (kürzere Pausen laufen als normales Spiel nach, statt Offline-Ertrag zu zahlen), `warmupSeconds` und `sampleSeconds` (wie lange die Spielregeln eine Kopie des Spielstands ohne Spieler einschwingen lassen und dann messen, siehe unten), `doublePriceShare` (Preis des Verdoppelns ohne Werbung als Anteil des Offline-Ertrags) |
+| `locations[]` | Standorte in Reihenfolge, siehe „Standorte“: `id`, optional `priceFactor` und `arrivalFactor`; ab dem zweiten zusätzlich `moveCost` und optional `reveal` |
 | `boost` | `factor` (Faktor auf die Verkaufspreise), `seconds` (Dauer, gezählt nur beim Spielen), `priceSeconds` (Kaufpreis: so viele Sekunden der Einnahmen der Automatik), `adsPerDay` (Boosts per Werbung pro Kalendertag), optional `reveal` (Bedingung, ab der das Angebot erscheint) |
 | `simulation` | Einstellungen des Simulators, siehe unten |
 
@@ -56,6 +57,17 @@ Die Mechanik selbst gehört zum Spielkern: Röstcharge, erster und zweiter Crack
 - **Speicherstand:** `serializeState()` schreibt Zeit, Geld, Zufallszahl, Ausbau, Säcke im Wagen, Statistiken, Ziel und die nächste Sonderlieferung. `sanitizeState()` prüft einen geladenen Stand und gibt `null` zurück, wenn er nicht passt. Unbekannte Teile des Ausbaus und Röstgrade fallen weg; Mengen werden auf das begrenzt, was das Thema zulässt (Käufe je Teil, Plätze im Wagen, Zahl der Ziele). Gäste und laufende Chargen beginnen nach dem Laden neu.
 - **Offline-Ertrag:** `automaticIncomePerMinute()` spielt eine Kopie des Spielstands ohne Eingaben, erst `offline.warmupSeconds`, dann `offline.sampleSeconds`, und misst die Einnahmen der zweiten Phase. `src/core/offline.js` zahlt davon `offline.rate` für die Zeit weg, höchstens `offline.maxHours` Stunden.
 - **Spielstand bei Abwesenheit:** Er läuft in dieser Zeit nicht weiter; Gäste, Röster und Sonderlieferung stehen danach dort, wo sie waren.
+
+## Standorte (Prestige)
+
+- **Start:** Die Rösterei beginnt am ersten Standort (`locations[0]`).
+- **Umzug:** `move()` zieht an den nächsten Standort, sobald dessen `reveal` erfüllt ist und das Geld `moveCost` erreicht.
+  - Der Durchgang beginnt neu: Geld, Ausbau, Säcke, Gäste, Ziele und die Statistiken des Durchgangs bleiben zurück. Ein laufender Boost und die Boosts per Werbung des Tages bleiben.
+  - Ziele mit `tutorial: true` werden übersprungen.
+  - Das Geld geht ganz verloren, nicht nur `moveCost`; der Dialog sagt das.
+- **Bonus:** Der neue Standort bleibt. Sein `priceFactor` multipliziert den gerundeten Verkaufspreis, sein `arrivalFactor` den Abstand zwischen zwei Gästen.
+- **Szene:** Sie bekommt den Standort im Spielstand (`state.location`). Die Kaffeerösterei zeigt ab dem zweiten Standort das Hafenviertel am Abend.
+- **Texte je Standort:** `locations.<id>.name`, ab dem zweiten zusätzlich `.move`, `.effect`, `.moveTitle`, `.moveBody`, `.banner` und `.goal`.
 
 ## Boost
 
@@ -84,7 +96,7 @@ Die Mechanik selbst gehört zum Spielkern: Röstcharge, erster und zweiter Crack
 - **aktiv:** rührt dreimal pro Sekunde und wirft aus, wenn die Röstung zum Wunsch des ersten Gasts passt.
 - **gemütlich:** rührt nie und wirft nur von Hand aus, bis die Automatik das übernimmt.
 
-Beide kaufen, was das aktuelle Ziel verlangt, danach alles, was sie sich leisten können, und tippen auf die Sonderlieferung. Boosts und Verdoppeln nutzen sie nicht; das Tempo gilt also für Spieler ohne Werbung. Das sind Annahmen, keine Messungen echter Spieler.
+Beide kaufen, was das aktuelle Ziel verlangt, danach alles, was sie sich leisten können, und tippen auf die Sonderlieferung. Sobald sie umziehen können, ziehen sie um; Zeitpunkte danach heißen `2:<Meilenstein>` und zählen ab dem Umzug. Boosts und Verdoppeln nutzen sie nicht; das Tempo gilt also für Spieler ohne Werbung. Das sind Annahmen, keine Messungen echter Spieler.
 
 **Ausgabe:**
 - je Spieler der früheste und späteste Zeitpunkt über alle Seeds für den ersten Verkauf, jeden Ausbau und das Ende der Ziele
@@ -93,13 +105,14 @@ Beide kaufen, was das aktuelle Ziel verlangt, danach alles, was sie sich leisten
 
 **Harte Fehler** beenden mit Code 1:
 - Geld wird ungültig oder negativ.
-- Länger als `simulation.maxSecondsWithoutProgress` gibt es keinen Kauf und kein erreichtes Ziel, obwohl noch etwas offen ist.
+- Länger als `simulation.maxSecondsWithoutProgress` gibt es keinen Kauf, kein erreichtes Ziel und keinen Umzug, obwohl noch etwas offen ist. Das Sparen auf einen Umzug zählt als offen.
 - Das Thema ist ungültig.
 
 **Warnungen:** Zeitpunkte außerhalb von `simulation.targets` (je Spieler und Meilenstein `[frühestens, spätestens]` in Sekunden).
 
-**Stand 01.10.2026:**
-- aktiv: Café nach 4:11 bis 4:24
-- gemütlich: Café nach 5:01 bis 5:24
+**Stand 01.10.2026 (Schritt 4a):**
+- aktiv: Café nach 4:11 bis 4:24, Umzug nach 6:16 bis 6:41, im zweiten Durchgang Café nach 2:15 bis 2:27
+- gemütlich: Café nach 5:01 bis 5:24, Umzug nach 7:16 bis 7:51, im zweiten Durchgang Café nach 2:31 bis 2:49
 - keine Warnungen
+- Die Zielwerte für den Umzug sind vorläufig. Schritt 4b bringt Inhalt zwischen Café und Umzug und stellt den Umzug auf etwa 15 bis 20 Minuten aktives Spiel ein.
 - Automatik am Ende: 343 bis 361 pro Minute, also etwa 82.000 bis 87.000 für 8 Stunden offline. Das ist weit mehr als der teuerste Ausbau (400). Solange das Spiel nach dem Café endet, fällt das nicht ins Gewicht; Schritt 4 muss Preise und Offline-Ertrag zusammen einstellen.

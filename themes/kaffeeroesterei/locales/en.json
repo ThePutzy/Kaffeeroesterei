@@ -63,5 +63,14 @@
   "banners.drum": "A drum roaster!",
   "banners.cafe": "The café is open!",
   "banners.sign": "The sign is up!",
-  "offline.body": "You were away for {duration}. Your roastery kept going and earned:"
+  "offline.body": "You were away for {duration}. Your roastery kept going and earned:",
+  "stats.location": "Location",
+  "locations.oldTown.name": "Old town",
+  "locations.harbor.name": "Harbor district",
+  "locations.harbor.move": "Move to the harbor district",
+  "locations.harbor.effect": "Guests pay twice as much there",
+  "locations.harbor.moveTitle": "Move to the harbor district?",
+  "locations.harbor.moveBody": "You start over there: your money, upgrades and bags stay here. In return, guests at the harbor pay twice as much, for good.",
+  "locations.harbor.banner": "Welcome to the harbor district!",
+  "locations.harbor.goal": "Save up for the move to the harbor district."
 }
