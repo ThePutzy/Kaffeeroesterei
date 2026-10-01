@@ -17,7 +17,8 @@ const STEP_SECONDS = 0.1;
 // - "active" stirs three times a second and ejects when the roast matches the
 //   first guest's wish;
 // - "casual" never stirs and stops ejecting by hand once a helper does it.
-// Both buy what the current goal asks for, later everything they can afford,
+// Both save for the upgrade the current goal asks for; while the goal asks
+// for something else (or after the last goal) they buy what they can afford,
 // tap the special delivery when it waits and move to the next location as soon
 // as they can. Milestones after a move are reported as "2:<name>", counted
 // from the move.
@@ -49,7 +50,7 @@ export function play(rules, kind, seed, until) {
     }
     const goal = rules.currentGoal(s);
     const goalItem = goal && rules.items.find((item) => item.id === goal.id);
-    const wanted = goal ? (goalItem ? [goalItem] : []) : rules.visibleItems(s);
+    const wanted = goalItem ? [goalItem] : rules.visibleItems(s);
     for (const item of wanted) {
       const cost = rules.itemPrice(s, item);
       if (cost !== undefined && s.money >= cost && rules.buyItem(s, item.id)) {

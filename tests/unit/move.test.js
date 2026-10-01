@@ -8,10 +8,10 @@ const rules = createRules(theme);
 const [home, next] = theme.locations;
 const copy = (value) => JSON.parse(JSON.stringify(value));
 
-// A run that reached the café.
+// A run that bought every upgrade.
 function finished(money = next.moveCost) {
   const s = rules.createState(4);
-  Object.assign(s.owned, { biggerPan: 1, sign: 1, helper: 1, drum: 2, profile: 1, cafe: 1 });
+  for (const item of theme.items) s.owned[item.id] = item.cost.length;
   s.drums = rules.sanitizeState(copy(rules.serializeState(s))).drums;
   s.money = money;
   s.goal.index = rules.goals.length;
@@ -24,7 +24,7 @@ test('the move is offered once its condition is met and needs its cost', () => {
   const fresh = rules.createState(1);
   assert.equal(rules.locationOf(fresh).id, home.id);
   assert.equal(rules.nextLocation(fresh).id, next.id);
-  assert.equal(rules.moveOffered(fresh), false, 'not before the café');
+  assert.equal(rules.moveOffered(fresh), false, 'not before its condition');
   assert.equal(rules.move(fresh), false);
   const poor = finished(next.moveCost - 1);
   assert.equal(rules.moveOffered(poor), true);

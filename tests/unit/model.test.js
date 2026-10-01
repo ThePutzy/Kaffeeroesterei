@@ -306,3 +306,24 @@ test('without the player only automation earns money', () => {
   rules.automaticIncomePerMinute(s);
   assert.equal(JSON.stringify(s), before, 'measuring does not change the game');
 });
+
+test('a gas burner (roastFactor) shortens every batch', () => {
+  const plain = createState(1);
+  const fast = createState(1);
+  fast.owned.burner = 1;
+  tapPan(plain);
+  tapPan(fast);
+  advance(plain, 3);
+  advance(fast, 3);
+  const factor = theme.items.find((item) => item.id === 'burner').effects.roastFactor;
+  assert.ok(Math.abs(fast.pan.p - plain.pan.p / factor) < 1e-9, `${fast.pan.p} vs ${plain.pan.p / factor}`);
+});
+
+test('the current goal tells what it asks for', () => {
+  const s = createState(1);
+  s.goal.index = theme.goals.findIndex((goal) => goal.done.stat === 'revenue');
+  const goal = currentGoal(s);
+  assert.equal(goal.condition.stat, 'revenue');
+  assert.ok(goal.condition.min > 1);
+  assert.equal(goal.done, false);
+});

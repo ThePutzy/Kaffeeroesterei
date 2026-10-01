@@ -71,8 +71,9 @@ for (const themeId of themeIds) {
     assert.doesNotMatch(scene, /fetch\(|XMLHttpRequest|<image|href="http|src="http/i, 'the scene loads nothing');
   });
 
-  test(`theme "${themeId}" draws an icon for every location one can move to`, async () => {
+  test(`theme "${themeId}" draws an icon for every upgrade and every location one can move to`, async () => {
     const scene = await import(new URL(theme.scene, folder).href);
+    for (const { id } of theme.items) assert.match(scene.ITEM_ICONS?.[id] ?? '', /^<svg /, `icon for item ${id}`);
     for (const { id } of theme.locations.slice(1)) assert.match(scene.LOCATION_ICONS?.[id] ?? '', /^<svg /, `icon for ${id}`);
   });
 

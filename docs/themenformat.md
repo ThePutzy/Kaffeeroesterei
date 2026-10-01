@@ -1,6 +1,6 @@
 # Themenformat und Balancing
 
-Das beschreibt, woraus ein Thema besteht, wie die Spielregeln (`src/core/model.js`) seine Zahlen nutzen und wie der Balance-Simulator (`tools/simulate.mjs`) das Tempo prüft. Stand: 01.10.2026, Schritt 4a des [Plans für das neue Spiel](umsetzungsplan-neues-spiel.md).
+Das beschreibt, woraus ein Thema besteht, wie die Spielregeln (`src/core/model.js`) seine Zahlen nutzen und wie der Balance-Simulator (`tools/simulate.mjs`) das Tempo prüft. Stand: 01.10.2026, Schritt 4b des [Plans für das neue Spiel](umsetzungsplan-neues-spiel.md).
 
 ## Was zu einem Thema gehört
 
@@ -42,6 +42,7 @@ Die Mechanik selbst gehört zum Spielkern: Röstcharge, erster und zweiter Crack
 | `capacity` | Plätze im Wagen; der größte Wert zählt |
 | `priceFactor` | multipliziert den Preis je Sack |
 | `arrivalFactor` | multipliziert den Abstand zwischen zwei Gästen; unter 1 kommen sie öfter |
+| `roastFactor` | multipliziert die Röstdauer aller Röster; unter 1 rösten sie schneller |
 | `panAutomatic` | die Pfanne röstet und wirft von selbst aus |
 | `followWishes` | die Automatik röstet, was der erste Gast ohne passenden Sack im Wagen wünscht |
 | `roaster` | jeder Kauf stellt einen weiteren Röster dieser Art auf (`roasters.<art>`) |
@@ -88,6 +89,7 @@ Die Mechanik selbst gehört zum Spielkern: Röstcharge, erster und zweiter Crack
   - zu jedem Röstgrad `levels.<id>`
   - die Texte von Skala, Status, Übersicht, Einblendungen und Bannern
 - **Platzhalter** wie `{value}` müssen in beiden Sprachen gleich sein. Das prüft ein Unit-Test.
+- **Ziele mit Menge:** Bei `goals.<id>` setzt das Spiel `{value}` auf das `min` der Bedingung, etwa „Verdiene {value} mit Verkäufen.“ Die Zahl steht so nur in `theme.json`.
 - **Fehlende Texte:** Fehlt ein Text, zeigt das Spiel den Schlüssel und meldet ihn in der Konsole. Damit schlägt auch der Browser-Test an.
 
 ## Balance-Simulator
@@ -110,9 +112,13 @@ Beide kaufen, was das aktuelle Ziel verlangt, danach alles, was sie sich leisten
 
 **Warnungen:** Zeitpunkte außerhalb von `simulation.targets` (je Spieler und Meilenstein `[frühestens, spätestens]` in Sekunden).
 
-**Stand 01.10.2026 (Schritt 4a):**
-- aktiv: Café nach 4:11 bis 4:24, Umzug nach 6:16 bis 6:41, im zweiten Durchgang Café nach 2:15 bis 2:27
-- gemütlich: Café nach 5:01 bis 5:24, Umzug nach 7:16 bis 7:51, im zweiten Durchgang Café nach 2:31 bis 2:49
+**Stand 01.10.2026 (Schritt 4b):**
+- aktiv: Café nach 4:11 bis 4:24, Röstkurs nach 12:38 bis 12:56, Umzug nach 15:12 bis 15:30; im zweiten Durchgang Café nach 2:10 bis 2:27, Röstkurs nach 6:30 bis 6:56
+- gemütlich: Café nach 5:01 bis 5:24, Umzug nach 17:09 bis 17:34; im zweiten Durchgang Röstkurs nach 7:34 bis 7:51
+- längste Wartezeit ohne Kauf, Ziel oder Umzug: 1:50 (aktiv), 1:44 (gemütlich)
 - keine Warnungen
-- Die Zielwerte für den Umzug sind vorläufig. Schritt 4b bringt Inhalt zwischen Café und Umzug und stellt den Umzug auf etwa 15 bis 20 Minuten aktives Spiel ein.
+- **Wie der Inhalt nach dem Café gebaut ist:**
+  - Nach dem Café kommen zu wenige Gäste; der Wagen ist meist voll. Deshalb folgen erst mehr Gäste (Kundenstopper) und höhere Preise (Espressomaschine).
+  - Mit dem Lastenrad kommen dann mehr Gäste, als die Röster schaffen, und einige gehen leer aus. Der Gasbrenner behebt das, danach hebt der Röstkurs die Preise.
+  - Zwischen den Käufen liegen Ziele für Einnahmen. Sie wachsen im Hafenviertel mit den doppelten Preisen mit, sodass auch der zweite Durchgang ohne lange Pausen bleibt.
 - Automatik am Ende: 343 bis 361 pro Minute, also etwa 82.000 bis 87.000 für 8 Stunden offline. Das ist weit mehr als der teuerste Ausbau (400). Solange das Spiel nach dem Café endet, fällt das nicht ins Gewicht; Schritt 4 muss Preise und Offline-Ertrag zusammen einstellen.

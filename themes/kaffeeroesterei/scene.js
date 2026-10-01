@@ -181,6 +181,67 @@ const HARBOR = `
 </g>
 `;
 
+// ---- Upgrades after the café --------------------------------------------------
+
+// Chalkboard sign on the pavement, right of the cart.
+const BOARD = `
+<g transform="translate(832 612)">
+  <ellipse cy="1" rx="20" ry="3" fill="#000" opacity=".14"/>
+  <path d="M-17 0L-6 -58H6L17 0" stroke="#7A4F32" stroke-width="4" fill="none" stroke-linejoin="round"/>
+  <rect x="-15" y="-54" width="30" height="38" rx="3" fill="#2A2A2A" stroke="#8A5B3A" stroke-width="2.5"/>
+  <g fill="none" stroke="#F4E6CF" stroke-width="1.8" stroke-linecap="round">
+    <path d="M-8 -42H5V-36Q5 -30 -1.5 -30Q-8 -30 -8 -36Z"/>
+    <path d="M5 -40Q9 -40 9 -37Q9 -34 5 -34"/>
+    <path d="M-9 -24H9"/>
+  </g>
+</g>
+`;
+
+// Espresso machine in the top of the café window, above the cart's awning.
+const ESPRESSO = `
+<g transform="translate(712 394)">
+  <rect x="-20" y="-36" width="40" height="36" rx="4" fill="#C9CFD4" stroke="#7A838B" stroke-width="2"/>
+  <rect x="-20" y="-36" width="40" height="9" rx="4" fill="#8E979E"/>
+  <rect x="-7" y="-25" width="14" height="7" rx="2" fill="#4A4646"/>
+  <path d="M-6 -12H6V-6Q6 -2 0 -2Q-6 -2 -6 -6Z" fill="#F4E6CF"/>
+  <circle cx="12" cy="-31" r="2.4" fill="#E0664F"/>
+  <g class="steam" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" opacity=".7">
+    <path d="M-3 -14Q-6 -18 -3 -22"/><path d="M3 -14Q6 -18 3 -22"/>
+  </g>
+</g>
+`;
+
+// Framed certificate of the roasting course, on the wall of the roastery.
+const DIPLOMA = `
+<g transform="translate(272 214)">
+  <rect x="-27" y="-22" width="54" height="42" rx="2" fill="#8B5A36"/>
+  <rect x="-23" y="-18" width="46" height="34" fill="#F7EEDC"/>
+  <path d="M-16 -10H16M-16 -4H10M-16 2H6" stroke="#B9A07A" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="13" cy="9" r="5.5" fill="#E0B25A"/>
+  <path d="M10 13L9 20L13 17.5L17 20L16 13" fill="#C8553D"/>
+</g>
+`;
+
+function cargoBikeMarkup() {
+  return `
+  <g class="ride">
+    <circle cx="-46" cy="-14" r="14" fill="none" stroke="#2A2A2A" stroke-width="4"/>
+    <circle cx="40" cy="-14" r="14" fill="none" stroke="#2A2A2A" stroke-width="4"/>
+    <rect x="-70" y="-58" width="50" height="30" rx="4" fill="#C8783F" stroke="#8E4F28" stroke-width="2"/>
+    <g transform="translate(-45 -43) rotate(-25)"><ellipse rx="6" ry="8.5" fill="#6E4023"/><path d="M0 -7Q-3 0 0 7" stroke="#C8783F" stroke-width="1.8" fill="none"/></g>
+    <path d="M-46 -14L-20 -30H18L40 -14M-20 -30L-26 -54M18 -30L10 -48" stroke="#2E8C84" stroke-width="5" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M-32 -56H-20" stroke="#2A2A2A" stroke-width="4" stroke-linecap="round"/>
+    <rect x="2" y="-52" width="18" height="6" rx="3" fill="#2A2A2A"/>
+    <g class="person">
+      <path d="M12 -50L6 -86" stroke="#3D5A80" stroke-width="14" stroke-linecap="round"/>
+      <path d="M8 -80L-22 -58" stroke="#3D5A80" stroke-width="7" stroke-linecap="round"/>
+      <path d="M12 -48L-2 -26" stroke="#2F3E46" stroke-width="8" stroke-linecap="round"/>
+      <circle cx="4" cy="-100" r="11" fill="#D9A27C"/>
+      <path d="M-7 -102Q-5 -114 5 -113Q15 -112 14 -101Q9 -107 3 -107Q-3 -107 -7 -102Z" fill="#6B4226"/>
+    </g>
+  </g>`;
+}
+
 const CAFE = `
 <rect x="648" y="150" width="262" height="470" fill="#ECDCC2"/>
 <rect x="643" y="142" width="272" height="12" rx="2" fill="#CDB594"/>
@@ -324,6 +385,7 @@ function panMarkup() {
 
 function flameMarkup() {
   return `
+  <ellipse class="gas-ring" cy="2" rx="40" ry="5" fill="none" stroke="#6EB6FF" stroke-width="3"/>
   <g class="flame">
     <path class="tongue t1" d="M-46 0Q-50 -12 -42 -24Q-38 -12 -32 -8Q-32 -2 -46 0Z" fill="url(#g-flame)"/>
     <path class="tongue t2" d="M-30 0Q-34 -14 -22 -28Q-12 -14 -14 0Z" fill="url(#g-flame)"/>
@@ -569,9 +631,14 @@ export function createScene(svg, { firstCrack, slots, levels }) {
   );
   const panHit = el('rect', { x: 20, y: 360, width: 210, height: 150, fill: 'transparent', 'data-hit': 'pan', class: 'hit' }, svg);
 
+  const diploma = group(svg, DIPLOMA, { class: 'diploma hidden' });
+  const espresso = group(svg, ESPRESSO, { class: 'espresso hidden' });
   group(svg, CART_ART);
+  const board = group(svg, BOARD, { class: 'board hidden' });
   const stockLayer = svg.querySelector('[data-ref="stock"]');
   const guestsLayer = group(svg, '', { class: 'guests' });
+  // The cargo bike rides past on the road now and then (see styles.css).
+  const cargoBike = group(svg, cargoBikeMarkup(), { class: 'cargo-bike hidden', transform: 'translate(0 698)' });
   const bike = group(svg, bikeMarkup(), { class: 'bike-wrap hidden', transform: `translate(1200 ${BIKE_Y})` });
   const bikeHit = el('rect', { x: -95, y: -140, width: 170, height: 150, fill: 'transparent', 'data-hit': 'delivery', class: 'hit' }, bike);
   drums.forEach(({ g }, index) => {
@@ -755,6 +822,11 @@ export function createScene(svg, { firstCrack, slots, levels }) {
 
     cafe.classList.toggle('hidden', !(s.owned.cafe > 0));
     buildings.classList.toggle('hidden', s.owned.cafe > 0);
+    board.classList.toggle('hidden', !(s.owned.board > 0));
+    espresso.classList.toggle('hidden', !(s.owned.espresso > 0 && s.owned.cafe > 0));
+    cargoBike.classList.toggle('hidden', !(s.owned.cargoBike > 0));
+    diploma.classList.toggle('hidden', !(s.owned.diploma > 0));
+    flame.classList.toggle('strong', s.owned.burner > 0);
     // Every location after the first one is at the harbor.
     harbor.classList.toggle('hidden', !(s.location > 0));
     harborBuildings.classList.toggle('hidden', s.owned.cafe > 0);
@@ -825,6 +897,11 @@ export function createScene(svg, { firstCrack, slots, levels }) {
         if (event.id === 'sign') burst({ x: 692, y: 270 }, '#F2C14E', 10, 50);
         if (event.id === 'cafe') burst({ x: 779, y: 300 }, '#F2C14E', 18, 140);
         if (event.id === 'biggerPan') burst({ x: PAN.x, y: PAN.y }, '#F2C14E', 10, 70);
+        if (event.id === 'board') burst({ x: 832, y: 580 }, '#F2C14E', 10, 50);
+        if (event.id === 'espresso') burst({ x: 712, y: 376 }, '#F2C14E', 12, 60);
+        if (event.id === 'cargoBike') burst({ x: 900, y: 640 }, '#F2C14E', 12, 80);
+        if (event.id === 'burner') burst({ x: PAN.x, y: 466 }, '#6EB6FF', 14, 60);
+        if (event.id === 'diploma') burst({ x: 272, y: 214 }, '#F2C14E', 12, 60);
         break;
       default:
         break;
@@ -856,6 +933,16 @@ export const LOCATION_ICONS = {
 
 // Icons for the upgrade list, keyed by item id, and the currency.
 export const ITEM_ICONS = {
+  board:
+    '<svg viewBox="0 0 40 40"><path d="M9 37L17 5H23L31 37" stroke="#8B5A36" stroke-width="3" fill="none" stroke-linejoin="round"/><rect x="11" y="9" width="18" height="22" rx="2" fill="#2A2A2A" stroke="#8B5A36" stroke-width="2"/><path d="M15 16H23V20Q23 24 19 24Q15 24 15 20Z M23 17.5Q26 17.5 26 19.5Q26 21.5 23 21.5" stroke="#F4E6CF" stroke-width="1.6" fill="none"/></svg>',
+  espresso:
+    '<svg viewBox="0 0 40 40"><rect x="8" y="7" width="24" height="26" rx="3" fill="#C9CFD4" stroke="#7A838B" stroke-width="1.5"/><rect x="8" y="7" width="24" height="7" rx="3" fill="#8E979E"/><rect x="16" y="14" width="8" height="5" rx="1" fill="#4A4646"/><path d="M15 24H23V27Q23 30 19 30Q15 30 15 27Z" fill="#F4E6CF"/><rect x="6" y="32" width="28" height="4" rx="2" fill="#4A4646"/><circle cx="27" cy="10.5" r="1.8" fill="#E0664F"/></svg>',
+  cargoBike:
+    '<svg viewBox="0 0 40 40"><circle cx="9" cy="30" r="6" fill="none" stroke="#2A2A2A" stroke-width="2.5"/><circle cx="32" cy="30" r="6" fill="none" stroke="#2A2A2A" stroke-width="2.5"/><rect x="2" y="13" width="15" height="10" rx="2" fill="#C8783F"/><path d="M9 30L17 23H26L32 30M17 23L15 12M26 23L23 15" stroke="#2E8C84" stroke-width="2.5" fill="none" stroke-linejoin="round" stroke-linecap="round"/><rect x="21" y="13" width="7" height="3" rx="1.5" fill="#2A2A2A"/></svg>',
+  burner:
+    '<svg viewBox="0 0 40 40"><ellipse cx="20" cy="33" rx="13" ry="3.5" fill="#4A4646"/><path d="M20 5Q30 15 27 24Q25 31 20 31Q15 31 13 24Q10 15 20 5Z" fill="#6EB6FF"/><path d="M20 13Q26 20 24 25Q23 29 20 29Q17 29 16 25Q14 20 20 13Z" fill="#E8F4FF"/></svg>',
+  diploma:
+    '<svg viewBox="0 0 40 40"><rect x="4" y="7" width="32" height="23" rx="2" fill="#F7EEDC" stroke="#8B5A36" stroke-width="2.5"/><path d="M10 14H30M10 18H25M10 22H20" stroke="#B9A07A" stroke-width="2" stroke-linecap="round"/><circle cx="28" cy="27" r="5" fill="#E0B25A"/><path d="M25 31L24 37L28 34.5L32 37L31 31" fill="#C8553D"/></svg>',
   biggerPan:
     '<svg viewBox="0 0 40 40"><ellipse cx="18" cy="22" rx="14" ry="5" fill="#403B3B"/><path d="M4 22Q5 30 12 30H24Q31 30 32 22Z" fill="#2F2C2C"/><path d="M32 21H38" stroke="#8B5A36" stroke-width="4" stroke-linecap="round"/><g fill="#844E2A"><ellipse cx="12" cy="21" rx="3" ry="2"/><ellipse cx="18" cy="20" rx="3" ry="2"/><ellipse cx="24" cy="22" rx="3" ry="2"/></g><path d="M30 5V15M25 10H35" stroke="#1D746D" stroke-width="3.4" stroke-linecap="round"/></svg>',
   sign: '<svg viewBox="0 0 40 40"><path d="M4 7H33" stroke="#2A1D17" stroke-width="3" stroke-linecap="round"/><path d="M12 7V12M26 7V12" stroke="#6F777E" stroke-width="2"/><rect x="7" y="12" width="26" height="21" rx="5" fill="#2A1D17" stroke="#E0B25A" stroke-width="2"/><g transform="translate(20 22.5) rotate(-25)"><ellipse rx="4.6" ry="6.2" fill="#C8783F"/><path d="M0 -5Q-2 0 0 5" stroke="#2A1D17" stroke-width="1.4" fill="none"/></g></svg>',
