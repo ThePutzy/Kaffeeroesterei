@@ -60,7 +60,8 @@
     { "id": "cafe", "reward": 80, "done": { "owned": "cafe" } }
   ],
   "goalPauseSeconds": 1.2,
-  "offline": { "rate": 0.5, "maxHours": 8, "minAwaySeconds": 60, "warmupSeconds": 30, "sampleSeconds": 120 },
+  "offline": { "rate": 0.5, "maxHours": 8, "minAwaySeconds": 60, "warmupSeconds": 30, "sampleSeconds": 120, "doublePriceShare": 0.5 },
+  "boost": { "factor": 2, "seconds": 600, "priceSeconds": 300, "adsPerDay": 6, "reveal": { "owned": "helper" } },
   "simulation": {
     "seeds": [1, 2, 3, 4, 5],
     "seconds": 420,

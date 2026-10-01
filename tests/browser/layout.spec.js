@@ -1,4 +1,4 @@
-import { expect, openGame, test } from './helpers.js';
+import { HOUR, expect, openAt, openGame, saveText, seedSave, test } from './helpers.js';
 
 // A phone in portrait plus all iframe sizes CrazyGames lists as most
 // important (docs.crazygames.com/requirements/gameplay, read 2026-09-28).
@@ -47,6 +47,39 @@ for (const viewport of VIEWPORTS) {
       const browser = testInfo.project.name;
       await page.screenshot({ path: `test-results/screenshots/${browser}-${viewport.name}.png` });
     });
+
+    test('with the helper: the boost card fits in the side panel, the welcome dialog on the screen', async ({ page }, testInfo) => {
+      await seedSave(page, saveText({ awayMs: 2 * HOUR }));
+      await openAt(page);
+      const dialog = page.getByRole('dialog', { name: 'Welcome back!' });
+      const box = await dialog.boundingBox();
+      expect(box.y, 'dialog below the top edge').toBeGreaterThanOrEqual(0);
+      expect(box.y + box.height, 'dialog above the bottom edge').toBeLessThanOrEqual(viewport.height);
+      for (const button of await dialog.getByRole('button').all()) {
+        expect.soft((await button.boundingBox()).height).toBeGreaterThanOrEqual(44);
+      }
+      const browser = testInfo.project.name;
+      await page.screenshot({ path: `test-results/screenshots/${browser}-${viewport.name}-welcome.png` });
+      await dialog.getByRole('button', { name: 'Continue' }).click();
+
+      const boost = page.locator('[data-ref="boost"]');
+      const side = await page.locator('.side').boundingBox();
+      const card = await boost.boundingBox();
+      expect(card.x).toBeGreaterThanOrEqual(side.x);
+      expect(card.x + card.width).toBeLessThanOrEqual(side.x + side.width + 1);
+      for (const button of await boost.locator('button:visible').all()) {
+        const size = await button.boundingBox();
+        expect.soft(size.width, 'boost button width').toBeGreaterThanOrEqual(44);
+        expect.soft(size.height, 'boost button height').toBeGreaterThanOrEqual(44);
+      }
+      await page.screenshot({ path: `test-results/screenshots/${browser}-${viewport.name}-boost.png` });
+      const spilling = await page.evaluate(() =>
+        [...document.querySelectorAll('.boost-title, .boost-sub, .boost-note, .reward-btn')]
+          .filter((node) => node.scrollWidth > node.clientWidth + 1)
+          .map((node) => node.textContent),
+      );
+      expect(spilling).toEqual([]);
+    });
   });
 }
 
@@ -56,15 +89,24 @@ for (const viewport of [VIEWPORTS[0], VIEWPORTS[1], VIEWPORTS[4]]) {
   test.describe(`German texts at ${viewport.width}x${viewport.height}`, () => {
     test.use({ viewport: { width: viewport.width, height: viewport.height }, locale: 'de-DE' });
 
-    test('the goal, the gauge labels and the upgrades stay inside their boxes', async ({ page }) => {
-      await openGame(page, '/?seed=1');
-      await expect(page.locator('html')).toHaveAttribute('lang', 'de');
-      const spilling = await page.evaluate(() =>
-        [...document.querySelectorAll('.goal-text, .gauge-labels span, .item-name, .lock-note, .stats dt, .stats dd')]
+    const spillingTexts = (page) =>
+      page.evaluate(() =>
+        [...document.querySelectorAll('.goal-text, .gauge-labels span, .item-name, .lock-note, .stats dt, .stats dd, .boost-title, .boost-sub, .boost-note, .reward-btn')]
           .filter((node) => node.scrollWidth > node.clientWidth + 1 || node.getBoundingClientRect().right > window.innerWidth)
           .map((node) => node.textContent),
       );
-      expect(spilling).toEqual([]);
+
+    test('the goal, the gauge labels and the upgrades stay inside their boxes', async ({ page }) => {
+      await openGame(page, '/?seed=1');
+      await expect(page.locator('html')).toHaveAttribute('lang', 'de');
+      expect(await spillingTexts(page)).toEqual([]);
+    });
+
+    test('with the helper, the boost card stays inside its box too', async ({ page }) => {
+      await seedSave(page, saveText());
+      await openAt(page);
+      await expect(page.locator('[data-ref="boost"]')).toBeVisible();
+      expect(await spillingTexts(page)).toEqual([]);
     });
   });
 }

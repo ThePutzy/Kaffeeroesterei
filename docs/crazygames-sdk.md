@@ -19,12 +19,12 @@ Quellen:
 
 ## Stand im Spiel
 
-> **Stand Schritt 2 des Plans für das neue Spiel (01.10.2026):** Das Spiel speichert wieder im `localStorage` und zahlt einen Offline-Ertrag, bietet aber noch keine Belohnungen an. Boost und Offline-Verdopplung kommen mit Schritt 3. Wo diese Datei unten vom Boost oder von „Kaufen für …“ spricht, beschreibt sie das Spiel vor der Neuausrichtung. Das Datenmodul des SDK (siehe „Speichern“) nutzt das Spiel noch nicht; das gehört zur SDK-Anbindung für den Full Launch.
+> **Stand Schritt 3 des Plans für das neue Spiel (01.10.2026):** Das Spiel speichert im `localStorage`, zahlt einen Offline-Ertrag und bietet Boost und Offline-Verdopplung nach den Entscheidungen vom 30.09.2026 an, jeweils per Anzeige oder als Kauf. Das Datenmodul des SDK (siehe „Speichern“) nutzt das Spiel noch nicht; das gehört zur SDK-Anbindung für den Full Launch.
 
 - **Basic Launch:** Das Paket `dist/crazygames` nutzt den Platzhalter-Adapter `src/ads/crazygames.js`. Er lädt kein SDK, macht keine Anfragen und zeigt keine Werbung.
   - Laut CrazyGames ist Werbung im Basic Launch ohnehin abgeschaltet.
-  - Belohnungs-Knöpfe bleiben ausgeblendet. So verlangt es CrazyGames: keine Belohnungs-Knöpfe ohne Wirkung.
-  - Der Boost bleibt über „Kaufen für …“ erreichbar.
+  - Werbe-Knöpfe bleiben ausgeblendet. So verlangt es CrazyGames: keine Belohnungs-Knöpfe ohne Wirkung. Ein Browser-Test prüft das für beide Pakete.
+  - Boost und Verdopplung bleiben als Kauf erreichbar: „Kaufen für …“ und „Verdoppeln für …“.
 - **Sprache:** Englisch, bis das SDK eine Locale liefert. Der Spieler kann wechseln.
 - **Speicherstand:** `localStorage` über `createStore` in `src/core/save.js`.
 
@@ -62,21 +62,24 @@ Die Regeln zu Belohnungen am 30.09.2026 noch einmal nachgelesen.
   - Bei `adError` keine Belohnung.
 - **Werbeblocker:** Das Spiel muss trotzdem normal spielbar sein. Belohnungs-Knöpfe ohne Wirkung sind verboten.
 
-## Wie das bisherige Spiel das umgesetzt hat
-
-Gilt für das Spiel vor Schritt 1 des neuen Plans; mit Schritt 3 kommt eine neue Umsetzung nach den Entscheidungen unten.
+## Wie das Spiel das umsetzt (seit Schritt 3 des neuen Plans)
 
 - **Werbung nur auf Wunsch:**
-  - Belohnungen gibt es nur nach einem Klick auf „Werbung ansehen“: 10 min doppelte Einnahmen, Offline-Ertrag verdoppeln.
-  - Den Boost bietet das Spiel erst an, wenn etwas produziert.
+  - Eine Anzeige startet nur nach einem Klick auf einen Knopf mit Video-Symbol: „Werbung“ in der Boost-Karte, „Verdoppeln mit Werbung“ im Dialog „Willkommen zurück!“. Ein Browser-Test prüft, dass ohne Klick keine Anzeige startet.
+  - Den Boost bietet das Spiel erst ab der Helferin an (`boost.reveal` in `theme.json`). Vorher gibt es noch keine Automatik, deren Einnahmen sich verdoppeln ließen, und die Einführung läuft noch. Das passt auch zur Regel, keine Werbung zu zeigen, bevor man eine angemessene Zeit gespielt hat.
   - Im Dialog „Willkommen zurück!“ ist „Weiter“ vorausgewählt; Enter startet also keine Anzeige.
   - Nur eine Anzeige zur Zeit, und die Belohnung erst nach einer tatsächlich gesehenen Anzeige (`src/core/adflow.js`).
-- **Zwischenanzeigen:** vorerst keine (Entscheidung vom 30.09.2026). Das Spiel ruft `showInterstitial` nicht auf; ein Browser-Test prüft, dass nach einem Prestige keine Anzeige kommt.
-- **Während einer Anzeige** sperrt ein modaler Dialog die ganze Oberfläche; auch mehrfaches Escape schließt ihn nicht. Antwortet ein Adapter nicht, gilt die Anzeige nach 2 Minuten als beendet, ohne Belohnung.
-- **Gestaltung:**
-  - Werbe-Knöpfe tragen ein Video-Symbol und sind genauso groß wie der Knopf ohne Werbung daneben: „Kaufen für …“ beim Boost, „Weiter“ im Offline-Dialog. Browser-Tests messen das.
-  - Läuft der Boost, ist das Angebot ausgeblendet, und ein Timer zeigt die Restzeit.
-  - Nach einer Belohnung erscheint eine Meldung. Gibt es keine Anzeige, bittet eine Meldung, es später noch einmal zu versuchen.
+- **Zwischenanzeigen:** vorerst keine (Entscheidung vom 30.09.2026). Das Spiel ruft `showInterstitial` nicht auf.
+- **Während einer Anzeige:**
+  - Das Spiel steht still. Die Zeit zählt weder als Spielzeit noch als Abwesenheit (`src/main.js`), damit der Spieler währenddessen nicht vorankommt.
+  - Der Ton ist aus, und ein modaler Dialog sperrt die ganze Oberfläche; auch mehrfaches Escape schließt ihn nicht.
+  - Antwortet ein Adapter nicht, gilt die Anzeige nach 2 Minuten als beendet, ohne Belohnung.
+- **Gestaltung** nach dem Design-Board „Full Roast Ahead – Design“:
+  - Der Boost steht in einer eigenen Karte oben im Seitenbereich, nie in der Spielszene.
+  - Werbe-Knopf und Kauf-Knopf sind gleich groß und gleich gestaltet. Auf schmalen Seitenbereichen, etwa bei 800×450, stehen sie untereinander. Im Dialog „Willkommen zurück!“ sind „Weiter“, „Verdoppeln mit Werbung“ und „Verdoppeln für …“ gleich groß. Browser-Tests messen das.
+  - Läuft der Boost, ist das Angebot ausgeblendet, und die Karte zeigt die Restzeit und einen Balken.
+  - Kann man sich den Kauf noch nicht leisten, ist der Knopf gesperrt, sieht aber gleich aus; eine Linie zeigt, wie viel noch fehlt.
+  - Gibt es keine Anzeige, sagt die Karte beziehungsweise der Dialog, man solle es später noch einmal versuchen. Eine Belohnung gibt es dann nicht.
 
 ## Werbung: Entscheidungen vom 30.09.2026
 
@@ -105,13 +108,10 @@ Diese Regeln gelten für die Neuausrichtung des Spiels (siehe `CLAUDE.md`). Alle
 - **Kauf als Alternative beim Offline-Ertrag:** CrazyGames verlangt eine Alternative zur Anzeige („Provide an alternative to watching an ad“). Zum halben Preis lohnt sich der Kauf, die Anzeige bleibt aber doppelt so ergiebig.
 - **Keine Zwischenanzeigen:** Entscheidung des Nutzers vom 30.09.2026, vorerst. Zum Vergleich nennt CrazyGames auf derselben Seite für die besten Clicker-Spiele „5.5 ad impressions per play, with about half coming from rewarded ads“.
 
-**Stand im bisherigen Spiel (`src/`):**
-- Umgesetzt: Boost 10 Minuten mit Kauf für 5 Minuten Produktion. Die Zwischenanzeige nach dem Prestige ist entfernt.
-- Es fehlen noch:
-  - die Pause der Restzeit außerhalb des Spiels (heute läuft sie auch offline ab)
-  - die Tagesgrenze
-  - die Alternative ohne Werbung beim Offline-Ertrag
-  - der eigene Bereich für das Angebot
+**Umgesetzt mit Schritt 3 des neuen Plans:** alle Punkte oben.
+- **Kaufpreis des Boosts:** Er entspricht 5 Minuten dessen, was die Automatik ohne Spieler einbringt. Die Spielregeln messen das an einer frischen Kopie mit demselben Ausbau, also hängt der Preis nur vom Ausbau ab und bleibt bis zum nächsten Kauf gleich.
+- **Was der Boost verdoppelt:** die Verkaufspreise, damit auch die Belohnung der Sonderlieferung, die sich nach den Einnahmen richtet. Zielbelohnungen verdoppelt er nicht.
+- **Uhr nur beim Spielen:** Die Restzeit läuft nur in Bildern, die man sieht. Zeit in einem verborgenen Tab spielt das Spiel ohne Boost nach. Den Offline-Ertrag verdoppelt der Boost nicht.
 
 ## Offene Punkte für den Full Launch
 
@@ -123,9 +123,7 @@ Diese Regeln gelten für die Neuausrichtung des Spiels (siehe `CLAUDE.md`). Alle
 - `gameplayStart` und `gameplayStop`, `loadingStart` und `loadingStop` auslösen.
 - Die Sprache aus `user.systemInfo` übernehmen.
 - Den Speicherstand über das Datenmodul führen.
-- **Alternative ohne Werbung:** CrazyGames verlangt zu jeder Belohnung eine Alternative ohne Werbung. Für den Boost gibt es sie (Kauf mit Bohnen), für „Offline-Ertrag verdoppeln“ noch nicht. Entschieden ist ein Kauf für die Hälfte des Offline-Ertrags (siehe unten); umgesetzt ist er noch nicht.
-- **Boost-Karte:** Laut CrazyGames gehört der Knopf nicht auf einen Bildschirm mit aktivem Spielgeschehen („The request button should not appear on an active gameplay screen.“). Entschieden am 30.09.2026: Das Angebot kommt in einen eigenen Bereich, nicht in die Spielszene. Im bisherigen Spiel liegt die Karte noch unter der Klickfläche.
-- **Offene Auslegung:** Während einer Anzeige ist die Bedienung gesperrt, die Produktion läuft aber weiter. CrazyGames verlangt, dass das Spiel während einer Anzeige pausiert und der Spieler nicht vorankommt. Ob passive Produktion dazu zählt, vor dem Full Launch klären; notfalls die Zeit der Anzeige nicht mitrechnen.
+- **Pause während einer Anzeige:** Seit Schritt 3 steht das ganze Spiel still, solange eine Anzeige läuft, auch die Automatik; die frühere offene Auslegung ist damit erledigt. Beim echten Adapter prüfen, dass `showRewarded()` erst nach `adFinished` oder `adError` endet, sonst läuft das Spiel zu früh weiter.
 - **Nicht geprüft:** Das Overlay ist ein modaler `<dialog>` und liegt damit über allem anderen auf der Seite. Zeichnet ein Werbe-SDK seine Anzeige im Spiel selbst, etwa mit hohem `z-index`, könnte das Overlay sie verdecken. Beim Bau eines echten Adapters prüfen und das Overlay notfalls ausblenden, sobald die Anzeige startet.
 - **Developer-Terms:** Die Fassung vom 18.08.2025 ist in `CLAUDE.md` zusammengefasst, ausführlicher in [docs/recherche/idle-miner-und-adventure-capitalist.md](recherche/idle-miner-und-adventure-capitalist.md). Das ist keine Rechtsberatung; vor der Zustimmung liest der Nutzer die Bedingungen selbst.
 

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { config as devConfig } from '../../src/config.js';
-import { expect, openGame, test } from './helpers.js';
+import { HOUR, expect, openAt, openGame, saveText, seedSave, test } from './helpers.js';
 
 const targets = JSON.parse(readFileSync(new URL('../../config/targets.json', import.meta.url), 'utf8'));
 
@@ -16,6 +16,25 @@ for (const [name, target] of Object.entries(targets)) {
     await openGame(page, `/dist/${name}/`);
     await expect(page.locator('html')).toHaveAttribute('data-target', name);
     await expect(page.locator('html')).toHaveAttribute('data-items', itemCount(target.runtime.theme));
+  });
+}
+
+// Neither package has an ad network yet (the CrazyGames adapter is the
+// placeholder for the Basic Launch), so no button may offer an ad; the
+// purchases stay (CrazyGames: no reward buttons without an effect).
+for (const name of Object.keys(targets)) {
+  test(`package "${name}" shows the purchases but no ad buttons`, async ({ page }) => {
+    await seedSave(page, saveText({ awayMs: 2 * HOUR }));
+    await openAt(page, `/dist/${name}/`);
+    const dialog = page.getByRole('dialog', { name: 'Welcome back!' });
+    await expect(dialog.getByRole('button', { name: /^Double for / })).toBeVisible();
+    await expect(dialog.locator('[data-action="double-ad"]')).toBeHidden();
+    await dialog.getByRole('button', { name: 'Continue' }).click();
+    await expect(page.locator('[data-ref="boost"]')).toBeVisible();
+    await expect(page.locator('[data-ref="boost-buy"]')).toHaveText(/^Buy for /);
+    await expect(page.locator('[data-ref="boost-ad"]')).toBeHidden();
+    await expect(page.locator('[data-ref="boost-note"]')).toBeHidden();
+    await expect(page.locator('svg.video:visible')).toHaveCount(0);
   });
 }
 

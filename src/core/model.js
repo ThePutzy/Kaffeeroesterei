@@ -109,6 +109,14 @@ export function validateTheme(theme) {
   check(isCount(offline.minAwaySeconds), 'offline.minAwaySeconds must be 0 or more');
   check(isCount(offline.warmupSeconds), 'offline.warmupSeconds must be 0 or more');
   check(isPositive(offline.sampleSeconds), 'offline.sampleSeconds must be above 0');
+  check(offline.doublePriceShare > 0 && offline.doublePriceShare <= 1, 'offline.doublePriceShare must be above 0 and at most 1');
+
+  const boost = theme?.boost ?? {};
+  check(boost.factor > 1, 'boost.factor must be above 1');
+  check(isPositive(boost.seconds), 'boost.seconds must be above 0');
+  check(isPositive(boost.priceSeconds), 'boost.priceSeconds must be above 0');
+  check(Number.isInteger(boost.adsPerDay) && boost.adsPerDay >= 0, 'boost.adsPerDay must be a whole number of 0 or more');
+  if (boost.reveal !== undefined) condition(boost.reveal, 'boost.reveal');
   return problems;
 }
 
@@ -211,6 +219,8 @@ export function createRules(theme) {
       sales: [],
       stockFullFor: 0,
       stats: { ...Object.fromEntries(STATS.map((stat) => [stat, 0])), lostAt: -Infinity },
+      boost: 0, // seconds left of a running boost
+      adBoosts: { day: null, count: 0 }, // boosts by ad on that calendar day
       events: [],
     };
     // The first guest already waits at the cart, so the first batch sells at once.
@@ -236,7 +246,7 @@ export function createRules(theme) {
   }
 
   function price(s, matched) {
-    return Math.round(sales.basePrice * product(s, 'priceFactor') * (matched ? sales.matchFactor : 1));
+    return Math.round(sales.basePrice * product(s, 'priceFactor') * (matched ? sales.matchFactor : 1)) * boostFactor(s);
   }
 
   function incomePerMinute(s) {
@@ -331,6 +341,10 @@ export function createRules(theme) {
   function step(s, dt) {
     if (!(dt > 0)) return;
     s.t += dt;
+    if (s.boost > 0) {
+      s.boost = Math.max(0, s.boost - dt);
+      if (s.boost === 0) emit(s, 'boostEnd');
+    }
     stepRoaster(s, s.pan, 'pan', dt);
     s.drums.forEach((drum, index) => stepRoaster(s, drum, index, dt));
     stepCustomers(s, dt);
@@ -561,6 +575,78 @@ export function createRules(theme) {
     }
   }
 
+  // ---- Boost -----------------------------------------------------------------------
+  //
+  // Income times boost.factor for boost.seconds of play the player sees
+  // (CLAUDE.md): by ad up to boost.adsPerDay times per calendar day, or
+  // bought for boost.priceSeconds of what the automation earns. One at a time.
+  // Calendar days come from the caller as "YYYY-MM-DD" (the device's date).
+
+  const BOOST = theme.boost;
+  const boostPrices = new Map();
+
+  function boostFactor(s) {
+    return s.boost > 0 ? BOOST.factor : 1;
+  }
+
+  // Whether the offer is shown at all: from boost.reveal on (after the
+  // first automation, so there is income to double and the tutorial is over).
+  function boostOffered(s) {
+    return BOOST.reveal === undefined || meets(s, BOOST.reveal);
+  }
+
+  function adBoostsLeft(s, day) {
+    const used = s.adBoosts.day === day ? s.adBoosts.count : 0;
+    return Math.max(0, BOOST.adsPerDay - used);
+  }
+
+  function canAdBoost(s, day) {
+    return boostOffered(s) && !(s.boost > 0) && adBoostsLeft(s, day) > 0;
+  }
+
+  function startBoost(s, byAd) {
+    s.boost = BOOST.seconds;
+    emit(s, 'boost', { byAd });
+  }
+
+  // The reward of a watched ad.
+  function startAdBoost(s, day) {
+    if (!canAdBoost(s, day)) return false;
+    s.adBoosts = { day, count: (s.adBoosts.day === day ? s.adBoosts.count : 0) + 1 };
+    startBoost(s, true);
+    return true;
+  }
+
+  // What the boost costs: boost.priceSeconds of the automation's income. It
+  // depends only on what the player owns, measured on a fresh copy, so it
+  // stays the same until the next purchase.
+  function boostPrice(s) {
+    const key = ITEMS.map((item) => itemCount(s, item.id)).join(',');
+    if (!boostPrices.has(key)) {
+      const sample = sanitizeState({ t: 0, money: 0, rng: 1, owned: s.owned });
+      boostPrices.set(key, Math.ceil((automaticIncomePerMinute(sample) * BOOST.priceSeconds) / 60));
+    }
+    return boostPrices.get(key);
+  }
+
+  function buyBoost(s) {
+    if (!boostOffered(s) || s.boost > 0) return false;
+    const cost = boostPrice(s);
+    if (!(cost > 0) || s.money < cost) return false;
+    s.money -= cost;
+    startBoost(s, false);
+    return true;
+  }
+
+  // Time the player did not see, e.g. some seconds in a hidden tab: the game
+  // goes on, but a boost neither runs down nor doubles anything meanwhile.
+  function advanceUnseen(s, seconds) {
+    const boost = s.boost;
+    s.boost = 0;
+    advance(s, seconds);
+    s.boost = boost;
+  }
+
   // ---- Saving --------------------------------------------------------------------
 
   // What a save keeps: money, purchases, progress and the cart. Batches in
@@ -576,6 +662,8 @@ export function createRules(theme) {
       stats: { ...s.stats, lostAt: Number.isFinite(s.stats.lostAt) ? s.stats.lostAt : null },
       goal: s.goal.doneTimer > 0 ? s.goal.index + 1 : s.goal.index,
       nextDeliveryAt: s.nextDeliveryAt,
+      boost: s.boost,
+      adBoosts: { ...s.adBoosts },
     };
   }
 
@@ -607,6 +695,12 @@ export function createRules(theme) {
     if (!Number.isInteger(goal) || goal < 0) return null;
     s.goal.index = Math.min(goal, GOALS.length);
     s.nextDeliveryAt = Number.isFinite(saved.nextDeliveryAt) ? Math.max(saved.nextDeliveryAt, s.t + guests.firstArrival) : s.t + delivery.firstAt;
+    // Saves from before the boost have neither field.
+    s.boost = isCount(saved.boost) ? Math.min(saved.boost, BOOST.seconds) : 0;
+    const ads = saved.adBoosts;
+    if (typeof ads?.day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(ads.day) && Number.isInteger(ads.count) && ads.count >= 0) {
+      s.adBoosts = { day: ads.day, count: Math.min(ads.count, BOOST.adsPerDay) };
+    }
     // The street is empty after loading; the first guest comes soon.
     s.customers = [];
     s.arrivalTimer = guests.firstArrival;
@@ -621,6 +715,7 @@ export function createRules(theme) {
   function automaticIncomePerMinute(s) {
     const copy = structuredClone(s);
     copy.events = [];
+    copy.boost = 0; // the boost doubles neither offline earnings nor its own price
     advance(copy, theme.offline.warmupSeconds);
     const before = copy.stats.revenue;
     advance(copy, theme.offline.sampleSeconds);
@@ -664,5 +759,13 @@ export function createRules(theme) {
     serializeState,
     sanitizeState,
     automaticIncomePerMinute,
+    boostFactor,
+    boostOffered,
+    adBoostsLeft,
+    canAdBoost,
+    startAdBoost,
+    boostPrice,
+    buyBoost,
+    advanceUnseen,
   };
 }

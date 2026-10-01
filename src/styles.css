@@ -18,6 +18,10 @@ html:not([data-ready='true']) .game {
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 html,
 body {
   margin: 0;
@@ -713,24 +717,281 @@ button {
   font-size: 13px;
 }
 
+/* ---- Welcome back (after the design board) ---- */
+
+.welcome {
+  width: min(380px, calc(100vw - 32px));
+  text-align: center;
+}
+
+.welcome-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 12px;
+  border-radius: 999px;
+  background: var(--gold);
+}
+
+.welcome-icon svg {
+  width: 30px;
+  height: 30px;
+  fill: none;
+  stroke: var(--ui-bg);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.confirm.welcome h2 {
+  font-size: 26px;
+  line-height: 1.15;
+}
+
 .welcome-amount {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 30px;
-  font-weight: 800;
+  justify-content: center;
+  gap: 10px;
+  font-size: 34px;
+  font-weight: 900;
   font-variant-numeric: tabular-nums;
 }
 
 .confirm .welcome-amount {
-  margin: 0 0 12px;
-  color: var(--gold);
+  margin: 0 0 14px;
+  color: var(--ui-text);
 }
 
 .welcome-amount svg {
   flex: none;
-  width: 1.2em;
-  height: 1.2em;
+  width: 1em;
+  height: 1em;
+}
+
+.confirm .welcome-status {
+  margin: 0 0 12px;
+  color: var(--gold);
+  font-weight: 800;
+}
+
+.welcome-actions {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.welcome-actions .reward-btn {
+  min-height: 50px;
+  border-radius: 12px;
+  background: var(--ui-card);
+  font-size: 17px;
+}
+
+.confirm.welcome .note {
+  margin: 0;
+  font-size: 12.5px;
+}
+
+/* ---- Rewards: equal buttons for the ad and the purchase ---- */
+
+.reward-actions {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.reward-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 10px;
+  overflow: hidden;
+  border: 1.5px solid var(--gold);
+  border-radius: 10px;
+  background: var(--ui-panel);
+  color: var(--ui-text);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.reward-btn > * {
+  position: relative;
+}
+
+.reward-btn svg {
+  flex: none;
+  width: 19px;
+  height: 19px;
+}
+
+.reward-btn svg.video {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Not affordable yet: same look as the ad button, with how far there is to go. */
+.reward-btn:disabled {
+  cursor: default;
+}
+
+.reward-btn .progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--gold);
+  opacity: 0.7;
+}
+
+.reward-btn:not(:disabled) .progress {
+  display: none;
+}
+
+.reward-btn:focus-visible {
+  outline: 3px solid var(--ui-text);
+  outline-offset: 3px;
+}
+
+/* ---- Boost card: the side panel, never the scene ---- */
+
+.boost {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 12px;
+  border: 1px solid var(--ui-line);
+  border-radius: 16px;
+  background: var(--ui-card);
+}
+
+.boost-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* The side panel is narrow on small screens (250 px at 800x450): there the
+   two buttons stand one above the other, still equal in size. */
+.boost {
+  container-type: inline-size;
+}
+
+.boost .reward-btn {
+  gap: 6px;
+  padding: 0 6px;
+  font-size: 14px;
+}
+
+@container (max-width: 209px) {
+  .boost .reward-actions {
+    grid-auto-flow: row;
+  }
+}
+
+.boost-badge {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--ui-bg);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.boost-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.boost-title {
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.boost-sub,
+.boost-note {
+  color: var(--ui-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.boost-note {
+  font-size: 12px;
+}
+
+.boost-note:empty {
+  display: none;
+}
+
+.boost-time {
+  color: var(--gold);
+  font-size: 22px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.boost-time:empty,
+.boost:not(.running) .boost-bar {
+  display: none;
+}
+
+.boost-bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--ui-bg);
+}
+
+.boost-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--gold);
+}
+
+.rate.boosted {
+  background: var(--gold);
+}
+
+/* ---- While an ad runs ---- */
+
+.ad-overlay {
+  padding: 18px 24px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--ui-panel);
+  color: var(--ui-text);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.ad-overlay::backdrop {
+  background: rgb(0 0 0 / 0.7);
+}
+
+.ad-overlay p {
+  margin: 0;
 }
 
 /* Why progress is not saved; stays visible while it is true. */
@@ -1193,6 +1454,37 @@ button {
   .btn {
     min-width: 0;
     font-size: 16px;
+  }
+}
+
+@media (max-height: 520px) {
+  .welcome-icon {
+    display: none;
+  }
+
+  .confirm.welcome {
+    padding: 16px 20px;
+  }
+
+  .confirm.welcome h2 {
+    font-size: 22px;
+  }
+
+  .confirm.welcome p {
+    margin-bottom: 8px;
+  }
+
+  .welcome-amount {
+    font-size: 28px;
+  }
+
+  .welcome-actions {
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .welcome-actions .reward-btn {
+    min-height: 44px;
   }
 }
 
