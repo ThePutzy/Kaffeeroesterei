@@ -1,23 +1,14 @@
 // A handful of sounds made on the spot with Web Audio: no sound files, no
 // requests. Browsers only allow audio after a tap, so unlock() is called from
-// the first pointer or key event.
+// the first pointer or key event. Whether the sound is muted is the caller's
+// to keep (step 2 of the plan stores it with the save).
 
-const STORAGE_KEY = 'roastery-prototype.muted';
-
-export function createAudio() {
+export function createAudio({ muted: startMuted = false } = {}) {
   let ctx = null;
   let master = null;
   let noise = null;
-  let muted = readMuted();
+  let muted = startMuted;
   const lastPlayed = new Map();
-
-  function readMuted() {
-    try {
-      return localStorage.getItem(STORAGE_KEY) === '1';
-    } catch {
-      return false;
-    }
-  }
 
   function unlock() {
     if (ctx) {
@@ -42,11 +33,6 @@ export function createAudio() {
 
   function setMuted(value) {
     muted = value;
-    try {
-      localStorage.setItem(STORAGE_KEY, value ? '1' : '0');
-    } catch {
-      // Storage may be blocked (private mode); the setting then lasts this visit.
-    }
     if (master) master.gain.setTargetAtTime(value ? 0 : 0.55, ctx.currentTime, 0.02);
   }
 

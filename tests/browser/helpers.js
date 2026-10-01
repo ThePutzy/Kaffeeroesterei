@@ -34,50 +34,5 @@ export async function openGame(page, path = '/') {
   await expect(page.locator('html')).toHaveAttribute('data-ready', 'true');
 }
 
-// Reads an English-formatted number such as "1,234.5" from an element.
-export async function readNumber(locator) {
-  const text = await locator.textContent();
-  return Number(text.replace(/[^0-9.]/g, ''));
-}
-
-export const SAVE_KEY = 'kaffeeroesterei.save';
-
-// Puts a save into the page's storage before the game first loads (not again
-// on reloads, so tests can check what the game itself saved).
-export async function seedStorage(page, key, text) {
-  await page.addInitScript(
-    ([storageKey, value]) => {
-      if (sessionStorage.getItem('test-seeded')) return;
-      localStorage.setItem(storageKey, value);
-      sessionStorage.setItem('test-seeded', '1');
-    },
-    [key, text],
-  );
-}
-
-export async function seedSave(page, state, { savedAt, settings = {} } = {}) {
-  const fullState = {
-    currency: 0,
-    runEarned: 0,
-    lifetimeEarned: 0,
-    clicks: 0,
-    generators: {},
-    upgrades: [],
-    prestigePoints: 0,
-    prestiges: 0,
-    achievements: [],
-    ...state,
-  };
-  await seedStorage(page, SAVE_KEY, JSON.stringify({ version: 1, savedAt, settings, state: fullState }));
-}
-
+// Tests that run the game with page.clock start it at this time.
 export const START = new Date('2026-01-01T00:00:00Z');
-
-// Time only moves when a test moves it, so production is exact. The clock
-// starts a second early: pauseAt() fails if the running clock has already
-// passed START, which happened now and then in Firefox and WebKit.
-export async function openPausedGame(page) {
-  await page.clock.install({ time: START.getTime() - 1000 });
-  await page.clock.pauseAt(START);
-  await openGame(page);
-}

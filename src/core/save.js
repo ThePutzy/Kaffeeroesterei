@@ -1,6 +1,8 @@
 // Saving and loading. Storage can be missing or throw on every access
 // (private windows, blocked site data, some iframes), so every access is
-// wrapped and the game keeps running without it.
+// wrapped and the game keeps running without it. What a usable game state is
+// decides the caller (see parseSave); the new game wires this up in step 2
+// of docs/umsetzungsplan-neues-spiel.md.
 export const SAVE_VERSION = 1;
 
 // MIGRATIONS[n] turns a version-n save into a version-(n + 1) save.
@@ -60,41 +62,10 @@ export function serialize({ state, savedAt, settings = {} }) {
   return JSON.stringify({ version: SAVE_VERSION, savedAt, settings, state });
 }
 
-const isCount = (value) => Number.isFinite(value) && value >= 0;
-
-// Checks a saved state against the current theme. Unknown ids (e.g. from an
-// older theme) are dropped; broken numbers make the whole save unreadable.
-function sanitizeState(saved, economy) {
-  const fresh = economy.createState();
-  if (!saved || typeof saved !== 'object') return null;
-  const numbers = ['currency', 'runEarned', 'lifetimeEarned', 'clicks', 'prestigePoints', 'prestiges'];
-  if (!numbers.every((field) => isCount(saved[field]))) return null;
-
-  const generators = { ...fresh.generators };
-  for (const id of Object.keys(generators)) {
-    const owned = saved.generators?.[id] ?? 0;
-    if (!Number.isInteger(owned) || owned < 0) return null;
-    generators[id] = owned;
-  }
-  const knownUpgrades = new Set((economy.theme.upgrades ?? []).map((upgrade) => upgrade.id));
-  const knownAchievements = new Set((economy.theme.achievements ?? []).map((achievement) => achievement.id));
-  const keep = (list, known) => [...new Set(Array.isArray(list) ? list : [])].filter((id) => known.has(id));
-
-  // Optional: saves from before the boost existed have no boostSeconds.
-  const boostSeconds = isCount(saved.boostSeconds) ? Math.min(saved.boostSeconds, economy.theme.boost.seconds) : 0;
-
-  return {
-    ...fresh,
-    ...Object.fromEntries(numbers.map((field) => [field, saved[field]])),
-    boostSeconds,
-    generators,
-    upgrades: keep(saved.upgrades, knownUpgrades),
-    achievements: keep(saved.achievements, knownAchievements),
-  };
-}
-
 // Returns { state, savedAt, settings } or null if the text is not a usable save.
-export function parseSave(text, economy, migrations = MIGRATIONS) {
+// sanitize(state) is the game's own check of a saved state: it returns a
+// usable copy, or null if the state cannot be used.
+export function parseSave(text, sanitize, migrations = MIGRATIONS) {
   let data;
   try {
     data = JSON.parse(text);
@@ -113,7 +84,12 @@ export function parseSave(text, economy, migrations = MIGRATIONS) {
   }
   if (data.version !== SAVE_VERSION) return null; // written by a newer game version
 
-  const state = sanitizeState(data.state, economy);
+  let state;
+  try {
+    state = sanitize(data.state);
+  } catch {
+    return null; // a check that fails on odd data must not stop the game
+  }
   if (!state) return null;
   return {
     state,
@@ -139,11 +115,11 @@ export function isNewerSave(text) {
 // - Any other unreadable save is copied to "<key>:unreadable" before the game
 //   starts fresh, so the next autosave cannot destroy it. An older copy there
 //   is kept.
-export function loadSave(store, economy) {
+export function loadSave(store, sanitize) {
   const text = store.read();
   if (text === null) return { save: null, readOnly: false };
   if (isNewerSave(text)) return { save: null, readOnly: true };
-  const save = parseSave(text, economy);
+  const save = parseSave(text, sanitize);
   if (!save && store.read(':unreadable') === null) store.write(text, ':unreadable');
   return { save, readOnly: false };
 }

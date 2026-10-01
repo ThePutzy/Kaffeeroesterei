@@ -25,7 +25,7 @@ Ein Browser-Idle-Spiel, das hauptsächlich über Werbung Geld verdienen soll. Er
 ## Neuausrichtung (29.09.2026)
 
 - Der Nutzer fand das Spiel nach dem Umsetzungsplan (eine Klickfläche mit Erzeugerliste) sehr langweilig und nannte das Aussehen „ein großes Problem“.
-- Neue Richtung: eine sichtbare Rösterei. Man röstet selbst, bedient Kunden und automatisiert Schritt für Schritt mit Helfern und Maschinen. Ein Prototyp der ersten fünf Minuten liegt in `prototype/`; laut Nutzer „schaut [er] schon viel besser aus“.
+- Neue Richtung: eine sichtbare Rösterei. Man röstet selbst, bedient Kunden und automatisiert Schritt für Schritt mit Helfern und Maschinen. Laut Nutzer „schaut [der Prototyp] schon viel besser aus“; seit Schritt 1 des neuen Plans ist er das Spiel.
 - Richtung laut Nutzer: ein Erfolg wie Idle Miner Tycoon und AdVenture Capitalist. Planbar ist das nicht, aber es gibt die Richtung vor.
   - Übernehmen: eine kleine erste Fassung, die an der Rückkehrquote gemessen wird; eine sichtbare Kette mit Engpass; frühe Automatik; ehrliche Belohnungsanzeigen; ein eigener Ton.
   - Nicht übernehmen: ihr Aussehen, ihre Figuren, Namen und Zahlen. CrazyGames zahlt nur für Spiele, die sich von bestehenden unterscheiden.
@@ -52,13 +52,12 @@ Ein Browser-Idle-Spiel, das hauptsächlich über Werbung Geld verdienen soll. Er
 
 ## Struktur
 
-- `src/core/`: Wirtschaft, Speicherstand, Offline-Ertrag, Oberfläche
+- `src/core/`: Spielregeln (`model.js`), Oberfläche, Ton, Texte, Speicherstand, Werbe-Ablauf
 - `src/ads/`: Schnittstelle mit `showRewarded` und `showInterstitial`. Adapter: `none` (Entwicklung und Tests), `crazygames`, später `adsense-h5`
-- `themes/<name>/`: `theme.json`, Texte `en` und `de`, eigene SVG-Grafiken
+- `themes/<name>/`: `theme.json` (alle Zahlen), Texte `en` und `de`, die Szene als SVG-Code (`scene.js`), Farben. Format: `docs/themenformat.md`
 - `tools/`: Balance-Simulator, Größen-Check
 - `tests/`: Browser-Test
 - `docs/recherche/`: Recherche-Berichte (Vergleichsspiele, Vorbilder)
-- `prototype/`: Prototyp der neuen Richtung; Schritt 1 des neuen Plans löst ihn auf
 - Build: ein Paket pro Ziel, zum Beispiel `dist/crazygames` und `dist/web`
 
 ## Regeln

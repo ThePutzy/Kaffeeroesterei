@@ -57,3 +57,13 @@ test('core texts exist in every language with the same placeholders', () => {
     }
   }
 });
+
+test('missing texts are reported once and show their key', () => {
+  const missing = [];
+  const i18n = createI18n({ en: { a: 'A' }, de: {} }, 'de', { onMissing: (key) => missing.push(key) });
+  assert.equal(i18n.t('a'), 'A', 'English stands in for a missing German text');
+  assert.equal(i18n.t('b'), 'b');
+  assert.equal(i18n.t('b'), 'b');
+  assert.equal(i18n.has('c'), false);
+  assert.deepEqual(missing, ['b']);
+});

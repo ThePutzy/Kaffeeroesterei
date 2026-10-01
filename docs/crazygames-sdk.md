@@ -19,6 +19,8 @@ Quellen:
 
 ## Stand im Spiel
 
+> **Seit Schritt 1 des Plans für das neue Spiel (01.10.2026):** Das Spiel speichert nichts und bietet keine Belohnungen an. Speicherstand und Offline-Ertrag kommen mit Schritt 2 zurück, Boost und Offline-Verdopplung mit Schritt 3. Wo diese Datei unten vom Boost, von „Kaufen für …“ oder vom Speicherstand spricht, beschreibt sie das Spiel davor.
+
 - **Basic Launch:** Das Paket `dist/crazygames` nutzt den Platzhalter-Adapter `src/ads/crazygames.js`. Er lädt kein SDK, macht keine Anfragen und zeigt keine Werbung.
   - Laut CrazyGames ist Werbung im Basic Launch ohnehin abgeschaltet.
   - Belohnungs-Knöpfe bleiben ausgeblendet. So verlangt es CrazyGames: keine Belohnungs-Knöpfe ohne Wirkung.
@@ -60,7 +62,9 @@ Die Regeln zu Belohnungen am 30.09.2026 noch einmal nachgelesen.
   - Bei `adError` keine Belohnung.
 - **Werbeblocker:** Das Spiel muss trotzdem normal spielbar sein. Belohnungs-Knöpfe ohne Wirkung sind verboten.
 
-## Wie das Spiel das heute umsetzt
+## Wie das bisherige Spiel das umgesetzt hat
+
+Gilt für das Spiel vor Schritt 1 des neuen Plans; mit Schritt 3 kommt eine neue Umsetzung nach den Entscheidungen unten.
 
 - **Werbung nur auf Wunsch:**
   - Belohnungen gibt es nur nach einem Klick auf „Werbung ansehen“: 10 min doppelte Einnahmen, Offline-Ertrag verdoppeln.

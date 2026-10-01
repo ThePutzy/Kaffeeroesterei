@@ -1,12 +1,12 @@
 // The roastery as one SVG scene: a cross-section with the roasting room on
 // the left and the street with the coffee cart on the right. Everything is
-// drawn here as code; nothing is loaded from elsewhere.
+// drawn here as code; nothing is loaded from elsewhere. The game core loads
+// this module from theme.json ("scene") and passes in what the rules know:
+// the first crack, the guests' places and the roast levels with their colors.
 //
 // Scene units: 1000 x 700, the floor at y = 610. The SVG keeps the bottom
 // edge and draws the background far beyond the view box, so any window shape
 // shows a full picture while the playable part stays in the view box.
-
-import { FIRST_CRACK, SLOTS } from './model.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 export const FLOOR = 610;
@@ -17,8 +17,12 @@ export const CART = { x: 747, counter: 510 };
 const HATCH = { x: 620, y: 478 };
 const BIKE_Y = 664;
 
-export const LABEL_COLORS = { light: '#F2C14E', medium: '#E0803C', dark: '#9C3F63' };
-const LEVEL_DOTS = { light: 1, medium: 2, dark: 3 };
+// Set by createScene() from the theme's roast levels.
+let FIRST_CRACK = 0.4;
+let SLOTS = [850, 895, 940];
+let LABEL_COLORS = {};
+let LEVEL_DOTS = {};
+let LEVEL_ROAST = {};
 
 const ROAST_STOPS = [
   [0, [143, 170, 92]],
@@ -41,7 +45,6 @@ export function roastColor(p) {
   return rgb(ca.map((v, k) => v + (cb[k] - v) * f));
 }
 
-export const LEVEL_ROAST = { light: 0.49, medium: 0.67, dark: 0.86 };
 
 function rgb(c) {
   return `rgb(${c.map((v) => Math.round(v)).join(',')})`;
@@ -478,7 +481,12 @@ function guestMarkup(look) {
 
 // ---- The scene ---------------------------------------------------------------
 
-export function createScene(svg) {
+export function createScene(svg, { firstCrack, slots, levels }) {
+  FIRST_CRACK = firstCrack;
+  SLOTS = slots;
+  LABEL_COLORS = Object.fromEntries(levels.map((level) => [level.id, level.color]));
+  LEVEL_DOTS = Object.fromEntries(levels.map((level, index) => [level.id, index + 1]));
+  LEVEL_ROAST = Object.fromEntries(levels.map((level) => [level.id, level.target]));
   svg.setAttribute('viewBox', '0 0 1000 700');
   svg.setAttribute('preserveAspectRatio', 'xMidYMax meet');
   el('defs', {}, svg).innerHTML = DEFS;
@@ -662,19 +670,19 @@ export function createScene(svg) {
       pan.classList.toggle('empty', panState.phase !== 'roasting');
       lastPanColor = color;
     }
-    pan.classList.toggle('bigger', s.owned.biggerPan);
+    pan.classList.toggle('bigger', s.owned.biggerPan > 0);
     smoke.style.opacity = roasting ? String(Math.min(0.9, 0.15 + panState.p)) : '0';
     smoke.classList.toggle('dark', roasting && panState.p > 0.7);
     const cooling = panState.phase === 'cooling' || panState.phase === 'waiting';
     sieveBeans.setAttribute('opacity', cooling ? '1' : '0');
     if (cooling && panState.batch) sieveBeans.setAttribute('fill', roastColor(LEVEL_ROAST[panState.batch.level]));
-    helper.classList.toggle('hidden', !s.owned.helper);
-    helper.classList.toggle('busy', s.owned.helper && roasting);
+    helper.classList.toggle('hidden', !(s.owned.helper > 0));
+    helper.classList.toggle('busy', s.owned.helper > 0 && roasting);
 
     drums.forEach((drum, index) => {
       const state = s.drums[index];
       drum.g.classList.toggle('empty-slot', !state);
-      drum.g.classList.toggle('next-slot', !state && index === s.drums.length && s.owned.helper);
+      drum.g.classList.toggle('next-slot', !state && index === s.drums.length && s.owned.helper > 0);
       if (!state) return;
       const active = state.phase === 'roasting';
       drum.g.classList.toggle('roasting', active);
@@ -691,9 +699,9 @@ export function createScene(svg) {
       drum.ref('full').setAttribute('opacity', state.phase === 'waiting' ? '1' : '0');
     });
 
-    cafe.classList.toggle('hidden', !s.owned.cafe);
-    buildings.classList.toggle('hidden', s.owned.cafe);
-    sign.classList.toggle('hidden', !s.owned.sign);
+    cafe.classList.toggle('hidden', !(s.owned.cafe > 0));
+    buildings.classList.toggle('hidden', s.owned.cafe > 0);
+    sign.classList.toggle('hidden', !(s.owned.sign > 0));
     renderStock(s.stock);
     syncGuests(s.customers, dt);
 
@@ -782,3 +790,19 @@ export function createScene(svg) {
     hits: { pan: panHit, bike: bikeHit },
   };
 }
+
+// Icons for the upgrade list, keyed by item id, and the currency.
+export const ITEM_ICONS = {
+  biggerPan:
+    '<svg viewBox="0 0 40 40"><ellipse cx="18" cy="22" rx="14" ry="5" fill="#403B3B"/><path d="M4 22Q5 30 12 30H24Q31 30 32 22Z" fill="#2F2C2C"/><path d="M32 21H38" stroke="#8B5A36" stroke-width="4" stroke-linecap="round"/><g fill="#844E2A"><ellipse cx="12" cy="21" rx="3" ry="2"/><ellipse cx="18" cy="20" rx="3" ry="2"/><ellipse cx="24" cy="22" rx="3" ry="2"/></g><path d="M30 5V15M25 10H35" stroke="#1D746D" stroke-width="3.4" stroke-linecap="round"/></svg>',
+  sign: '<svg viewBox="0 0 40 40"><path d="M4 7H33" stroke="#2A1D17" stroke-width="3" stroke-linecap="round"/><path d="M12 7V12M26 7V12" stroke="#6F777E" stroke-width="2"/><rect x="7" y="12" width="26" height="21" rx="5" fill="#2A1D17" stroke="#E0B25A" stroke-width="2"/><g transform="translate(20 22.5) rotate(-25)"><ellipse rx="4.6" ry="6.2" fill="#C8783F"/><path d="M0 -5Q-2 0 0 5" stroke="#2A1D17" stroke-width="1.4" fill="none"/></g></svg>',
+  helper:
+    '<svg viewBox="0 0 40 40"><path d="M8 38Q8 21 20 21Q32 21 32 38Z" fill="#D9A441"/><path d="M14 23H26V38H14Z" fill="#F3E7D3"/><circle cx="20" cy="12" r="6.5" fill="#D9A27C"/><path d="M13.5 11Q14 4 20.5 4.5Q27 5 26.5 11Q24 7.5 20 7.5Q16 7.5 13.5 11Z" fill="#3A2418"/><circle cx="25" cy="5.5" r="3.2" fill="#3A2418"/></svg>',
+  drum: '<svg viewBox="0 0 40 40"><path d="M29 14V2" stroke="#9DA6AE" stroke-width="3"/><path d="M15 14L13 6H27L25 14Z" fill="#9DA6AE"/><rect x="8" y="14" width="24" height="19" rx="4" fill="#2C2A30"/><circle cx="19" cy="24" r="7.5" fill="#C8783F"/><circle cx="19" cy="24" r="3.6" fill="#241710"/><rect x="10" y="33" width="20" height="4" rx="1.5" fill="#1B1A1E"/></svg>',
+  profile:
+    '<svg viewBox="0 0 40 40"><rect x="6" y="5" width="28" height="30" rx="5" fill="#2A1D17"/><rect x="9" y="8" width="22" height="24" rx="3" fill="#F3EADB"/><path d="M11 29Q16 27 19 21T29 13" stroke="#C8553D" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M11 13H17M11 17H15" stroke="#C4AD95" stroke-width="2" stroke-linecap="round"/><circle cx="24" cy="17" r="2.4" fill="#2FA39A"/></svg>',
+  cafe: '<svg viewBox="0 0 40 40"><rect x="8" y="3" width="24" height="7" rx="2" fill="#2A1D17"/><rect x="5" y="12" width="30" height="25" fill="#7C3544"/><path d="M4 12H36V17Q34 20 32 17Q30 20 28 17Q26 20 24 17Q22 20 20 17Q18 20 16 17Q14 20 12 17Q10 20 8 17Q6 20 4 17Z" fill="#F4E6CF"/><rect x="9" y="22" width="15" height="11" rx="1.5" fill="#FFD9A0"/><rect x="27" y="22" width="5" height="15" fill="#3E1A22"/></svg>',
+};
+
+export const COIN_ICON =
+  '<svg class="coin" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#C9901A"/><circle cx="16" cy="15" r="13" fill="#F2C14E"/><g transform="translate(16 15) rotate(-25)"><ellipse rx="5.5" ry="7.5" fill="#C9901A"/><path d="M0 -6Q-2.5 0 0 6" stroke="#F2C14E" stroke-width="1.6" fill="none"/></g></svg>';

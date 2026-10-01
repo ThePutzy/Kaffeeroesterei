@@ -8,9 +8,9 @@ Browser-Idle-Spiel, Thema 1: Kaffeerösterei. Reines HTML, CSS und JavaScript (E
 - Themenformat, Formeln und Balance-Simulator: [docs/themenformat.md](docs/themenformat.md)
 - Entwürfe für die eigene Seite (Anleitung, Über uns, Datenschutz, Impressum): [docs/entwuerfe/](docs/entwuerfe/README.md)
 
-Stand: Alle sechs Schritte des Umsetzungsplans sind umgesetzt. Das Spiel ist mit eigenen Texten (Englisch und Deutsch) und eigenen SVG-Grafiken spielbar, speichert im Browser und hat Belohnungen per Werbung, bisher nur simuliert. Titel, vorläufig: **Full Roast Ahead**; er ist nicht markenrechtlich geprüft ([Titelrecherche](docs/recherche/spieltitel.md)). Danach wurde das Spiel neu ausgerichtet, siehe [CLAUDE.md](CLAUDE.md). Entwürfe für Anleitung, Über uns, Datenschutz und Impressum liegen in `docs/entwuerfe/`.
+Stand: Schritt 1 des [Plans für das neue Spiel](docs/umsetzungsplan-neues-spiel.md). Das Spiel ist jetzt die sichtbare Rösterei aus dem Prototyp: rösten, beim ersten Crack auswerfen, Gäste am Wagen bedienen, mit Helferin und Trommelröstern automatisieren. Englisch und Deutsch, Handy und Desktop. Der Inhalt reicht bis zum Café, etwa fünf Minuten. **Noch nicht wieder dabei:** Speicherstand und Offline-Ertrag (Schritt 2) und Belohnungen per Werbung (Schritt 3); ein Neuladen beginnt von vorn.
 
-**Neue Richtung:** Der Prototyp der ersten fünf Minuten in [`prototype/`](prototype/README.md) zeigt eine sichtbare Rösterei und das Rösten als Kernmechanik. Er ist die Grundlage des neuen Spiels, siehe [Plan für das neue Spiel](docs/umsetzungsplan-neues-spiel.md). Noch ist er nicht Teil der Pakete unter `dist/`.
+Titel, vorläufig: **Full Roast Ahead**; er ist nicht markenrechtlich geprüft ([Titelrecherche](docs/recherche/spieltitel.md)). Entwürfe für Anleitung, Über uns, Datenschutz und Impressum liegen in `docs/entwuerfe/`; sie beschreiben noch das Spiel vor der Neuausrichtung.
 
 ## Voraussetzungen
 
@@ -24,13 +24,15 @@ Stand: Alle sechs Schritte des Umsetzungsplans sind umgesetzt. Das Spiel ist mit
 | --- | --- |
 | `npm run dev` | Startet einen lokalen Server auf http://127.0.0.1:8080/. Unter `/` läuft der Quellstand, unter `/dist/<ziel>/` das gebaute Paket. Mit `npm run dev -- --host 0.0.0.0` ist er auch vom Handy im selben WLAN erreichbar; das nur in einem vertrauenswürdigen Netz, denn der Server liefert den Repository-Ordner aus (ohne versteckte Dateien wie `.git` und ohne `node_modules`). |
 | `npm test` | Unit-Tests mit dem eingebauten Node-Testrunner |
-| `npm run sim` | Balance-Simulator: spielt das Thema durch und prüft Tempo und Zahlen (siehe [docs/themenformat.md](docs/themenformat.md)) |
+| `npm run sim` | Balance-Simulator: spielt das Thema mit zwei gescripteten Spielern und prüft das Tempo (siehe [docs/themenformat.md](docs/themenformat.md)) |
 | `npm run build` | Baut je Ziel ein Paket nach `dist/<ziel>/` |
 | `npm run check:size` | Prüft jedes Paket: unter 2.000.000 Bytes, keine externen URLs (auch `ws://`, `wss://`, `ftp://`) und keine Symlinks |
 | `npm run test:browser` | Browser-Test mit Playwright; baut vorher neu |
 | `npm run check` | Führt alles nacheinander aus |
 
 ES-Module laden nicht über `file://`. Zum Ausprobieren darum immer `npm run dev` nutzen, nicht die HTML-Datei direkt öffnen.
+
+Hilfen zum Testen: `/?seed=1` spielt immer dasselbe Spiel (gleiche Gäste und Wünsche), `/?debug` stellt den Spielstand als `window.roastery` bereit.
 
 ## Ziele
 
@@ -49,26 +51,23 @@ Zugangsdaten, Schlüssel und Publisher-IDs gehören nicht ins Repository, auch n
 
 | Ordner | Inhalt |
 | --- | --- |
-| `src/core/` | Wirtschaft (`economy.js`), Spielablauf (`game.js`), Speicherstand (`save.js`), Offline-Ertrag (`offline.js`), Werbe-Ablauf (`adflow.js`), Texte (`i18n.js`, `locales/`), Zahlenformat (`format.js`), Oberfläche (`ui/`) |
+| `src/core/` | Spielregeln (`model.js`), Oberfläche (`ui/app.js`), Ton (`audio.js`), Texte (`i18n.js`, `locales/`), Zahlenformat (`format.js`), Speicher-Grundlagen (`save.js`), Werbe-Ablauf (`adflow.js`) |
+| `src/main.js` | Start: lädt das Thema, erzeugt Regeln, Szene und Oberfläche |
 | `src/ads/` | Werbe-Schnittstelle und Adapter |
-| `themes/kaffeeroesterei/` | Themendaten (`theme.json`), Texte (`locales/en.json`, `locales/de.json`; sie überschreiben gleichnamige Kerntexte), Farben (`theme.css`), SVG-Grafiken (`art/`) |
+| `themes/kaffeeroesterei/` | Zahlen (`theme.json`), Texte (`locales/`), Szene als SVG-Code mit den Symbolen (`scene.js`), Farben (`theme.css`); Format: [docs/themenformat.md](docs/themenformat.md) |
 | `tools/` | Build, lokaler Server, Größen-Check, Balance-Simulator |
 | `tests/unit/` | Unit-Tests (`*.test.js`) |
-| `tests/fixtures/` | Testdaten, z. B. ein kleines Test-Thema mit nachrechenbaren Werten |
 | `tests/browser/` | Browser-Tests (`*.spec.js`) |
 | `config/` | Ziel-Konfiguration |
 | `docs/` | Dokumentation |
 
 ## Speicherstand
 
-- **Wo:** im `localStorage` des Browsers unter `<Thema>.save`, also `kaffeeroesterei.save`.
-- **Wann:** beim Start, alle 10 Sekunden, solange die Seite sichtbar ist, außerdem beim Verbergen oder Verlassen der Seite, nach einem Prestige, nach dem Sprachwechsel und nach dem Zurücksetzen.
-- **Ohne Speicher**, etwa im privaten Fenster: Das Spiel läuft weiter und weist darauf hin.
-- **Unlesbarer Speicherstand:** Er wird unter `<Thema>.save:unreadable` beiseitegelegt, danach startet das Spiel neu. Liegt dort schon eine ältere Kopie, bleibt sie erhalten.
-- **Spielstand einer neueren Version**, etwa wenn nach einem Update wieder eine alte Version ausgeliefert wird: Er bleibt unangetastet. Diese Version speichert dann nicht und sagt das.
-- **Mehrere Tabs:** Es speichert nur der Tab, der zuletzt gespeichert hat. Ein älterer Tab hört auf zu speichern und bietet „Hier weiterspielen“ an; das lädt den neueren Stand.
-- **Speichern schlägt später fehl**, etwa bei vollem Speicher: Das Spiel sagt es einmal und versucht es weiter.
-- **Neues Speicherformat:** `SAVE_VERSION` in `src/core/save.js` erhöhen und eine Migration ergänzen.
+Das Spiel speichert derzeit nichts; ein Neuladen beginnt von vorn. Schritt 2 des Plans bringt den Speicherstand zurück. Die Grundlagen dafür bleiben in `src/core/save.js`:
+- ein Speicherzugriff, der bei gesperrtem oder vollem Speicher nie abstürzt
+- Versionsnummer und Migrationen
+- Schutz vor dem Überschreiben eines Spielstands aus einer neueren Version
+- ein unlesbarer Spielstand wird beiseitegelegt
 
 ## Werbung
 
@@ -76,7 +75,7 @@ Zugangsdaten, Schlüssel und Publisher-IDs gehören nicht ins Repository, auch n
 - **Adapter:**
   - `none`: kein Werbenetz. Mit `simulate: true` (nur in der Entwicklung) spielt er eine Anzeige von 0,8 s vor.
   - `crazygames`: Platzhalter für den Basic Launch, ohne SDK.
-- **Wann Werbung erscheint** (`src/core/adflow.js`): nur als Belohnung auf Wunsch des Spielers. Zwischenanzeigen gibt es vorerst keine (Entscheidung vom 30.09.2026, siehe [CLAUDE.md](CLAUDE.md)); `showInterstitial` bleibt in der Schnittstelle, das Spiel ruft es aber nicht auf. Solange eine Anzeige läuft, ist die Oberfläche gesperrt; ein Adapter, der nicht antwortet, gilt nach 2 Minuten als fertig.
+- **Wann Werbung erscheint:** derzeit gar nicht; das Spiel bietet noch keine Belohnungen an. Schritt 3 des Plans bringt Boost und Offline-Verdopplung nach den Regeln vom 30.09.2026 zurück (siehe [CLAUDE.md](CLAUDE.md)). Der Werbe-Ablauf `src/core/adflow.js` bleibt dafür bestehen: Belohnungen nur auf Wunsch des Spielers, keine Zwischenanzeigen, ein Adapter, der nicht antwortet, gilt nach 2 Minuten als fertig.
 - **CrazyGames:** Anforderungen und SDK-Notizen stehen in [docs/crazygames-sdk.md](docs/crazygames-sdk.md).
 
 ## Regeln für ausgelieferte Dateien

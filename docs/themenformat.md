@@ -1,96 +1,84 @@
 # Themenformat und Balancing
 
-Das beschreibt `themes/<name>/theme.json`, die Texte und Grafiken eines Themas, die Formeln des Wirtschaftskerns (`src/core/economy.js`) und den Balance-Simulator (`tools/simulate.mjs`). Stand: Schritt 5, Inhalte der Kaffeerösterei.
+Das beschreibt, woraus ein Thema besteht, wie die Spielregeln (`src/core/model.js`) seine Zahlen nutzen und wie der Balance-Simulator (`tools/simulate.mjs`) das Tempo prüft. Stand: 01.10.2026, Schritt 1 des [Plans für das neue Spiel](umsetzungsplan-neues-spiel.md).
+
+## Was zu einem Thema gehört
+
+| Datei im Themenordner | Inhalt |
+| --- | --- |
+| `theme.json` | alle Zahlen: Röstgrade, Röster, Preise, Gäste, Sonderlieferung, Ausbau, Ziele, Simulator-Einstellungen |
+| `locales/en.json`, `locales/de.json` | die Texte des Themas. Sie überschreiben gleichnamige Kerntexte aus `src/core/locales/`. |
+| `scene.js` | die Szene als SVG-Code, dazu die Symbole für den Ausbau (`ITEM_ICONS`) und die Münze (`COIN_ICON`). Die Szene importiert nichts; das Spiel übergibt ihr den ersten Crack, die Plätze der Gäste und die Röstgrade mit ihren Farben. |
+| `theme.css` | die Farben als CSS-Variablen (`--ui-*`, `--gold`, `--teal` …). Das Stylesheet des Spiels (`src/styles.css`) benutzt nur diese Variablen. |
+
+Die Mechanik selbst gehört zum Spielkern: Röstcharge, erster und zweiter Crack, Abkühlen, Wagen, Schlange, Wünsche der Gäste, Automatik, Sonderlieferung und Ziele.
 
 ## theme.json
 
 | Feld | Bedeutung |
 | --- | --- |
 | `id` | Name des Themenordners |
-| `stylesheet` | optional: CSS-Datei im Themenordner, die die Farb-Variablen des Kerns überschreibt (z. B. `theme.css`) |
-| `art` | optional: `currency` (Symbol am Kontostand), `click` (Bild in der Klickfläche), `logo` (Favicon, Einstellungen). Relative `.svg`-Pfade im Themenordner |
-| `click.base` | Ertrag pro Klick ohne Boni |
-| `generators[]` | Erzeuger: `id`, optional `icon` (relativer `.svg`-Pfad), `baseCost` (Preis des ersten Stücks), `costGrowth` (Preisfaktor je gekauftem Stück, größer als 1), `baseRate` (Ertrag pro Sekunde je Stück) |
-| `upgrades[]` | Upgrades: `id`, `cost`, `effect`, optional `unlock` (eine Bedingung; ohne sie ist das Upgrade sofort verfügbar) |
-| `achievements[]` | Erfolge: `id`, `condition` |
-| `prestige` | `threshold`, `exponent` (größer als 0, höchstens 1), `bonusPerPoint` |
-| `offline` | `maxHours` (Obergrenze der Abwesenheit), `rate` (Anteil der normalen Produktion, größer als 0, höchstens 1) |
-| `boost` | `factor` (Einnahmen-Faktor, größer als 1), `seconds` (Dauer), `priceSeconds` (Preis beim Kauf mit Währung: so viele Sekunden der aktuellen Produktion ohne Boost) |
+| `stylesheet`, `scene` | Dateinamen im Themenordner, siehe oben |
+| `roast.firstCrack`, `roast.secondCrack` | Röstfortschritt (0 bis 1) des ersten und zweiten Cracks. Vor dem ersten Crack kann man nicht auswerfen. |
+| `roast.levels[]` | Röstgrade in aufsteigender Reihenfolge: `id`, `until` (Ende des Bereichs; der erste beginnt beim ersten Crack, der letzte endet bei 1), `target` (wo die Automatik auswirft), `wish` (Gewicht, wie oft Gäste ihn wünschen), `color` (Farbe von Etikett, Skala und Sprechblase) |
+| `roast.defaultLevel` | Röstgrad, den die Automatik ohne Röstprofil röstet |
+| `roasters.<art>` | `roastSeconds` (Dauer einer Charge ohne Rühren), `tapHeat` (Fortschritt je Rühren), `coolSeconds`, `loadDelay` (Pause, bis die Automatik neu befüllt), `bags` (Säcke je Charge). `pan` ist Pflicht; weitere Arten kauft man über den Ausbau. |
+| `sales` | `basePrice` (Preis je Sack), `matchFactor` (Faktor bei getroffenem Wunsch), `capacity` (Plätze im Wagen), `incomeWindowSeconds` (Zeitraum für die Anzeige „pro Minute“) |
+| `guests` | `firstArrival`, `arrivalSeconds` (mittlerer Abstand), `arrivalSpread` (Schwankung, 0,5 heißt ±25 %), `firstWish` (Wunsch des ersten Gasts, der schon wartet), `buySeconds`, `walkSpeed` sowie die Positionen in Szenen-Einheiten: `slots` (Plätze in der Schlange), `spawnX`, `turnX`, `exitX` |
+| `delivery` | Sonderlieferung: `firstAt`, `gapSeconds` ([kürzester, längster] Abstand), `waitSeconds`, `speed`, `stopX`, `offstageX`, `rewardIncomeSeconds` (Belohnung: so viele Sekunden des aktuellen Ertrags), `minReward` |
+| `items[]` | Ausbau: `id`, `cost` (Preise der Reihe nach; nur Röster gibt es mehrmals), optional `reveal` (Bedingung, ab der man ihn sieht), `effects` |
+| `goals[]` | Ziele in Reihenfolge: `id`, `reward`, `done` (Bedingung) |
+| `goalPauseSeconds` | Pause zwischen zwei Zielen, in der „Geschafft!“ steht |
+| `simulation` | Einstellungen des Simulators, siehe unten |
 
-**Effekte** (`effect.factor` muss größer als 1 sein):
+**Effekte des Ausbaus** (gelten, sobald man das Teil mindestens einmal besitzt):
 
-| `effect.type` | Wirkung |
+| Effekt | Wirkung |
 | --- | --- |
-| `generatorMultiplier` | multipliziert die Produktion eines Erzeugers (`effect.generator`) |
-| `globalMultiplier` | multipliziert die gesamte Produktion, nicht die Klicks |
-| `clickMultiplier` | multipliziert den Ertrag pro Klick |
+| `panBags` | Säcke je Pfannen-Charge; der größte Wert zählt |
+| `capacity` | Plätze im Wagen; der größte Wert zählt |
+| `priceFactor` | multipliziert den Preis je Sack |
+| `arrivalFactor` | multipliziert den Abstand zwischen zwei Gästen; unter 1 kommen sie öfter |
+| `panAutomatic` | die Pfanne röstet und wirft von selbst aus |
+| `followWishes` | die Automatik röstet, was der erste Gast ohne passenden Sack im Wagen wünscht |
+| `roaster` | jeder Kauf stellt einen weiteren Röster dieser Art auf (`roasters.<art>`) |
 
-**Bedingungen** haben immer einen `type` und einen `value`:
+**Bedingungen** haben entweder `stat` oder `owned`, optional `min` (Standard 1):
+- `{ "stat": "sales" }`: so viele Verkäufe. Statistiken: `taps`, `manualEjects`, `ejects`, `sales`, `matched`, `lost`, `revenue`.
+- `{ "owned": "helper" }`: so viele Stück dieses Ausbaus.
 
-| `type` | erfüllt, wenn … |
-| --- | --- |
-| `owned` | mindestens `value` Stück von `generator` im aktuellen Durchgang |
-| `runEarned` | seit dem letzten Prestige mindestens `value` verdient |
-| `lifetimeEarned` | insgesamt mindestens `value` verdient |
-| `clicks` | insgesamt mindestens `value` Klicks |
-| `prestiges` | mindestens `value` Prestiges |
+`validateTheme()` in `src/core/model.js` prüft das alles beim Start. Ein Fehler stoppt das Spiel mit einer Meldung, statt mit falschen Zahlen zu laufen.
 
-**IDs** bestehen nur aus Kleinbuchstaben, Ziffern und Unterstrich und sind über alle Listen hinweg eindeutig. Aus ihnen entstehen die Textschlüssel (siehe unten). Fehlerhafte Daten lehnt `createEconomy` mit einer Fehlermeldung ab.
+## Texte
 
-## Texte und Grafiken
-
-- **Texte:** `themes/<name>/locales/en.json` und `de.json`.
-  - Namen: `generator.<id>.name`, `upgrade.<id>.name` und `achievement.<id>.name`.
-  - Dazu kommt `app.title`, der Titel im Browser-Tab und in den Einstellungen.
-  - Schlüssel mit demselben Namen wie ein Kerntext (`src/core/locales/`) überschreiben ihn. So heißt „Erzeuger“ bei der Kaffeerösterei „Ausstattung“ und „Prestige“ heißt „Ansehen“.
-- **Was die Tests prüfen** (`tests/unit/theme.test.js`):
-  - Jede ID hat in jeder Sprache einen Namen.
-  - Es gibt keine unbekannten Schlüssel.
-  - Überschriebene Texte behalten die Platzhalter des Kerntexts.
-- **Grafiken:** SVG, von Hand als Code geschrieben, unter `themes/<name>/art/`. Die Tests prüfen:
-  - höchstens 4 KB je Datei
-  - `viewBox` vorhanden
-  - keine Skripte, keine eingebetteten Bilder, keine Verweise nach außen
-  - Jede Datei wird benutzt, und jede benutzte Datei existiert.
-
-## Formeln
-
-- **Preis des nächsten Stücks:** `baseCost × costGrowth ^ Anzahl`
-- **Preis für k Stück:** Summe der nächsten k Preise (geometrische Reihe). „Max kaufbar“ rechnet mit der geschlossenen Formel und korrigiert Rundungsfehler exakt.
-- **Produktion pro Sekunde:** Σ (Anzahl × `baseRate` × Erzeuger-Multiplikatoren) × globale Multiplikatoren × Prestige-Multiplikator × `boost.factor`, solange der Boost läuft
-- **Klick:** `click.base` × Klick-Multiplikatoren × Prestige-Multiplikator × `boost.factor`, solange der Boost läuft
-- **Prestige-Multiplikator:** `1 + Punkte × bonusPerPoint`
-- **Prestige-Punkte:** `⌊(Ertrag des Durchgangs / threshold) ^ exponent⌋`
-- **Prestige setzt zurück:** Währung, Ertrag des Durchgangs, Erzeuger und Upgrades.
-- **Prestige behält:** Gesamtertrag, Klicks, Prestige-Punkte, Zahl der Prestiges und Erfolge.
-- **Erfolge** haben nur Bedingungen und keinen Bonus.
-- **Offline-Ertrag:** Produktion pro Sekunde × Abwesenheit (höchstens `maxHours`) × `rate`. Als Abwesenheit zählt jede Lücke von mehr als 60 Sekunden ohne Aktualisierung: geschlossenes Spiel, verborgener Tab oder schlafendes Gerät. Kürzere Lücken zählen voll.
-- **Boost:** Solange er läuft, wirkt `boost.factor` auf Produktion und Klicks. Es gibt ihn als Belohnung für eine Werbung oder zum Kauf für `Grundproduktion × priceSeconds`. Er läuft auch während der Abwesenheit ab; der Offline-Ertrag rechnet ohne Boost. Ein Prestige beendet ihn nicht. Angeboten wird er erst, wenn etwas produziert; vorher läge der Preis bei 0.
-- **Zahlen** sind normale JavaScript-Zahlen (bis etwa 1e308). Der Simulator prüft, dass sie unter 1e300 bleiben.
+- Kerntexte in `src/core/locales/` decken allgemeine Knöpfe und Meldungen ab, etwa Einstellungen, Neustart, „pro Minute“ und den Ausbau.
+- **Das Thema bringt mit:**
+  - den Titel
+  - zu jedem Ausbau `items.<id>.name` und `.effect`
+  - zu jedem Ziel `goals.<id>`
+  - zu jedem Röstgrad `levels.<id>`
+  - die Texte von Skala, Status, Übersicht, Einblendungen und Bannern
+- **Platzhalter** wie `{value}` müssen in beiden Sprachen gleich sein. Das prüft ein Unit-Test.
+- **Fehlende Texte:** Fehlt ein Text, zeigt das Spiel den Schlüssel und meldet ihn in der Konsole. Damit schlägt auch der Browser-Test an.
 
 ## Balance-Simulator
 
-`npm run sim` spielt das Thema mit einer festen Strategie und gibt einen Bericht aus.
+`npm run sim` spielt das Thema mit zwei gescripteten Spielern und mehreren Seeds (`simulation.seeds`) bis `simulation.seconds`:
+- **aktiv:** rührt dreimal pro Sekunde und wirft aus, wenn die Röstung zum Wunsch des ersten Gasts passt.
+- **gemütlich:** rührt nie und wirft nur von Hand aus, bis die Automatik das übernimmt.
 
-**Strategie:** Der simulierte Spieler kauft immer ein Stück von dem, was sich am schnellsten bezahlt macht. Dabei zählen die Wartezeit, bis er es sich leisten kann, und der Preis geteilt durch den zusätzlichen Ertrag pro Sekunde.
+Beide kaufen, was das aktuelle Ziel verlangt, danach alles, was sie sich leisten können, und tippen auf die Sonderlieferung. Das sind Annahmen, keine Messungen echter Spieler.
 
-**Szenarien**
-- „active“: 3 Klicks pro Sekunde. Das ist eine Annahme.
-- „idle“: Er klickt nur, bis etwas produziert.
+**Ausgabe:** je Spieler der früheste und späteste Zeitpunkt über alle Seeds für den ersten Verkauf, jeden Ausbau und das Ende der Ziele, dazu die längste Wartezeit ohne Fortschritt.
 
-Jedes Szenario läuft zwei Durchgänge. Dazu kommt ein Dauerlauf über 30 Tage im Szenario „idle“, um die Größe der Zahlen zu prüfen.
+**Harte Fehler** beenden mit Code 1:
+- Geld wird ungültig oder negativ.
+- Länger als `simulation.maxSecondsWithoutProgress` gibt es keinen Kauf und kein erreichtes Ziel, obwohl noch etwas offen ist.
+- Das Thema ist ungültig.
 
-**Prestige:** Der simulierte Spieler setzt zurück, sobald die neuen Punkte den Prestige-Multiplikator mindestens verdoppeln. Kann er 24 Stunden lang nichts kaufen, macht er ein Prestige, sofern es mindestens einen Punkt bringt.
+**Warnungen:** Zeitpunkte außerhalb von `simulation.targets` (je Spieler und Meilenstein `[frühestens, spätestens]` in Sekunden).
 
-**Harte Fehler** (Exit-Code 1):
-- ungültige Zahlen (NaN, unendlich oder negativ)
-- Stillstand: 24 Stunden lang ist nichts kaufbar, und ein Prestige ist nicht möglich
-- eine Zahl über 1e300
-
-**Zielwerte** (nur Warnungen, Annahmen aus dem Umsetzungsplan, gelten für „active“):
-- erster Erzeuger nach höchstens 15 s
-- im ersten Durchgang höchstens 5 min Wartezeit zwischen zwei Käufen
-- erstes lohnendes Prestige nach 45–60 min
-- der zweite Durchgang erreicht das Niveau des ersten mindestens 1,5-mal so schnell
-
-**Grenzen:** Der Simulator folgt einer festen Strategie; echte Spieler kaufen anders, klicken unterschiedlich viel und machen Pausen. Ob das Spiel Spaß macht, kann er nicht beurteilen.
+**Stand 01.10.2026:**
+- aktiv: Café nach 4:11 bis 4:24
+- gemütlich: Café nach 5:01 bis 5:24
+- keine Warnungen

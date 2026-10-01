@@ -1,16 +1,15 @@
+// Starts the game: loads the configured theme (numbers, texts, colors and the
+// scene), creates the rules and the screen and runs one frame per animation
+// frame. Saving, offline earnings and ads come back with steps 2 and 3 of
+// docs/umsetzungsplan-neues-spiel.md; until then a reload starts over.
 import { config } from './config.js';
-import { loadAds } from './ads/index.js';
-import { createAdFlow } from './core/adflow.js';
-import { createEconomy } from './core/economy.js';
-import { createGame } from './core/game.js';
+import { createAudio } from './core/audio.js';
 import { LANGUAGES, createI18n, detectLanguage, mergeTexts } from './core/i18n.js';
-import { createStore, loadSave, serialize } from './core/save.js';
-import { createUi } from './core/ui/app.js';
+import { createRules } from './core/model.js';
+import { createApp } from './core/ui/app.js';
 
-const RENDER_INTERVAL_MS = 100;
-const AUTOSAVE_INTERVAL_MS = 10_000;
+const MAX_FRAME_SECONDS = 0.25;
 const root = document.documentElement;
-const app = document.getElementById('app');
 
 async function loadJson(path) {
   const response = await fetch(new URL(path, import.meta.url));
@@ -34,106 +33,73 @@ async function loadTexts(folder) {
   return Object.fromEntries(entries);
 }
 
+// ?seed=N replays the same game (tests, screenshots); otherwise every visit
+// plays a different one.
+function readSeed() {
+  const fromUrl = Number.parseInt(new URLSearchParams(location.search).get('seed') ?? '', 10);
+  return Number.isFinite(fromUrl) ? fromUrl : Date.now() % 2147483647;
+}
+
 async function start() {
-  const [theme, coreTexts, themeTexts] = await Promise.all([
-    loadJson(`../themes/${config.theme}/theme.json`),
-    loadTexts('./core/locales'),
-    loadTexts(`../themes/${config.theme}/locales`),
-  ]);
-  const economy = createEconomy(theme);
   const themeFolder = `../themes/${config.theme}`;
-  if (theme.stylesheet) await loadStylesheet(`${themeFolder}/${theme.stylesheet}`);
-  if (theme.art?.logo) {
-    document.querySelector('link[rel="icon"]').href = new URL(`${themeFolder}/${theme.art.logo}`, import.meta.url).href;
-  }
-  const adFlow = createAdFlow({ ads: await loadAds(config.ads) });
-  const store = createStore(`${theme.id}.save`);
-  const loaded = store.available ? loadSave(store, economy) : { save: null, readOnly: false };
-  const { save } = loaded;
-  const settings = { ...save?.settings };
-  // False for good once the save belongs to a newer version or another tab.
-  let saving = store.available && !loaded.readOnly;
-  let writeFailed = false;
+  const [theme, coreTexts, themeTexts] = await Promise.all([
+    loadJson(`${themeFolder}/theme.json`),
+    loadTexts('./core/locales'),
+    loadTexts(`${themeFolder}/locales`),
+  ]);
+  const rules = createRules(theme);
+  const [sceneModule] = await Promise.all([
+    import(new URL(`${themeFolder}/${theme.scene}`, import.meta.url).href),
+    theme.stylesheet ? loadStylesheet(`${themeFolder}/${theme.stylesheet}`) : null,
+  ]);
 
   const language = detectLanguage({
-    saved: settings.language,
     detection: config.languageDetection,
     preferred: navigator.languages ?? [navigator.language],
   });
-  const i18n = createI18n(mergeTexts(coreTexts, themeTexts), language);
+  const i18n = createI18n(mergeTexts(coreTexts, themeTexts), language, {
+    // A missing text shows its key; in tests the console error fails the run.
+    onMissing: (key) => console.error(`Missing text: ${key}`),
+  });
   errorText = (message) => i18n.t('app.error', { message });
 
-  // The game resumes at the time it was saved; the first update pays out the
-  // time in between (offline earnings, see core/game.js).
-  const game = createGame({ economy, state: save?.state, now: save?.savedAt ?? Date.now() });
-
-  function persist() {
-    const now = Date.now();
-    game.update(now);
-    if (!saving) return;
-    const written = store.write(serialize({ state: game.state, savedAt: now, settings }));
-    if (!written && !writeFailed) {
-      writeFailed = true; // e.g. storage full; told once, later saves still try
-      ui.showStorageProblem('failed');
-    }
-  }
-
-  const ui = createUi({
-    root: app,
-    game,
+  const state = rules.createState(readSeed());
+  const scene = sceneModule.createScene(document.querySelector('[data-ref="scene"]'), {
+    firstCrack: rules.firstCrack,
+    slots: rules.slots,
+    levels: theme.roast.levels,
+  });
+  const app = createApp({
+    rules,
+    state,
+    scene,
+    icons: sceneModule.ITEM_ICONS,
+    coinIcon: sceneModule.COIN_ICON,
+    audio: createAudio(),
     i18n,
-    adFlow,
-    storageProblem: !store.available ? 'unavailable' : loaded.readOnly ? 'newer' : null,
-    onLanguageChange(next) {
-      settings.language = next;
-      persist();
-    },
-    onReset() {
-      game.reset();
-      persist();
-    },
+    onRestart: () => location.reload(),
   });
 
-  game.on((event) => {
-    if (event.type !== 'prestige') return;
-    persist();
-  });
-  // Pay out the time since the last save right away, not only on the first frame.
-  game.update(Date.now());
-  ui.render();
+  // With ?debug in the address, tests and screenshots can reach the state.
+  if (new URLSearchParams(location.search).has('debug')) window.roastery = { state, rules };
 
-  // Two tabs must not overwrite each other's progress: the tab that saved last
-  // owns the save. Saving right away claims it; an older tab that sees the
-  // write stops saving and offers to continue with the newer save.
-  window.addEventListener('storage', (event) => {
-    if (event.key !== store.key || !saving) return;
-    saving = false;
-    ui.showOtherTab();
-  });
-  persist();
-  // While the tab is hidden nothing runs; the time counts as time away.
-  setInterval(() => {
-    if (!document.hidden) persist();
-  }, AUTOSAVE_INTERVAL_MS);
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) persist();
-  });
-  window.addEventListener('pagehide', persist);
-
-  let lastRender = 0;
-  function frame(time) {
-    game.update(Date.now());
-    if (time - lastRender >= RENDER_INTERVAL_MS) {
-      ui.render();
-      lastRender = time;
-    }
+  // A hidden tab gets no frames; that time is lost until offline earnings
+  // come with step 2.
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(MAX_FRAME_SECONDS, Math.max(0, (now - last) / 1000));
+    last = now;
+    app.frame(dt);
     requestAnimationFrame(frame);
   }
-  requestAnimationFrame(frame);
+  requestAnimationFrame((now) => {
+    last = now;
+    frame(now);
+  });
 
   // Lets tests wait until the game runs.
   root.dataset.target = config.target;
-  root.dataset.generators = String(theme.generators.length);
+  root.dataset.items = String(theme.items.length);
   root.dataset.ready = 'true';
 }
 
@@ -142,7 +108,9 @@ let errorText = (message) => `The game could not start: ${message}`;
 
 start().catch((error) => {
   console.error(error);
-  app.innerHTML = '<p class="app-error"></p>';
-  app.firstElementChild.textContent = errorText(error.message);
+  const message = document.createElement('p');
+  message.className = 'app-error';
+  message.textContent = errorText(error.message);
+  document.body.prepend(message);
   root.dataset.ready = 'error';
 });
