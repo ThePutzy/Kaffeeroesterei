@@ -77,6 +77,22 @@
 
       <aside class="side">
         <p class="notice" data-ref="notice" role="status" hidden></p>
+        <section class="boost" data-ref="boost" aria-labelledby="boost-title" hidden>
+          <div class="boost-head">
+            <span class="boost-badge" data-ref="boost-badge" aria-hidden="true"></span>
+            <div class="boost-text">
+              <span class="boost-title" id="boost-title" data-ref="boost-title"></span>
+              <span class="boost-sub" data-ref="boost-sub"></span>
+            </div>
+            <span class="boost-time" data-ref="boost-time"></span>
+          </div>
+          <div class="boost-bar" data-ref="boost-bar" aria-hidden="true"><div class="boost-fill" data-ref="boost-fill"></div></div>
+          <div class="reward-actions" data-ref="boost-actions">
+            <button type="button" class="reward-btn" data-action="boost-ad" data-ref="boost-ad"></button>
+            <button type="button" class="reward-btn" data-action="boost-buy" data-ref="boost-buy"></button>
+          </div>
+          <span class="boost-note" data-ref="boost-note" role="status"></span>
+        </section>
         <h2 data-ref="shop-title"></h2>
         <div class="items" data-ref="items"></div>
         <section class="stats">
@@ -110,13 +126,23 @@
       </dialog>
 
       <dialog class="confirm welcome" data-ref="welcome-dialog" aria-labelledby="welcome-title">
+        <span class="welcome-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 7V12L15.5 14" /></svg>
+        </span>
         <h2 id="welcome-title" data-ref="welcome-title"></h2>
         <p data-ref="welcome-body"></p>
         <p class="welcome-amount" data-ref="welcome-amount"></p>
-        <p class="note" data-ref="welcome-note"></p>
-        <div class="confirm-actions">
-          <button type="button" class="btn" data-action="welcome-close" data-ref="welcome-close"></button>
+        <p class="welcome-status" data-ref="welcome-status" role="status" hidden></p>
+        <div class="welcome-actions">
+          <button type="button" class="reward-btn" data-action="welcome-close" data-ref="welcome-close" autofocus></button>
+          <button type="button" class="reward-btn" data-action="double-ad" data-ref="double-ad"></button>
+          <button type="button" class="reward-btn" data-action="double-buy" data-ref="double-buy"></button>
         </div>
+        <p class="note" data-ref="welcome-note"></p>
+      </dialog>
+
+      <dialog class="ad-overlay" data-ref="ad-dialog" aria-labelledby="ad-text">
+        <p id="ad-text" data-ref="ad-text"></p>
       </dialog>
 
       <dialog class="confirm" data-ref="tab-dialog" aria-labelledby="tab-title">

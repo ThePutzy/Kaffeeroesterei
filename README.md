@@ -8,7 +8,7 @@ Browser-Idle-Spiel, Thema 1: Kaffeerösterei. Reines HTML, CSS und JavaScript (E
 - Themenformat, Formeln und Balance-Simulator: [docs/themenformat.md](docs/themenformat.md)
 - Entwürfe für die eigene Seite (Anleitung, Über uns, Datenschutz, Impressum): [docs/entwuerfe/](docs/entwuerfe/README.md)
 
-Stand: Schritt 2 des [Plans für das neue Spiel](docs/umsetzungsplan-neues-spiel.md). Das Spiel ist die sichtbare Rösterei aus dem Prototyp: rösten, beim ersten Crack auswerfen, Gäste am Wagen bedienen, mit Helferin und Trommelröstern automatisieren. Englisch und Deutsch, Handy und Desktop. Der Inhalt reicht bis zum Café, etwa fünf Minuten. Das Spiel speichert im Browser und zahlt einen Offline-Ertrag. **Noch nicht wieder dabei:** Belohnungen per Werbung (Schritt 3).
+Stand: Schritt 3 des [Plans für das neue Spiel](docs/umsetzungsplan-neues-spiel.md). Das Spiel ist die sichtbare Rösterei aus dem Prototyp: rösten, beim ersten Crack auswerfen, Gäste am Wagen bedienen, mit Helferin und Trommelröstern automatisieren. Englisch und Deutsch, Handy und Desktop. Der Inhalt reicht bis zum Café, etwa fünf Minuten. Das Spiel speichert im Browser, zahlt einen Offline-Ertrag und bietet Boost und Offline-Verdopplung an, per Werbung oder als Kauf.
 
 Titel, vorläufig: **Full Roast Ahead**; er ist nicht markenrechtlich geprüft ([Titelrecherche](docs/recherche/spieltitel.md)). Entwürfe für Anleitung, Über uns, Datenschutz und Impressum liegen in `docs/entwuerfe/`; sie beschreiben noch das Spiel vor der Neuausrichtung.
 
@@ -63,7 +63,7 @@ Zugangsdaten, Schlüssel und Publisher-IDs gehören nicht ins Repository, auch n
 
 ## Speicherstand
 
-- **Wo:** im `localStorage` des Browsers unter `kaffeeroesterei.save`. Gespeichert werden Geld, Ausbau, Säcke im Wagen, Statistiken, das aktuelle Ziel und die Einstellungen, die der Spieler gewählt hat (Sprache, Ton). Gäste auf der Straße und Chargen im Röster beginnen nach dem Laden neu.
+- **Wo:** im `localStorage` des Browsers unter `kaffeeroesterei.save`. Gespeichert werden Geld, Ausbau, Säcke im Wagen, Statistiken, das aktuelle Ziel, die Restzeit eines Boosts, die Boosts per Werbung am aktuellen Tag und die Einstellungen, die der Spieler gewählt hat (Sprache, Ton). Gäste auf der Straße und Chargen im Röster beginnen nach dem Laden neu.
 - **Wann:** beim Start, alle 10 Sekunden, solange das Spiel sichtbar ist, wenn der Tab verborgen oder geschlossen wird, nach jedem Kauf und nach dem Wechsel von Sprache oder Ton.
 - **Version 2:** Spielstände des ersten Spiels (Version 1) werden nicht übernommen, sondern unter `kaffeeroesterei.save:unreadable` beiseitegelegt.
 - **Neu starten:** löscht den Fortschritt, die Einstellungen bleiben.
@@ -92,7 +92,15 @@ Die Zeit, in der das Spiel nicht läuft, rechnet `src/main.js` nach: beim Start 
 - **Adapter:**
   - `none`: kein Werbenetz. Mit `simulate: true` (nur in der Entwicklung) spielt er eine Anzeige von 0,8 s vor.
   - `crazygames`: Platzhalter für den Basic Launch, ohne SDK.
-- **Wann Werbung erscheint:** derzeit gar nicht; das Spiel bietet noch keine Belohnungen an. Schritt 3 des Plans bringt Boost und Offline-Verdopplung nach den Regeln vom 30.09.2026 zurück (siehe [CLAUDE.md](CLAUDE.md)). Der Werbe-Ablauf `src/core/adflow.js` bleibt dafür bestehen: Belohnungen nur auf Wunsch des Spielers, keine Zwischenanzeigen, ein Adapter, der nicht antwortet, gilt nach 2 Minuten als fertig.
+- **Wann Werbung erscheint:** nur nach einem Klick auf einen Knopf mit Video-Symbol, nach den Regeln vom 30.09.2026 (siehe [CLAUDE.md](CLAUDE.md)). Zwischenanzeigen gibt es keine.
+  - **Boost:** doppelte Verkaufspreise für 10 Minuten, angeboten ab der Helferin in einer eigenen Karte oben im Seitenbereich.
+    - Die Restzeit läuft nur, solange man das Spiel sieht.
+    - Kein Stapeln, höchstens 6 Boosts per Werbung pro Kalendertag.
+    - Als Kauf kostet er so viel, wie die Automatik in 5 Minuten einbringt.
+  - **Offline-Ertrag verdoppeln:** im Dialog „Willkommen zurück!“, einmal je Rückkehr, per Werbung oder als Kauf für die Hälfte des Betrags.
+  - **Während einer Anzeige** steht das Spiel still, der Ton ist aus, und ein Dialog sperrt die Bedienung.
+  - **Ablauf** (`src/core/adflow.js`): nur eine Anzeige zur Zeit, die Belohnung erst nach einer gesehenen Anzeige. Ein Adapter, der nicht antwortet, gilt nach 2 Minuten als fertig, ohne Belohnung.
+  - **Ohne Werbenetz**, also derzeit in beiden Paketen: Die Werbe-Knöpfe bleiben ausgeblendet, die Käufe bleiben.
 - **CrazyGames:** Anforderungen und SDK-Notizen stehen in [docs/crazygames-sdk.md](docs/crazygames-sdk.md).
 
 ## Regeln für ausgelieferte Dateien

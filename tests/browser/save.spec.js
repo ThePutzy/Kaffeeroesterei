@@ -3,57 +3,19 @@ import { formatNumber } from '../../src/core/format.js';
 import { createRules } from '../../src/core/model.js';
 import { offlineEarnings } from '../../src/core/offline.js';
 import { SAVE_VERSION } from '../../src/core/save.js';
-import { START, expect, test } from './helpers.js';
+import { AUTOMATED, HOUR, SAVE_KEY, expect, openAt, saveText, seedSave, test } from './helpers.js';
 
 // Saving, loading, the time away and what happens when the browser does not
 // let the game save. Console errors and foreign requests fail every test
 // (see helpers.js).
 
-const SAVE_KEY = 'kaffeeroesterei.save';
-const HOUR = 3600 * 1000;
 const theme = JSON.parse(readFileSync(new URL('../../themes/kaffeeroesterei/theme.json', import.meta.url), 'utf8'));
 const rules = createRules(theme);
 const html = (page) => page.locator('html');
 
-// A roastery with the helper, saved awayMs before START.
-const AUTOMATED = {
-  t: 300,
-  money: 40,
-  rng: 7,
-  owned: { biggerPan: 1, sign: 1, helper: 1 },
-  stock: [],
-  stats: { taps: 30, manualEjects: 8, ejects: 20, sales: 30, matched: 12, lost: 2, revenue: 260 },
-  goal: 7,
-  nextDeliveryAt: 420,
-};
-
-function saveText({ state = AUTOMATED, awayMs = 0, settings = {}, version = SAVE_VERSION } = {}) {
-  return JSON.stringify({ version, savedAt: START.getTime() - awayMs, settings, state });
-}
-
 // What the game has to pay for the time away, worked out with the same rules.
 function expectedEarnings(seconds) {
   return offlineEarnings(rules, rules.sanitizeState(structuredClone(AUTOMATED)), seconds).amount;
-}
-
-// Puts a save in place before the first load only; reloads then read what the
-// game saved itself.
-async function seedSave(page, text) {
-  await page.addInitScript(
-    ({ key, value }) => {
-      if (sessionStorage.getItem('test-seeded')) return;
-      sessionStorage.setItem('test-seeded', '1');
-      localStorage.setItem(key, value);
-    },
-    { key: SAVE_KEY, value: text },
-  );
-}
-
-async function openAt(page, query = 'seed=1') {
-  await page.clock.install({ time: START.getTime() - 1000 });
-  await page.clock.pauseAt(START);
-  await page.goto(`/?${query}`);
-  await expect(html(page)).toHaveAttribute('data-ready', 'true');
 }
 
 async function reload(page) {

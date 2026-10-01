@@ -1,8 +1,9 @@
 // Starts the game: loads the configured theme (numbers, texts, colors and the
-// scene) and the save, creates the rules and the screen, runs one frame per
-// animation frame and saves. Ads come back with step 3 of
-// docs/umsetzungsplan-neues-spiel.md.
+// scene), the save and the ads adapter of the target, creates the rules and
+// the screen, runs one frame per animation frame and saves.
+import { loadAds } from './ads/index.js';
 import { config } from './config.js';
+import { createAdFlow } from './core/adflow.js';
 import { createAudio } from './core/audio.js';
 import { LANGUAGES, createI18n, detectLanguage, mergeTexts } from './core/i18n.js';
 import { createRules } from './core/model.js';
@@ -54,10 +55,12 @@ async function start() {
     loadTexts(`${themeFolder}/locales`),
   ]);
   const rules = createRules(theme);
-  const [sceneModule] = await Promise.all([
+  const [sceneModule, ads] = await Promise.all([
     import(new URL(`${themeFolder}/${theme.scene}`, import.meta.url).href),
+    loadAds(config.ads),
     theme.stylesheet ? loadStylesheet(`${themeFolder}/${theme.stylesheet}`) : null,
   ]);
+  const adFlow = createAdFlow({ ads });
 
   const store = createStore(`${theme.id}.save`);
   const loaded = store.available ? loadSave(store, rules.sanitizeState) : { save: null, readOnly: false };
@@ -109,6 +112,7 @@ async function start() {
     coinIcon: sceneModule.COIN_ICON,
     audio: createAudio({ muted: settings.muted === true }),
     i18n,
+    adFlow,
     onRestart() {
       // Nothing may save the old game after this, also not on pagehide. The
       // settings stay; if they cannot be written, the save goes.
@@ -123,6 +127,7 @@ async function start() {
       persist();
     },
     onPurchase: persist,
+    onReward: persist,
   });
   if (!store.available) app.showNotice('unavailable');
   else if (loaded.readOnly) app.showNotice('newer');
@@ -168,18 +173,31 @@ async function start() {
   });
   window.addEventListener('pagehide', persist);
 
-  // A hidden tab gets no frames; the next frame catches the time up.
+  // The game stands still while an ad runs (CrazyGames: the player must not
+  // progress meanwhile); that time counts neither as play nor as time away.
+  adFlow.on((type) => {
+    if (type === 'end') playedUntil = Date.now();
+  });
+
+  // A hidden tab gets no frames (and frames of a hidden page are ignored);
+  // the next frame catches the time up.
   let last = performance.now();
   function frame(now) {
     if (stopped) return;
+    requestAnimationFrame(frame);
     const wall = Date.now();
+    if (document.hidden) return;
+    if (adFlow.busy) {
+      playedUntil = wall;
+      last = now;
+      return;
+    }
     const away = (wall - playedUntil) / 1000;
     playedUntil = wall;
     const dt = Math.max(0, (now - last) / 1000);
     last = now;
     if (away > GAP_SECONDS) catchUp(away);
     else app.frame(Math.min(MAX_FRAME_SECONDS, dt));
-    requestAnimationFrame(frame);
   }
   requestAnimationFrame((now) => {
     last = now;

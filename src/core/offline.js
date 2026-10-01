@@ -10,3 +10,9 @@ export function offlineEarnings(rules, state, awaySeconds) {
   const amount = Math.floor((perMinute * seconds * rate) / 60);
   return { amount, seconds, perMinute };
 }
+
+// What doubling the offline earnings costs without an ad (CLAUDE.md: half of
+// the earnings, so the purchase adds 50 % and the ad 100 %).
+export function doublePrice(rules, amount) {
+  return Math.ceil(amount * rules.theme.offline.doublePriceShare);
+}

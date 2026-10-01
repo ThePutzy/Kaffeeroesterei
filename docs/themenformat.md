@@ -1,12 +1,12 @@
 # Themenformat und Balancing
 
-Das beschreibt, woraus ein Thema besteht, wie die Spielregeln (`src/core/model.js`) seine Zahlen nutzen und wie der Balance-Simulator (`tools/simulate.mjs`) das Tempo prüft. Stand: 01.10.2026, Schritt 2 des [Plans für das neue Spiel](umsetzungsplan-neues-spiel.md).
+Das beschreibt, woraus ein Thema besteht, wie die Spielregeln (`src/core/model.js`) seine Zahlen nutzen und wie der Balance-Simulator (`tools/simulate.mjs`) das Tempo prüft. Stand: 01.10.2026, Schritt 3 des [Plans für das neue Spiel](umsetzungsplan-neues-spiel.md).
 
 ## Was zu einem Thema gehört
 
 | Datei im Themenordner | Inhalt |
 | --- | --- |
-| `theme.json` | alle Zahlen: Röstgrade, Röster, Preise, Gäste, Sonderlieferung, Ausbau, Ziele, Offline-Ertrag, Simulator-Einstellungen |
+| `theme.json` | alle Zahlen: Röstgrade, Röster, Preise, Gäste, Sonderlieferung, Ausbau, Ziele, Offline-Ertrag, Boost, Simulator-Einstellungen |
 | `locales/en.json`, `locales/de.json` | die Texte des Themas. Sie überschreiben gleichnamige Kerntexte aus `src/core/locales/`. |
 | `scene.js` | die Szene als SVG-Code, dazu die Symbole für den Ausbau (`ITEM_ICONS`) und die Münze (`COIN_ICON`). Die Szene importiert nichts; das Spiel übergibt ihr den ersten Crack, die Plätze der Gäste und die Röstgrade mit ihren Farben. |
 | `theme.css` | die Farben als CSS-Variablen (`--ui-*`, `--gold`, `--teal` …). Das Stylesheet des Spiels (`src/styles.css`) benutzt nur diese Variablen. |
@@ -29,7 +29,8 @@ Die Mechanik selbst gehört zum Spielkern: Röstcharge, erster und zweiter Crack
 | `items[]` | Ausbau: `id`, `cost` (Preise der Reihe nach; nur Röster gibt es mehrmals), optional `reveal` (Bedingung, ab der man ihn sieht), `effects` |
 | `goals[]` | Ziele in Reihenfolge: `id`, `reward`, `done` (Bedingung) |
 | `goalPauseSeconds` | Pause zwischen zwei Zielen, in der „Geschafft!“ steht |
-| `offline` | Offline-Ertrag: `rate` (Anteil, über 0 bis 1), `maxHours` (Obergrenze), `minAwaySeconds` (kürzere Pausen laufen als normales Spiel nach, statt Offline-Ertrag zu zahlen), `warmupSeconds` und `sampleSeconds` (wie lange die Spielregeln eine Kopie des Spielstands ohne Spieler einschwingen lassen und dann messen, siehe unten) |
+| `offline` | Offline-Ertrag: `rate` (Anteil, über 0 bis 1), `maxHours` (Obergrenze), `minAwaySeconds` (kürzere Pausen laufen als normales Spiel nach, statt Offline-Ertrag zu zahlen), `warmupSeconds` und `sampleSeconds` (wie lange die Spielregeln eine Kopie des Spielstands ohne Spieler einschwingen lassen und dann messen, siehe unten), `doublePriceShare` (Preis des Verdoppelns ohne Werbung als Anteil des Offline-Ertrags) |
+| `boost` | `factor` (Faktor auf die Verkaufspreise), `seconds` (Dauer, gezählt nur beim Spielen), `priceSeconds` (Kaufpreis: so viele Sekunden der Einnahmen der Automatik), `adsPerDay` (Boosts per Werbung pro Kalendertag), optional `reveal` (Bedingung, ab der das Angebot erscheint) |
 | `simulation` | Einstellungen des Simulators, siehe unten |
 
 **Effekte des Ausbaus** (gelten, sobald man das Teil mindestens einmal besitzt):
@@ -56,6 +57,15 @@ Die Mechanik selbst gehört zum Spielkern: Röstcharge, erster und zweiter Crack
 - **Offline-Ertrag:** `automaticIncomePerMinute()` spielt eine Kopie des Spielstands ohne Eingaben, erst `offline.warmupSeconds`, dann `offline.sampleSeconds`, und misst die Einnahmen der zweiten Phase. `src/core/offline.js` zahlt davon `offline.rate` für die Zeit weg, höchstens `offline.maxHours` Stunden.
 - **Spielstand bei Abwesenheit:** Er läuft in dieser Zeit nicht weiter; Gäste, Röster und Sonderlieferung stehen danach dort, wo sie waren.
 
+## Boost
+
+- **Wirkung:** Solange er läuft, multipliziert `boost.factor` jeden Verkaufspreis. Damit steigt auch die Belohnung der Sonderlieferung, die sich nach den Einnahmen richtet; Zielbelohnungen bleiben gleich.
+- **Uhr:** `advance()` zählt die Restzeit herunter. Zeit, die der Spieler nicht gesehen hat, rechnet `advanceUnseen()` nach: Das Spiel läuft weiter, der Boost wartet und verdoppelt nichts. Offline-Ertrag und Kaufpreis rechnen ohne Boost.
+- **Per Werbung:** `startAdBoost(state, day)` mit dem Kalendertag des Geräts (`"YYYY-MM-DD"`), höchstens `boost.adsPerDay` am Tag.
+- **Als Kauf:** `buyBoost()`. Der Preis (`boostPrice()`) sind `boost.priceSeconds` der Einnahmen der Automatik, gemessen an einer frischen Kopie mit demselben Ausbau. Er hängt also nur vom Ausbau ab.
+- **Kein Stapeln:** Läuft ein Boost, scheitern beide Wege.
+- **Speicherstand:** Restzeit und die Boosts per Werbung des Tages werden gespeichert. Spielstände ohne diese Felder laden mit „kein Boost“.
+
 ## Texte
 
 - Kerntexte in `src/core/locales/` decken allgemeine Knöpfe und Meldungen ab, etwa Einstellungen, Neustart, „pro Minute“ und den Ausbau.
@@ -74,7 +84,7 @@ Die Mechanik selbst gehört zum Spielkern: Röstcharge, erster und zweiter Crack
 - **aktiv:** rührt dreimal pro Sekunde und wirft aus, wenn die Röstung zum Wunsch des ersten Gasts passt.
 - **gemütlich:** rührt nie und wirft nur von Hand aus, bis die Automatik das übernimmt.
 
-Beide kaufen, was das aktuelle Ziel verlangt, danach alles, was sie sich leisten können, und tippen auf die Sonderlieferung. Das sind Annahmen, keine Messungen echter Spieler.
+Beide kaufen, was das aktuelle Ziel verlangt, danach alles, was sie sich leisten können, und tippen auf die Sonderlieferung. Boosts und Verdoppeln nutzen sie nicht; das Tempo gilt also für Spieler ohne Werbung. Das sind Annahmen, keine Messungen echter Spieler.
 
 **Ausgabe:**
 - je Spieler der früheste und späteste Zeitpunkt über alle Seeds für den ersten Verkauf, jeden Ausbau und das Ende der Ziele

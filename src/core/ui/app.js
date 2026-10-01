@@ -2,6 +2,7 @@
 // controls in index.html. src/main.js creates it once the theme is loaded,
 // calls frame() once per animation frame and decides when the game saves.
 import { formatNumber, formatPercent } from '../format.js';
+import { doublePrice } from '../offline.js';
 
 // Why progress is not (or no longer) saved, and the text that says so.
 const NOTICE_TEXTS = {
@@ -10,12 +11,32 @@ const NOTICE_TEXTS = {
   failed: 'save.failed',
 };
 
+// Marks every button that starts an ad (CrazyGames: it must be clear that an
+// ad comes).
+const VIDEO_SVG =
+  '<svg class="video" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5L15 12L10 14.5Z"/></svg>';
+
+// How long a note like "no ad available" stays in the boost card.
+const MESSAGE_SECONDS = 4;
+
+// The calendar day of the device, "YYYY-MM-DD", for the daily ad limit.
+function localDay(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function formatClock(seconds) {
+  const whole = Math.ceil(seconds);
+  return `${String(Math.floor(whole / 60)).padStart(2, '0')}:${String(whole % 60).padStart(2, '0')}`;
+}
+
 const LOCK_SVG =
   '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="8" rx="2" fill="currentColor"/><path d="M5 7V5a3 3 0 0 1 6 0v2" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>';
 
+// Ads only run through adFlow (src/core/adflow.js), and only after a click.
 // Callbacks: onRestart after the player confirmed starting over, onReload when
 // the player continues in this tab after another one saved, onSettings with
-// the changed settings ({ language } or { muted }), onPurchase after a buy.
+// the changed settings ({ language } or { muted }), onPurchase after a buy and
+// onReward after the reward of an ad.
 export function createApp({
   rules,
   state,
@@ -24,10 +45,12 @@ export function createApp({
   coinIcon = '',
   audio,
   i18n,
+  adFlow,
   onRestart,
   onReload = () => {},
   onSettings = () => {},
   onPurchase = () => {},
+  onReward = () => {},
 }) {
   const ref = (name) => document.querySelector(`[data-ref="${name}"]`);
   const t = (key, params) => i18n.t(key, params);
@@ -51,7 +74,9 @@ export function createApp({
   let lastLostNote = -Infinity;
   let lastWishKey = '';
   let noticeKey = null;
-  let welcome = null; // time away and earnings in the open welcome dialog
+  let welcome = null; // time away, earnings and doubling in the open welcome dialog
+  let boostKey = '';
+  let boostMessage = null; // { key, until } shown in the boost card for a moment
   let otherTab = false; // another tab saved; src/main.js stops this one
 
   // ---- Gauge, built from the theme's roast levels ----------------------------
@@ -100,11 +125,13 @@ export function createApp({
     ref('restart-confirm').textContent = t('restart.confirm');
     ref('welcome-title').textContent = t('offline.title');
     ref('welcome-close').textContent = t('offline.continue');
+    ref('ad-text').textContent = t('ads.playing');
     ref('tab-title').textContent = t('tab.title');
     ref('tab-body').textContent = t('tab.body');
     ref('tab-continue').textContent = t('tab.continue');
     if (noticeKey) ref('notice').textContent = t(noticeKey);
     renderWelcome();
+    boostKey = '';
     lastGoalKey = '';
     lastItemsKey = '';
     lastWishKey = '';
@@ -218,6 +245,10 @@ export function createApp({
         flyCoins({ x: box.right - 30, y: box.top + box.height / 2 }, 3);
         break;
       }
+      case 'boost':
+        audio.play('purchase');
+        banner(t('boost.started', { minutes: formatNumber(rules.theme.boost.seconds / 60, i18n.language) }));
+        break;
       case 'delivery':
         audio.play('bell');
         floater(scene.points.bike(rules.theme.delivery.stopX), t('floaters.delivery'), 'note');
@@ -244,6 +275,53 @@ export function createApp({
     ref('money').textContent = money(Math.floor(shownMoney));
     const perMinute = rules.incomePerMinute(state);
     ref('rate').textContent = perMinute > 0 ? t('rate.perMinute', { value: money(perMinute) }) : '';
+    ref('rate').classList.toggle('boosted', state.boost > 0);
+  }
+
+  // The boost card in the side panel, never in the scene (CLAUDE.md): an
+  // offer (ad and purchase side by side, equal in size), the running boost
+  // with its time, or only the purchase once the ads of the day are used up.
+  function renderBoost() {
+    const card = ref('boost');
+    const offered = rules.boostOffered(state);
+    card.hidden = !offered;
+    if (!offered) return;
+    const { boost } = rules.theme;
+    const running = state.boost > 0;
+    const day = localDay();
+    const adsShown = adFlow.canOfferReward();
+    const adsLeft = rules.adBoostsLeft(state, day);
+    const canAd = adsShown && rules.canAdBoost(state, day);
+    const price = rules.boostPrice(state);
+    if (boostMessage && state.t > boostMessage.until) boostMessage = null;
+    const key = [running, canAd, adsShown, adsLeft, price, boostMessage?.key, i18n.language].join('|');
+    if (key !== boostKey) {
+      boostKey = key;
+      const minutes = formatNumber(boost.seconds / 60, i18n.language);
+      card.classList.toggle('running', running);
+      ref('boost-badge').textContent = t('boost.badge', { factor: formatNumber(boost.factor, i18n.language) });
+      ref('boost-title').textContent = running ? t('boost.activeTitle') : t('boost.title');
+      ref('boost-sub').textContent = running ? t('boost.activeNote') : t('boost.offerNote', { minutes });
+      ref('boost-actions').hidden = running;
+      const ad = ref('boost-ad');
+      ad.hidden = !canAd;
+      ad.innerHTML = VIDEO_SVG;
+      ad.append(t('boost.ad'));
+      ad.setAttribute('aria-label', t('boost.adLabel', { minutes }));
+      const buy = ref('boost-buy');
+      buy.innerHTML = `${coinIcon}<span></span><span class="progress"></span>`;
+      buy.querySelector('span').textContent = canAd ? amount(price) : t('boost.buy', { price: amount(price) });
+      buy.setAttribute('aria-label', t('boost.buyLabel', { minutes, price: amount(price) }));
+      let note = '';
+      if (boostMessage) note = t(boostMessage.key);
+      else if (adsShown) note = adsLeft > 0 ? t('boost.adsLeft', { count: adsLeft }) : t('boost.adsUsedUp');
+      ref('boost-note').textContent = note;
+    }
+    ref('boost-time').textContent = running ? formatClock(state.boost) : '';
+    ref('boost-fill').style.width = `${(state.boost / boost.seconds) * 100}%`;
+    const buy = ref('boost-buy');
+    buy.disabled = running || state.money < price;
+    buy.querySelector('.progress').style.width = `${price > 0 ? Math.min(100, (state.money / price) * 100) : 0}%`;
   }
 
   function renderGoal() {
@@ -474,6 +552,7 @@ export function createApp({
 
   function render(dt) {
     renderHud(dt);
+    renderBoost();
     renderGoal();
     renderRoast();
     renderItems();
@@ -505,6 +584,31 @@ export function createApp({
       rate: formatPercent(offline.rate, i18n.language),
       hours: formatNumber(offline.maxHours, i18n.language),
     });
+    // Doubling once per return: with an ad, or bought for doublePrice().
+    const doubleAd = ref('double-ad');
+    doubleAd.hidden = Boolean(welcome.doubled) || !adFlow.canOfferReward();
+    doubleAd.innerHTML = VIDEO_SVG;
+    doubleAd.append(t('offline.doubleAd'));
+    const doubleBuy = ref('double-buy');
+    doubleBuy.hidden = Boolean(welcome.doubled);
+    doubleBuy.innerHTML = coinIcon;
+    doubleBuy.append(t('offline.doubleBuy', { price: amount(doublePrice(rules, welcome.amount)) }));
+    doubleBuy.disabled = state.money < doublePrice(rules, welcome.amount);
+    const status = ref('welcome-status');
+    let text = '';
+    if (welcome.doubled) text = t('offline.doubled', { amount: money(welcome.doubled) });
+    else if (welcome.adFailed) text = t('ads.unavailable');
+    status.textContent = text;
+    status.hidden = text === '';
+  }
+
+  // Pays the earnings shown in the welcome dialog once more.
+  function grantDouble(shown) {
+    if (welcome !== shown || shown.doubled) return false;
+    state.money += shown.amount;
+    shown.doubled = shown.amount;
+    renderWelcome();
+    return true;
   }
 
   const welcomeDialog = ref('welcome-dialog');
@@ -515,7 +619,7 @@ export function createApp({
   // Shows what the roastery earned while the player was away. Gaps while the
   // dialog is open (e.g. another switch of tabs) add up.
   function showWelcome({ awaySeconds, amount }) {
-    welcome ??= { awaySeconds: 0, amount: 0 };
+    welcome ??= { awaySeconds: 0, amount: 0, doubled: 0, adFailed: false };
     welcome.awaySeconds += awaySeconds;
     welcome.amount += amount;
     renderWelcome();
@@ -534,6 +638,62 @@ export function createApp({
   function showOtherTab() {
     otherTab = true;
     if (!tabDialog.open && typeof tabDialog.showModal === 'function') tabDialog.showModal();
+  }
+
+  // While an ad runs, the game stands still (src/main.js), the sound is off and
+  // a modal dialog blocks every control until the ad has ended.
+  const adDialog = ref('ad-dialog');
+  adDialog.addEventListener('cancel', (event) => event.preventDefault());
+  adDialog.addEventListener('close', () => {
+    if (adFlow.busy) adDialog.showModal();
+  });
+  let mutedBeforeAd = false;
+  let adsStarted = 0;
+  adFlow.on((type) => {
+    if (type === 'start') {
+      adsStarted += 1;
+      document.documentElement.dataset.ads = String(adsStarted);
+      mutedBeforeAd = audio.isMuted();
+      audio.setMuted(true);
+      if (!adDialog.open && typeof adDialog.showModal === 'function') adDialog.showModal();
+    } else {
+      audio.setMuted(mutedBeforeAd);
+      if (adDialog.open) adDialog.close();
+    }
+  });
+  document.documentElement.dataset.ads = '0';
+
+  function showBoostMessage(key) {
+    boostMessage = { key, until: state.t + MESSAGE_SECONDS };
+  }
+
+  async function watchBoostAd() {
+    if (adFlow.busy) return;
+    const watched = await adFlow.reward(() => rules.startAdBoost(state, localDay()));
+    if (watched) onReward();
+    else showBoostMessage('ads.unavailable');
+  }
+
+  async function watchDoubleAd() {
+    const shown = welcome;
+    if (!shown || shown.doubled || adFlow.busy) return;
+    const watched = await adFlow.reward(() => grantDouble(shown));
+    if (watched) {
+      onReward();
+    } else if (welcome === shown) {
+      shown.adFailed = true;
+      renderWelcome();
+    }
+  }
+
+  function buyDouble() {
+    const shown = welcome;
+    if (!shown || shown.doubled) return;
+    const price = doublePrice(rules, shown.amount);
+    if (state.money < price) return;
+    state.money -= price;
+    grantDouble(shown);
+    onPurchase();
   }
 
   function showNotice(kind) {
@@ -590,6 +750,14 @@ export function createApp({
       onRestart();
     } else if (action === 'welcome-close') {
       welcomeDialog.close();
+    } else if (action === 'boost-ad') {
+      watchBoostAd();
+    } else if (action === 'boost-buy') {
+      if (rules.buyBoost(state)) onPurchase();
+    } else if (action === 'double-ad') {
+      watchDoubleAd();
+    } else if (action === 'double-buy') {
+      buyDouble();
     } else if (action === 'tab-continue') {
       onReload();
     }
@@ -616,9 +784,10 @@ export function createApp({
   }
 
   // Plays a short gap on (e.g. some seconds in a hidden tab) without sounds
-  // and effects for what happened meanwhile.
+  // and effects for what happened meanwhile. The player did not see it, so a
+  // boost waits.
   function skip(seconds) {
-    rules.advance(state, seconds);
+    rules.advanceUnseen(state, seconds);
     rules.drainEvents(state);
     scene.update(state, 0);
     render(0);

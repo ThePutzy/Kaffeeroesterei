@@ -29,5 +29,22 @@
   "save.failed": "Saving failed, for example because the browser's storage is full. Your latest progress may not be saved.",
   "tab.title": "Open in another tab",
   "tab.body": "The game is also open in another tab or window, and only one of them can save. Continue here to load the latest progress.",
-  "tab.continue": "Continue here"
+  "tab.continue": "Continue here",
+  "offline.doubleAd": "Double with an ad",
+  "offline.doubleBuy": "Double for {price}",
+  "offline.doubled": "Doubled: another +{amount}.",
+  "boost.badge": "×{factor}",
+  "boost.title": "Double income",
+  "boost.activeTitle": "Double income on",
+  "boost.offerNote": "{minutes} minutes, while you play",
+  "boost.activeNote": "Only runs while you play",
+  "boost.ad": "Watch ad",
+  "boost.adLabel": "Watch an ad: double income for {minutes} minutes",
+  "boost.buy": "Buy for {price}",
+  "boost.buyLabel": "Buy double income for {minutes} minutes for {price}",
+  "boost.adsLeft": "Ads left today: {count}",
+  "boost.adsUsedUp": "No more ads today, back tomorrow",
+  "boost.started": "Double income for {minutes} minutes!",
+  "ads.playing": "The ad is playing …",
+  "ads.unavailable": "No ad available right now. Please try again later."
 }

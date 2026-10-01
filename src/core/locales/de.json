@@ -29,5 +29,22 @@
   "save.failed": "Speichern ist fehlgeschlagen, zum Beispiel weil der Speicher des Browsers voll ist. Der neueste Fortschritt ist womöglich nicht gespeichert.",
   "tab.title": "In einem anderen Tab geöffnet",
   "tab.body": "Das Spiel ist auch in einem anderen Tab oder Fenster geöffnet, und nur eins davon kann speichern. Spiel hier weiter, um den neuesten Stand zu laden.",
-  "tab.continue": "Hier weiterspielen"
+  "tab.continue": "Hier weiterspielen",
+  "offline.doubleAd": "Verdoppeln mit Werbung",
+  "offline.doubleBuy": "Verdoppeln für {price}",
+  "offline.doubled": "Verdoppelt: noch einmal +{amount}.",
+  "boost.badge": "×{factor}",
+  "boost.title": "Doppelte Einnahmen",
+  "boost.activeTitle": "Doppelte Einnahmen aktiv",
+  "boost.offerNote": "{minutes} Minuten lang, solange du spielst",
+  "boost.activeNote": "Läuft nur, solange du spielst",
+  "boost.ad": "Werbung",
+  "boost.adLabel": "Werbung ansehen: {minutes} Minuten doppelte Einnahmen",
+  "boost.buy": "Kaufen für {price}",
+  "boost.buyLabel": "{minutes} Minuten doppelte Einnahmen kaufen für {price}",
+  "boost.adsLeft": "Heute noch {count}× per Werbung",
+  "boost.adsUsedUp": "Werbung für heute aufgebraucht, morgen wieder",
+  "boost.started": "{minutes} Minuten doppelte Einnahmen!",
+  "ads.playing": "Die Werbung läuft …",
+  "ads.unavailable": "Gerade ist keine Werbung verfügbar. Versuch es später noch einmal."
 }
