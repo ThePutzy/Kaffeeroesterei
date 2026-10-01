@@ -10,9 +10,11 @@ export function createAudio({ muted: startMuted = false } = {}) {
   let muted = startMuted;
   const lastPlayed = new Map();
 
+  // Also called on later taps: iOS suspends or interrupts the context when
+  // the app goes to the background, and only a tap or click may resume it.
   function unlock() {
     if (ctx) {
-      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+      if (ctx.state === 'suspended' || ctx.state === 'interrupted') ctx.resume().catch(() => {});
       return;
     }
     const AudioContext = window.AudioContext || window.webkitAudioContext;

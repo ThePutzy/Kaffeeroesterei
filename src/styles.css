@@ -43,9 +43,12 @@ button {
   color: inherit;
 }
 
+/* In the CrazyGames app the game runs edge to edge: notches and rounded
+   corners must not cover the controls. Zero everywhere else. */
 .game {
   position: fixed;
   inset: 0;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
   display: grid;
   grid-template-columns: minmax(0, 1fr) clamp(250px, 30vw, 360px);
   grid-template-rows: minmax(0, 1fr) auto;

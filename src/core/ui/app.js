@@ -786,8 +786,10 @@ export function createApp({
     audio.unlock();
   }
 
-  document.addEventListener('pointerdown', unlockAudio, { capture: true });
-  document.addEventListener('keydown', unlockAudio, { capture: true });
+  // Touch browsers allow audio only from touchend or click, not pointerdown.
+  for (const type of ['pointerdown', 'touchend', 'click', 'keydown']) {
+    document.addEventListener(type, unlockAudio, { capture: true });
+  }
 
   ref('scene').addEventListener('pointerdown', (event) => {
     const hit = event.target.closest('[data-hit]');

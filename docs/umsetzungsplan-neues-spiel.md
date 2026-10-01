@@ -122,6 +122,10 @@ Aufgeteilt in zwei Pull Requests, weil einer zu groß würde (01.10.2026):
 
 Branch `claude/neues-spiel-5-auftritt`
 
+Aufgeteilt (01.10.2026), weil Logo und Cover auf die Wahl des Nutzers warten:
+- **5a:** CrazyGames-Anforderungen erneut gelesen. Daraus behoben: sicherer Bereich in der CrazyGames-App und Ton auf iOS. Der Rest steht in `docs/crazygames-sdk.md`.
+- **5b:** Logo, die drei Cover und die zwei Vorschauvideos, die CrazyGames bei der Einreichung verlangt. Sobald der Nutzer das Logo gewählt hat.
+
 - **Logo:** das gewählte Logo vom Design-Board im Spiel. Eine Schrift kommt nur mit Open-Font-Lizenz und lokal ins Paket, nie von einem fremden Server.
 - **Cover:** die drei Cover-Bilder als PNG für die Einreichung.
 - **CrazyGames-Anforderungen:** erneut prüfen, darunter:
