@@ -143,7 +143,7 @@ export const SHOTS = [
     warmup: 8,
     state: {
       t: 1000,
-      money: 3960,
+      money: theme.locations[1].moveCost + 60,
       rng: 3,
       owned: ownAll(),
       stats: { taps: 500, manualEjects: 70, ejects: 400, sales: 700, matched: 380, lost: 6, revenue: 12000 },
@@ -166,9 +166,9 @@ export const SHOTS = [
       money: 260,
       rng: 9,
       location: 1,
-      owned: { biggerPan: 1, sign: 1, helper: 1, drum: 2, profile: 1, cafe: 1 },
-      stats: { taps: 60, manualEjects: 6, ejects: 90, sales: 140, matched: 80, lost: 1, revenue: 2600 },
-      goal: goalIndex('board'),
+      owned: { biggerPan: 1, sign: 1, helper: 1, board: 1, drum: 2, profile: 1, cafe: 1 },
+      stats: { taps: 60, manualEjects: 6, ejects: 90, sales: 140, matched: 80, lost: 1, revenue: 1500 },
+      goal: goalIndex('cargoBike'),
       nextDeliveryAt: 2000,
     },
     async play(shot) {

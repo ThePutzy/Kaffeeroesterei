@@ -9,7 +9,7 @@ Browser-Idle-Spiel, Thema 1: Kaffeerösterei. Reines HTML, CSS und JavaScript (E
 - Entwürfe für die eigene Seite (Anleitung, Über uns, Datenschutz, Impressum): [docs/entwuerfe/](docs/entwuerfe/README.md)
 
 Stand: Schritt 5b des [Plans für das neue Spiel](docs/umsetzungsplan-neues-spiel.md). Das Spiel ist die sichtbare Rösterei aus dem Prototyp: rösten, beim ersten Crack auswerfen, Gäste am Wagen bedienen, mit Helferin und Trommelröstern automatisieren. Englisch und Deutsch, Handy und Desktop.
-- **Ausbau:** Nach dem Café kommen Kundenstopper, Espressomaschine, Lastenrad, Gasbrenner und Röstkurs.
+- **Ausbau:** Nach der Helferin kommen Kundenstopper, Trommelröster, Röstprofil und Café, danach Lastenrad, Espressomaschine, Gasbrenner und Röstkurs. Mehr Gäste und mehr Röster wechseln sich ab, damit sich Rühren lange lohnt.
 - **Umzug (Prestige):** Danach kann man ins Hafenviertel umziehen, laut Simulator nach etwa 15 Minuten aktivem Spiel. Der Durchgang beginnt neu, die Gäste zahlen dort das Doppelte. Das Spiel speichert im Browser, zahlt einen Offline-Ertrag und bietet Boost und Offline-Verdopplung an, per Werbung oder als Kauf.
 - **Logo:** Logo A „Röstetikett“ vom Design-Board. Es steht in der Mitte, solange das Spiel lädt, und dient als Symbol im Browser-Tab.
 - **Einreichung:** Die drei Cover und die zwei Vorschauvideos für CrazyGames liegen in `media/crazygames/` (siehe „Cover und Vorschauvideos“).
