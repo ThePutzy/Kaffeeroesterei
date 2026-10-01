@@ -81,3 +81,18 @@ for (const themeId of themeIds) {
     for (const level of theme.roast.levels) assert.match(level.color, /^#[0-9a-f]{6}$/i, `${level.id}: color`);
   });
 }
+
+// The page shows the logo while the game loads and names the browser icon,
+// both from the theme folder (CLAUDE.md: no external requests).
+test('the page uses the logo and the icon of the theme, as self-contained drawings', () => {
+  const page = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
+  const files = [...page.matchAll(/(?:src|href)="(themes\/[^"]+)"/g)].map((match) => match[1]).sort();
+  assert.deepEqual(files, ['themes/kaffeeroesterei/icon.svg', 'themes/kaffeeroesterei/logo.svg']);
+  assert.deepEqual(themeIds, ['kaffeeroesterei'], 'the page names this theme folder; a target with another theme needs its own logo and icon');
+  for (const file of files) {
+    const svg = readFileSync(new URL(`../../${file}`, import.meta.url), 'utf8');
+    assert.match(svg, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="[\d. ]+">/, `${file}: an SVG with a viewBox`);
+    assert.doesNotMatch(svg, /<script|<image|<foreignObject|<text|href=|url\(|@import|@font-face/i, `${file}: draws everything itself, no scripts, images, links or fonts`);
+    assert.ok(svg.length < 10_000, `${file}: ${svg.length} bytes`);
+  }
+});

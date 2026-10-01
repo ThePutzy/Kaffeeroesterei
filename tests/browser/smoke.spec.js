@@ -16,6 +16,11 @@ for (const [name, target] of Object.entries(targets)) {
     await openGame(page, `/dist/${name}/`);
     await expect(page.locator('html')).toHaveAttribute('data-target', name);
     await expect(page.locator('html')).toHaveAttribute('data-items', itemCount(target.runtime.theme));
+    // The logo and the browser icon are in the package too.
+    expect(await page.locator('.splash').evaluate((img) => img.naturalWidth)).toBeGreaterThan(0);
+    const icon = await page.request.get(new URL(await page.locator('link[rel="icon"]').getAttribute('href'), page.url()).href);
+    expect(icon.ok()).toBe(true);
+    expect(icon.headers()['content-type']).toBe('image/svg+xml');
   });
 }
 
@@ -37,6 +42,27 @@ for (const name of Object.keys(targets)) {
     await expect(page.locator('svg.video:visible')).toHaveCount(0);
   });
 }
+
+test('the logo shows while the game loads and then gives way to the game', async ({ page }) => {
+  let release;
+  const held = new Promise((resolve) => {
+    release = resolve;
+  });
+  await page.route('**/src/main.js', async (route) => {
+    await held;
+    await route.continue();
+  });
+  // Module scripts hold back DOMContentLoaded and load, so wait for neither.
+  await page.goto('/', { waitUntil: 'commit' });
+  const splash = page.getByRole('img', { name: 'Full Roast Ahead' });
+  await expect(splash).toBeVisible();
+  await expect.poll(() => splash.evaluate((img) => img.naturalWidth)).toBeGreaterThan(0);
+  await expect(page.locator('.game')).toBeHidden();
+  release();
+  await expect(page.locator('html')).toHaveAttribute('data-ready', 'true');
+  await expect(page.locator('.splash')).toBeHidden();
+  await expect(page.locator('.game')).toBeVisible();
+});
 
 test('source version loads with the development config', async ({ page }) => {
   await openGame(page);

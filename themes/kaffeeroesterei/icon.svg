@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150">
+<!-- The square icon of logo A ("Roestetikett") from the design board: the coin with the bean. -->
+<rect width="150" height="150" rx="34" fill="#2a1e17"/>
+<rect x="10" y="10" width="130" height="130" rx="24" fill="none" stroke="#f2c14e" stroke-width="4"/>
+<g transform="translate(29 29) scale(1.9167)"><circle cx="24" cy="24" r="23" fill="#f2c14e"/><circle cx="24" cy="24" r="19.5" fill="none" stroke="#2a1e17" stroke-width="1.6"/><g transform="rotate(-28 24 24)"><ellipse cx="24" cy="24" rx="9.5" ry="13.5" fill="#2a1e17"/><path d="M24 11.5Q19 24 24 36.5" stroke="#f2c14e" stroke-width="2.6" fill="none" stroke-linecap="round"/></g></g>
+</svg>

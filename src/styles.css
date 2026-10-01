@@ -9,6 +9,32 @@ html:not([data-ready='true']) .game {
   visibility: hidden;
 }
 
+/* Meanwhile the logo stands in the middle; it fades out once the game is
+   ready, and at once if the game cannot start. */
+.splash {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 10;
+  width: min(70vw, 460px);
+  max-height: 30vh;
+  object-fit: contain;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  transition:
+    opacity 0.25s,
+    visibility 0.25s;
+}
+
+html[data-ready='true'] .splash {
+  opacity: 0;
+  visibility: hidden;
+}
+
+html[data-ready='error'] .splash {
+  display: none;
+}
+
 .app-error {
   margin: 24px;
   font-size: 18px;
