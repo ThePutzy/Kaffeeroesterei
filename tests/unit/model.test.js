@@ -136,7 +136,7 @@ test('the effects of the sign and the café come from the theme', () => {
 
 test('drums are automatic and limited to two', () => {
   const s = createState(1);
-  Object.assign(s.owned, { biggerPan: 1, sign: 1, helper: 1 });
+  Object.assign(s.owned, { biggerPan: 1, sign: 1, helper: 1, board: 1 });
   s.money = 1000;
   assert.equal(buyItem(s, 'drum'), true);
   assert.equal(buyItem(s, 'drum'), true);
@@ -150,7 +150,7 @@ test('drums are automatic and limited to two', () => {
 
 test('a full cart holds the roasters up until guests buy', () => {
   const s = createState(1);
-  Object.assign(s.owned, { biggerPan: 1, sign: 1, helper: 1 });
+  Object.assign(s.owned, { biggerPan: 1, sign: 1, helper: 1, board: 1 });
   s.money = 1000;
   buyItem(s, 'drum');
   buyItem(s, 'drum');
@@ -246,7 +246,7 @@ test('the same seed plays the same game', () => {
 
 test('a saved game loads back with its money, purchases, cart and progress', () => {
   const s = createState(3);
-  Object.assign(s.owned, { biggerPan: 1, sign: 1, helper: 1 });
+  Object.assign(s.owned, { biggerPan: 1, sign: 1, helper: 1, board: 1 });
   s.money = 1000;
   buyItem(s, 'drum');
   s.stock.push('dark', 'light');
@@ -296,7 +296,7 @@ test('broken saves are refused, unknown and excess entries are dropped', () => {
 test('without the player only automation earns money', () => {
   const s = createState(1);
   assert.equal(rules.automaticIncomePerMinute(s), 0, 'a pan without a helper waits');
-  Object.assign(s.owned, { biggerPan: 1, sign: 1, helper: 1 });
+  Object.assign(s.owned, { biggerPan: 1, sign: 1, helper: 1, board: 1 });
   const withHelper = rules.automaticIncomePerMinute(s);
   assert.ok(withHelper > 0);
   s.money = 1000;

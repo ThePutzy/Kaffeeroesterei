@@ -107,6 +107,8 @@ Beide kaufen, was das aktuelle Ziel verlangt, danach alles, was sie sich leisten
 **Ausgabe:**
 - je Spieler der früheste und späteste Zeitpunkt über alle Seeds für den ersten Verkauf, jeden Ausbau und das Ende der Ziele
 - die längste Wartezeit ohne Fortschritt
+- **Leerlauf:** die längste Strecke am Stück (`longest idle`) und der Anteil an der Zeit (`idle share`), in denen Rösten nichts bringt. Gezählt wird in Abschnitten von 15 Sekunden: Der Wagen stand mindestens die Hälfte der Zeit voll, und kein Gast wartete auf einen Sack. Nur solange noch etwas offen ist, also nicht nach dem letzten Kauf.
+- **Verlorene Gäste** (`guests lost`): Anteil der Gäste, die vor einer vollen Schlange umkehren. Er zeigt, ob sich Rühren lohnt: Der aktive Spieler sollte deutlich weniger Gäste verlieren als der gemütliche.
 - was die Automatik am Ende ohne Spieler pro Minute einbringt (`auto per min`) und was das als Offline-Ertrag für die volle Obergrenze ergibt (`offline 8 h`)
 
 **Harte Fehler** beenden mit Code 1:
@@ -114,15 +116,22 @@ Beide kaufen, was das aktuelle Ziel verlangt, danach alles, was sie sich leisten
 - Länger als `simulation.maxSecondsWithoutProgress` gibt es keinen Kauf, kein erreichtes Ziel und keinen Umzug, obwohl noch etwas offen ist. Das Sparen auf einen Umzug zählt als offen.
 - Das Thema ist ungültig.
 
-**Warnungen:** Zeitpunkte außerhalb von `simulation.targets` (je Spieler und Meilenstein `[frühestens, spätestens]` in Sekunden).
+**Warnungen:**
+- Zeitpunkte außerhalb von `simulation.targets` (je Spieler und Meilenstein `[frühestens, spätestens]` in Sekunden)
+- Leerlauf länger als `simulation.maxIdleSeconds` am Stück
 
-**Stand 01.10.2026 (Schritt 4b):**
-- aktiv: Café nach 4:11 bis 4:24, Röstkurs nach 12:38 bis 12:56, Umzug nach 15:12 bis 15:30; im zweiten Durchgang Café nach 2:10 bis 2:27, Röstkurs nach 6:30 bis 6:56
-- gemütlich: Café nach 5:01 bis 5:24, Umzug nach 17:09 bis 17:34; im zweiten Durchgang Röstkurs nach 7:34 bis 7:51
-- längste Wartezeit ohne Kauf, Ziel oder Umzug: 1:50 (aktiv), 1:44 (gemütlich)
+Der Unit-Test des Simulators verlangt für das Thema null Warnungen; eine Warnung lässt also auch `npm test` scheitern.
+
+**Stand 01.10.2026 (Balance nach Schritt 5b):**
+- aktiv: Café nach 4:13 bis 4:23, Röstkurs nach 12:18 bis 12:55, Umzug nach 15:06 bis 15:27; im zweiten Durchgang Café nach 2:17 bis 2:29, Röstkurs nach 6:15 bis 6:44
+- gemütlich: Café nach 5:35 bis 6:06, Röstkurs nach 15:40 bis 16:05, Umzug nach 18:46 bis 19:25; im zweiten Durchgang Röstkurs nach 8:14 bis 8:43
+- längste Wartezeit ohne Kauf, Ziel oder Umzug: 1:34 (aktiv), 1:48 (gemütlich)
+- Leerlauf: höchstens 0:45 am Stück und 3 % der Zeit (aktiv), keiner beim gemütlichen Spieler
+- verlorene Gäste: 3 % (aktiv), 17 % (gemütlich)
 - keine Warnungen
-- **Wie der Inhalt nach dem Café gebaut ist:**
-  - Nach dem Café kommen zu wenige Gäste; der Wagen ist meist voll. Deshalb folgen erst mehr Gäste (Kundenstopper) und höhere Preise (Espressomaschine).
-  - Mit dem Lastenrad kommen dann mehr Gäste, als die Röster schaffen, und einige gehen leer aus. Der Gasbrenner behebt das, danach hebt der Röstkurs die Preise.
-  - Zwischen den Käufen liegen Ziele für Einnahmen. Sie wachsen im Hafenviertel mit den doppelten Preisen mit, sodass auch der zweite Durchgang ohne lange Pausen bleibt.
-- Automatik am Ende: 343 bis 361 pro Minute, also etwa 82.000 bis 87.000 für 8 Stunden offline. Das ist weit mehr als der teuerste Ausbau (400). Solange das Spiel nach dem Café endet, fällt das nicht ins Gewicht; Schritt 4 muss Preise und Offline-Ertrag zusammen einstellen.
+- **Warum diese Reihenfolge:** Vorher kamen Helferin und Trommelröster direkt hintereinander. Ab etwa Minute 2 konnten Pfanne und Trommelröster schon ohne Rühren rund 31 Säcke pro Minute rösten, es kamen aber nur etwa 21 Gäste (geschätzt aus den Röstzeiten und Ankünften). Der Wagen stand voll, die Röster standen 36 bis 68 % der Zeit still, und Rühren brachte bis zum Café nichts (Leerlauf bis 2:30 am Stück, 36 % der Zeit). Jetzt wechseln sich mehr Gäste und mehr Röster ab:
+  - Helferin, dann der Kundenstopper (mehr Gäste): Gäste warten, Rühren lohnt sich.
+  - Trommelröster (jetzt 12 statt 10 Sekunden bis zur dunkelsten Röstung), dann Röstprofil und Café: Nachfrage und Röster etwa gleich.
+  - zweiter Trommelröster, dann das Lastenrad (mehr Gäste, mehr Platz): Danach warten wieder Gäste, bis der Gasbrenner die Röster beschleunigt. Die Espressomaschine und der Röstkurs heben dazwischen die Preise.
+  - Die Ziele für Einnahmen liegen jeweils etwa in der Mitte zwischen zwei Käufen, damit keine Pause länger als zwei Minuten wird. Im Hafenviertel gelten dieselben Schwellen; mit den doppelten Preisen erreicht man sie schneller, der zweite Durchgang ist darum kürzer.
+- Automatik am Ende des simulierten zweiten Durchgangs: etwa 1.900 bis 2.300 pro Minute, also 460.000 bis 560.000 für 8 Stunden offline.

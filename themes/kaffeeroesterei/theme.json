@@ -14,7 +14,7 @@
   },
   "roasters": {
     "pan": { "roastSeconds": 12, "tapHeat": 0.03, "coolSeconds": 1.2, "loadDelay": 0.8, "bags": 1 },
-    "drum": { "roastSeconds": 10, "tapHeat": 0.02, "coolSeconds": 1.5, "loadDelay": 1.2, "bags": 3 }
+    "drum": { "roastSeconds": 12, "tapHeat": 0.02, "coolSeconds": 1.5, "loadDelay": 1.2, "bags": 3 }
   },
   "sales": { "basePrice": 5, "matchFactor": 1.5, "capacity": 8, "incomeWindowSeconds": 30 },
   "guests": {
@@ -43,13 +43,13 @@
     { "id": "biggerPan", "cost": [8], "reveal": { "stat": "sales" }, "effects": { "panBags": 2 } },
     { "id": "sign", "cost": [20], "reveal": { "owned": "biggerPan" }, "effects": { "arrivalFactor": 0.62 } },
     { "id": "helper", "cost": [85], "reveal": { "owned": "sign" }, "effects": { "panAutomatic": true } },
-    { "id": "drum", "cost": [150, 400], "reveal": { "owned": "helper" }, "effects": { "roaster": "drum" } },
+    { "id": "board", "cost": [110], "reveal": { "owned": "helper" }, "effects": { "arrivalFactor": 0.75 } },
+    { "id": "drum", "cost": [150, 400], "reveal": { "owned": "board" }, "effects": { "roaster": "drum" } },
     { "id": "profile", "cost": [200], "reveal": { "owned": "drum" }, "effects": { "followWishes": true } },
     { "id": "cafe", "cost": [320], "reveal": { "owned": "profile" }, "effects": { "capacity": 12, "priceFactor": 1.5, "arrivalFactor": 0.62 } },
-    { "id": "board", "cost": [550], "reveal": { "owned": "cafe" }, "effects": { "arrivalFactor": 0.75 } },
-    { "id": "espresso", "cost": [1000], "reveal": { "owned": "board" }, "effects": { "priceFactor": 1.4 } },
-    { "id": "cargoBike", "cost": [1450], "reveal": { "owned": "espresso" }, "effects": { "capacity": 16, "arrivalFactor": 0.75 } },
-    { "id": "burner", "cost": [2000], "reveal": { "owned": "cargoBike" }, "effects": { "roastFactor": 0.7 } },
+    { "id": "cargoBike", "cost": [1000], "reveal": { "owned": "cafe" }, "effects": { "capacity": 16, "arrivalFactor": 0.75 } },
+    { "id": "espresso", "cost": [1450], "reveal": { "owned": "cargoBike" }, "effects": { "priceFactor": 1.4 } },
+    { "id": "burner", "cost": [2000], "reveal": { "owned": "espresso" }, "effects": { "roastFactor": 0.7 } },
     { "id": "diploma", "cost": [2300], "reveal": { "owned": "burner" }, "effects": { "priceFactor": 1.3 } }
   ],
   "goals": [
@@ -60,34 +60,35 @@
     { "id": "match", "reward": 5, "done": { "stat": "matched" } },
     { "id": "sign", "reward": 10, "done": { "owned": "sign" } },
     { "id": "helper", "reward": 20, "done": { "owned": "helper" } },
+    { "id": "board", "reward": 20, "done": { "owned": "board" } },
     { "id": "drum", "reward": 30, "done": { "owned": "drum" } },
     { "id": "profile", "reward": 50, "done": { "owned": "profile" } },
     { "id": "cafe", "reward": 80, "done": { "owned": "cafe" } },
-    { "id": "board", "reward": 50, "done": { "owned": "board" } },
-    { "id": "earn1", "reward": 60, "done": { "stat": "revenue", "min": 1800 } },
-    { "id": "espresso", "reward": 100, "done": { "owned": "espresso" } },
-    { "id": "earn2", "reward": 100, "done": { "stat": "revenue", "min": 3000 } },
-    { "id": "cargoBike", "reward": 150, "done": { "owned": "cargoBike" } },
-    { "id": "earn3", "reward": 150, "done": { "stat": "revenue", "min": 4500 } },
+    { "id": "earn1", "reward": 60, "done": { "stat": "revenue", "min": 1400 } },
+    { "id": "cargoBike", "reward": 100, "done": { "owned": "cargoBike" } },
+    { "id": "earn2", "reward": 100, "done": { "stat": "revenue", "min": 2300 } },
+    { "id": "espresso", "reward": 150, "done": { "owned": "espresso" } },
+    { "id": "earn3", "reward": 150, "done": { "stat": "revenue", "min": 3700 } },
     { "id": "burner", "reward": 200, "done": { "owned": "burner" } },
-    { "id": "earn4", "reward": 200, "done": { "stat": "revenue", "min": 6000 } },
+    { "id": "earn4", "reward": 200, "done": { "stat": "revenue", "min": 5300 } },
     { "id": "diploma", "reward": 250, "done": { "owned": "diploma" } },
-    { "id": "earn5", "reward": 300, "done": { "stat": "revenue", "min": 8000 } }
+    { "id": "earn5", "reward": 300, "done": { "stat": "revenue", "min": 7500 } }
   ],
   "goalPauseSeconds": 1.2,
   "offline": { "rate": 0.5, "maxHours": 8, "minAwaySeconds": 60, "warmupSeconds": 30, "sampleSeconds": 120, "doublePriceShare": 0.5 },
   "boost": { "factor": 2, "seconds": 600, "priceSeconds": 300, "adsPerDay": 6, "reveal": { "owned": "helper" } },
   "locations": [
     { "id": "oldTown" },
-    { "id": "harbor", "moveCost": 3900, "reveal": { "owned": "diploma" }, "priceFactor": 2 }
+    { "id": "harbor", "moveCost": 4200, "reveal": { "owned": "diploma" }, "priceFactor": 2 }
   ],
   "simulation": {
     "seeds": [1, 2, 3, 4, 5],
     "seconds": 1800,
     "maxSecondsWithoutProgress": 120,
+    "maxIdleSeconds": 60,
     "targets": {
       "active": { "firstSale": [0, 15], "biggerPan": [0, 20], "helper": [25, 75], "drum": [0, 150], "cafe": [0, 300], "move": [900, 1200], "2:cafe": [0, 200] },
-      "casual": { "helper": [0, 90], "cafe": [0, 360], "move": [0, 1800], "2:cafe": [0, 260] }
+      "casual": { "helper": [0, 90], "cafe": [0, 390], "move": [0, 1800], "2:cafe": [0, 260] }
     }
   }
 }

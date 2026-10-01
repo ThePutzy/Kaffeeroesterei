@@ -106,6 +106,7 @@ Branch `claude/neues-spiel-4-standorte`
 Aufgeteilt in zwei Pull Requests, weil einer zu groß würde (01.10.2026):
 - **4a:** der Umzug selbst. Standorte in `theme.json`, Umzug mit Bonus und Zurücksetzen, das Hafenviertel als zweiter Standort, Simulator mit zweitem Durchgang. Der Umzug kommt vorerst kurz nach dem Café.
 - **4b:** Inhalt zwischen Café und Umzug, Ziele bis dahin und das Balancing auf die Zielwerte unten. Umgesetzt: fünf neue Ausbauten und Ziele für Einnahmen; Umzug im Simulator nach etwa 15 Minuten aktivem und 17 Minuten gemütlichem Spiel.
+- **Balance-Korrektur (01.10.2026, nach Schritt 5b):** Der Nutzer bemerkte, dass man nach 3 bis 4 Minuten kaum noch etwas zu tun hat: Der Wagen war voll, alle Gäste wurden bedient. Der Simulator misst jetzt diesen Leerlauf. Kundenstopper und Lastenrad kommen früher, sodass sich mehr Gäste und mehr Röster abwechseln. Umzug jetzt nach etwa 15 Minuten aktivem und 19 Minuten gemütlichem Spiel. Einzelheiten: `docs/themenformat.md`, „Balance-Simulator“.
 
 - **Inhalt:** ab Minute fünf bis zum Umzug an einen neuen Standort, mit Zielen bis dahin.
 - **Prestige:** ein Bonus, der den nächsten Durchgang spürbar schneller macht.
