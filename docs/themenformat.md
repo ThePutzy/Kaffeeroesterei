@@ -10,6 +10,10 @@ Das beschreibt, woraus ein Thema besteht, wie die Spielregeln (`src/core/model.j
 | `locales/en.json`, `locales/de.json` | die Texte des Themas. Sie überschreiben gleichnamige Kerntexte aus `src/core/locales/`. |
 | `scene.js` | die Szene als SVG-Code, dazu die Symbole für den Ausbau (`ITEM_ICONS`), für die Standorte, in die man umziehen kann (`LOCATION_ICONS`), und für die Münze (`COIN_ICON`). Die Szene importiert nichts; das Spiel übergibt ihr den ersten Crack, die Plätze der Gäste und die Röstgrade mit ihren Farben. |
 | `theme.css` | die Farben als CSS-Variablen (`--ui-*`, `--gold`, `--teal` …). Das Stylesheet des Spiels (`src/styles.css`) benutzt nur diese Variablen. |
+| `logo.svg` | das Logo, mit den Buchstaben als Pfaden statt als Text, damit keine Schrift geladen werden muss. `index.html` zeigt es, solange das Spiel lädt, und `tools/media.mjs` setzt es auf die Cover. |
+| `icon.svg` | das quadratische Symbol des Logos, als Symbol im Browser-Tab |
+
+`index.html` nennt den Themenordner für Logo und Symbol direkt, denn beide müssen sichtbar sein, bevor das Spiel sein Thema lädt. Ein Ziel mit einem anderen Thema bräuchte darum eine eigene Seite; ein Unit-Test erinnert daran.
 
 Die Mechanik selbst gehört zum Spielkern: Röstcharge, erster und zweiter Crack, Abkühlen, Wagen, Schlange, Wünsche der Gäste, Automatik, Sonderlieferung und Ziele.
 

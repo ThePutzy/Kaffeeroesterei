@@ -136,7 +136,7 @@ Gelesen: Anforderungen (Einführung, Technik, Gameplay, Werbung, Qualität, Cove
   - 15 bis 20 Sekunden, höchstens 50 MB, ohne Ton
   - ohne schwarze Überblendungen, schwarze Balken, Standard-Mauszeiger, „Play Now“ oder App-Symbole
   - Das erste Bild soll das Cover sein.
-  - Gehört zu Schritt 5, zusammen mit Logo und Covern.
+  - **Umgesetzt** in Schritt 5b (01.10.2026), siehe „Einreichung“ unten.
 - **Cover:** 1920×1080, 800×1200 und 800×800.
   - Kein Rahmen, kein Text außer dem Titel, keine Store-Logos.
   - Ein reiner Screenshot wird nicht empfohlen.
@@ -207,3 +207,16 @@ Die Einreichung selbst ist nicht Teil dieses Projekts (CLAUDE.md). Hier steht nu
   - 15–20 Sekunden, höchstens 50 MB, ohne Ton; das erste Bild ist das Cover.
   - Ohne schwarze Balken, Mauszeiger, Logo-Einblendung, „Play Now“ oder andere Werbetexte, nicht vorgespult.
 - Cover und Videos zeigen den Titel. Sie sollten darum erst entstehen, wenn der Titel feststeht.
+
+**Stand (01.10.2026, Schritt 5b):** Cover und Videos liegen in `media/crazygames/`; `npm run media` erzeugt sie neu (README, „Cover und Vorschauvideos“).
+- **Logo:** Logo A „Röstetikett“ vom Design-Board, gewählt vom Nutzer am 01.10.2026.
+- **Cover:** die Szene des Spiels, darüber das Logo in der Größe des Design-Boards. Kein weiterer Text, kein Rahmen. Wunschblasen über den Gästen zeigen nur Symbole.
+- **Videos:**
+  - 1920×1080 und 1080×1620, 30 Bilder pro Sekunde, H.264 in MP4, ohne Tonspur; Länge 17,8 und 19,1 Sekunden, Größe je etwa 3 MB.
+  - Das erste Bild ist das Cover, in der Größe des Videos gezeichnet. Es steht 0,5 Sekunden und blendet dann in 0,4 Sekunden ins Spiel über.
+  - Danach kommen vier Szenen, alle in echter Geschwindigkeit und hart geschnitten. Statt eines Mauszeigers zeigt ein heller Ring, wo getippt wird.
+- **Unsicher:**
+  - Ein Dateiformat nennt die Seite zu den Covern nicht. MP4 mit H.264 habe ich gewählt, weil es am weitesten verbreitet ist. Ob CrazyGames auch andere Formate annimmt, weiß ich nicht.
+  - CrazyGames nennt „Black screen and logo transition“ als zu vermeiden und verlangt zugleich das Cover als erstes Bild. Ich verstehe das als Verbot eines Vorspanns, etwa eines schwarzen Bildes mit Logo-Animation. Das Video beginnt darum mit dem Cover, und die Überblendung ins Spiel kommt ohne Schwarz aus. Das ist meine Auslegung.
+  - Wie CrazyGames die Cover und Videos beurteilt, zeigt erst die Einreichung.
+- Der Titel ist weiterhin vorläufig und nicht markenrechtlich geprüft (CLAUDE.md). Ändert er sich, müssen Logo, Cover und Videos neu entstehen.

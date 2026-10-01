@@ -124,7 +124,7 @@ Branch `claude/neues-spiel-5-auftritt`
 
 Aufgeteilt (01.10.2026), weil Logo und Cover auf die Wahl des Nutzers warten:
 - **5a:** CrazyGames-Anforderungen erneut gelesen. Daraus behoben: sicherer Bereich in der CrazyGames-App und Ton auf iOS. Der Rest steht in `docs/crazygames-sdk.md`.
-- **5b:** Logo, die drei Cover und die zwei Vorschauvideos, die CrazyGames bei der Einreichung verlangt. Sobald der Nutzer das Logo gewählt hat.
+- **5b:** Logo, die drei Cover und die zwei Vorschauvideos, die CrazyGames bei der Einreichung verlangt. Sobald der Nutzer das Logo gewählt hat. Umgesetzt (01.10.2026): Logo A „Röstetikett“ als Lade-Anzeige und Symbol im Browser-Tab; Cover und Videos in `media/crazygames/`, erzeugt mit `npm run media`.
 
 - **Logo:** das gewählte Logo vom Design-Board im Spiel. Eine Schrift kommt nur mit Open-Font-Lizenz und lokal ins Paket, nie von einem fremden Server.
 - **Cover:** die drei Cover-Bilder als PNG für die Einreichung.
@@ -132,7 +132,7 @@ Aufgeteilt (01.10.2026), weil Logo und Cover auf die Wahl des Nutzers warten:
   - kein Startbildschirm
   - Lesbarkeit in den iframe-Größen
   - Sprache
-- **Erfolge:** wenn sie dann passen.
+- **Erfolge:** wenn sie dann passen. Stand 01.10.2026: noch nicht umgesetzt. Die Ziele führen bereits durch den ganzen Inhalt bis zum Umzug, Erfolge würden sie bisher nur doppeln. Empfehlung: nach dem Basic Launch entscheiden, wenn die Rückkehrquote zeigt, was fehlt.
 
 ## Zielwerte und offene Entscheidungen
 
@@ -142,5 +142,5 @@ Ohne andere Ansage des Nutzers gilt jeweils die Empfehlung:
 - **Erstes Prestige:** bei aktivem Spiel nach etwa 15 bis 20 Minuten, bei gemütlichem nach höchstens 30 Minuten.
   - Grundlage: CrazyGames nennt für Clicker etwa 15 Minuten durchschnittliche Spielzeit, und erfolgreiche Spiele haben laut CrazyGames oft Sitzungen von 10 Minuten oder mehr.
   - Annahme: Ein Prestige in dieser Zeit fühlt sich in der ersten Sitzung erreichbar an.
-- **Logo und Cover:** Die Auswahl trifft der Nutzer auf dem Design-Board in Claude Design („Full Roast Ahead – Design“).
+- **Logo und Cover:** Die Auswahl trifft der Nutzer auf dem Design-Board in Claude Design („Full Roast Ahead – Design“). Gewählt: Logo A „Röstetikett“ (01.10.2026).
 - **Alte Spielstände:** werden nicht übernommen.
