@@ -1,15 +1,17 @@
-/* Colors of the coffee roastery theme; they override the core variables. */
+/* Colors of the coffee roastery. The game's stylesheet (src/styles.css)
+   only uses these variables. */
 :root {
-  --color-bg: #f5ede3;
-  --color-surface: #fffaf3;
-  --color-surface-strong: #ead9c4;
-  --color-text: #2b1a10;
-  --color-muted: #6e5646;
-  --color-accent: #7a3b1c;
-  --color-accent-strong: #582812;
-  --color-on-accent: #fff8ef;
-  --color-border: #dcc6ae;
-  --click-background: radial-gradient(circle at 38% 30%, #fffaf1, #f1dcc0 58%, #d8b287);
-  --click-text: #3b2314;
-  --click-text-shadow: 0 1px 2px rgb(255 250 241 / 85%);
+  --ui-bg: #1f1611;
+  --ui-panel: #2a1e17;
+  --ui-card: #36271e;
+  --ui-card-hi: #44322a;
+  --ui-line: #4d392c;
+  --ui-text: #f8eddf;
+  --ui-muted: #c9b39b;
+  --gold: #f2c14e;
+  --gold-deep: #b9851a;
+  --teal: #2fa39a;
+  --teal-deep: #1d746d;
+  --ember: #e0664f;
+  --good: #7bc96f;
 }

@@ -1,290 +1,147 @@
-// Balance simulator: plays a theme with a fixed strategy and reports its pacing.
+// Balance simulator: plays a theme with scripted players and reports when
+// they reach each milestone.
 // Usage: node tools/simulate.mjs [theme]   (default: kaffeeroesterei)
-// Hard failures (invalid numbers, stalls, numbers above MAX_NUMBER) exit with
-// code 1. Missed pacing targets are warnings only.
+// Hard failures (invalid numbers, stalls, an invalid theme) exit with code 1.
+// Missed pacing targets from theme.json ("simulation.targets") are warnings.
 import { realpathSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ROOT } from './build.mjs';
-import { createEconomy } from '../src/core/economy.js';
+import { createRules } from '../src/core/model.js';
 
-// Pacing targets from docs/umsetzungsplan.md. They are assumptions, not
-// player data, and apply to the active scenario.
-export const TARGETS = {
-  firstGeneratorSeconds: 15,
-  longestWaitSeconds: 5 * 60,
-  firstPrestigeMinutes: [45, 60],
-  secondRunSpeedup: 1.5,
-};
+const STEP_SECONDS = 0.1;
 
-export const SCENARIOS = {
-  // Assumption: an active player clicks about three times per second.
-  active: { name: 'active', clicksPerSecond: 3, clickOnlyUntilFirstGenerator: false },
-  // Clicks only until something produces, then just waits and buys.
-  idle: { name: 'idle', clicksPerSecond: 3, clickOnlyUntilFirstGenerator: true },
-};
+// Scripted players. Assumptions, not player data:
+// - "active" stirs three times a second and ejects when the roast matches the
+//   first guest's wish;
+// - "casual" never stirs and stops ejecting by hand once a helper does it.
+// Both buy what the current goal asks for, later everything they can afford,
+// and tap the special delivery when it waits.
+export const PLAYERS = ['active', 'casual'];
 
-export const MAX_NUMBER = 1e300;
-const MAX_WAIT_SECONDS = 24 * 3600;
-const LONG_RUN_DAYS = 30;
-
-function clickRate(eco, state, scenario) {
-  const producing = eco.productionPerSecond(state) > 0;
-  return scenario.clickOnlyUntilFirstGenerator && producing ? 0 : scenario.clicksPerSecond;
-}
-
-function incomePerSecond(eco, state, clicksPerSecond) {
-  return eco.productionPerSecond(state) + clicksPerSecond * eco.clickValue(state);
-}
-
-// Every purchase the player could make now or later in this run, with the
-// income per second it adds at the current click rate.
-function candidates(eco, state, clicksPerSecond) {
-  const before = incomePerSecond(eco, state, clicksPerSecond);
-  const list = [];
-  for (const { id } of eco.theme.generators) {
-    const cost = eco.generatorCost(state, id);
-    const after = eco.buyGenerator({ ...state, currency: cost }, id);
-    list.push({ kind: 'generator', id, cost, gain: incomePerSecond(eco, after, clicksPerSecond) - before });
+export function play(rules, kind, seed, until) {
+  const s = rules.createState(seed);
+  const times = {};
+  const problems = [];
+  let sinceTap = 0;
+  let lastProgress = 0;
+  let longestWait = 0;
+  while (s.t < until) {
+    const pan = s.pan;
+    const wish = rules.levelTarget(rules.queue(s)[0]?.order ?? rules.theme.roast.defaultLevel);
+    if (pan.phase === 'empty' && !rules.isAutomatic(s, 'pan')) rules.tapPan(s);
+    if (pan.phase === 'roasting') {
+      const byHand = kind === 'active' || !rules.isAutomatic(s, 'pan');
+      if (byHand && pan.p >= Math.max(rules.firstCrack, wish)) rules.eject(s, 'pan');
+      else if (kind === 'active' && (sinceTap += STEP_SECONDS) >= 0.33) {
+        sinceTap = 0;
+        rules.tapPan(s);
+      }
+    }
+    const goal = rules.currentGoal(s);
+    const goalItem = goal && rules.items.find((item) => item.id === goal.id);
+    const wanted = goal ? (goalItem ? [goalItem] : []) : rules.visibleItems(s);
+    for (const item of wanted) {
+      const cost = rules.itemPrice(s, item);
+      if (cost !== undefined && s.money >= cost && rules.buyItem(s, item.id)) {
+        times[item.id] ??= s.t;
+        lastProgress = s.t;
+      }
+    }
+    if (s.delivery?.phase === 'wait') rules.tapDelivery(s);
+    rules.step(s, STEP_SECONDS);
+    for (const event of rules.drainEvents(s)) {
+      if (event.type === 'sale') times.firstSale ??= s.t;
+      if (event.type === 'goal') {
+        lastProgress = s.t;
+        if (event.id === rules.goals.at(-1).id) times.allGoals ??= s.t;
+      }
+    }
+    if (!Number.isFinite(s.money) || s.money < 0) {
+      problems.push(`money is ${s.money} after ${formatDuration(s.t)}`);
+      break;
+    }
+    // Waiting only counts while there is still something to reach.
+    const open = rules.currentGoal(s) !== null || rules.visibleItems(s).some((item) => rules.itemPrice(s, item) !== undefined);
+    if (open) longestWait = Math.max(longestWait, s.t - lastProgress);
+    else lastProgress = s.t;
   }
-  for (const { id, cost } of eco.theme.upgrades ?? []) {
-    if (!eco.isUpgradeAvailable(state, id)) continue;
-    const after = eco.buyUpgrade({ ...state, currency: cost }, id);
-    list.push({ kind: 'upgrade', id, cost, gain: incomePerSecond(eco, after, clicksPerSecond) - before });
-  }
-  return list.filter((candidate) => candidate.gain > 0);
+  return { s, times, longestWait, problems };
 }
 
-// Strategy: buy whatever pays for itself soonest, counting the time needed
-// to save up for it (waiting time + cost / added income).
-function pickPurchase(eco, state, scenario) {
-  const clicksPerSecond = clickRate(eco, state, scenario);
-  const income = incomePerSecond(eco, state, clicksPerSecond);
-  let best = null;
-  for (const candidate of candidates(eco, state, clicksPerSecond)) {
-    const missing = Math.max(0, candidate.cost - state.currency);
-    const wait = missing === 0 ? 0 : income > 0 ? missing / income : Number.POSITIVE_INFINITY;
-    const score = wait + candidate.cost / candidate.gain;
-    if (!best || score < best.score) best = { ...candidate, wait, score };
-  }
-  return best;
-}
-
-function advance(eco, state, scenario, seconds) {
-  const clicksPerSecond = clickRate(eco, state, scenario);
-  let next = eco.tick(state, seconds);
-  if (clicksPerSecond > 0) {
-    const clicks = clicksPerSecond * seconds;
-    next = { ...eco.earn(next, clicks * eco.clickValue(state)), clicks: next.clicks + clicks };
-  }
-  return next;
-}
-
-// Gain that at least doubles the prestige multiplier: the simulated player
-// only resets when it clearly pays off.
-function worthwhileGain(eco, state) {
-  const bonus = eco.theme.prestige.bonusPerPoint;
-  return Math.max(1, Math.ceil((1 + state.prestigePoints * bonus) / bonus - 1e-9));
-}
-
-function isSane(state) {
-  return [state.currency, state.runEarned, state.lifetimeEarned].every((value) => Number.isFinite(value) && value >= 0);
-}
-
-export function simulate(theme, scenario, { runs = 2, maxRunHours = 12, maxTotalHours = Number.POSITIVE_INFINITY } = {}) {
-  const eco = createEconomy(theme);
-  let state = eco.createState();
-  let time = 0;
-  let maxNumber = 0;
-  let previousLevel = null;
+// Runs every player with every seed; returns milestones per player plus
+// errors (hard failures) and warnings (missed targets).
+export function simulate(theme) {
+  const rules = createRules(theme);
+  const settings = theme.simulation ?? {};
+  const seeds = settings.seeds ?? [1, 2, 3];
+  const seconds = settings.seconds ?? 600;
+  const maxWait = settings.maxSecondsWithoutProgress ?? 120;
+  const milestones = ['firstSale', ...rules.items.map((item) => item.id), ...(rules.goals.length > 0 ? ['allGoals'] : [])];
   const errors = [];
-  const results = [];
-
-  for (let run = 1; run <= runs && errors.length === 0 && time < maxTotalHours * 3600; run += 1) {
-    const start = time;
-    const result = {
-      run,
-      firstPurchase: {},
-      purchases: 0,
-      longestWait: 0,
-      longestWaitFor: null,
-      prestigeAvailableAt: null,
-      prestigeAt: null,
-      prestigeGain: 0,
-      prestigeReason: null,
-      reachedPreviousAt: null,
-    };
-    let lastPurchase = time;
-
-    while (time - start < maxRunHours * 3600 && time < maxTotalHours * 3600) {
-      const best = pickPurchase(eco, state, scenario);
-      if (!best || best.wait > MAX_WAIT_SECONDS) {
-        // A real player who cannot buy anything for a day would reset instead.
-        if (eco.prestigeGain(state) >= 1) {
-          result.prestigeReason = 'stuck';
-        } else {
-          errors.push(`stall in run ${run} after ${formatDuration(time - start)}: nothing to buy within 24 h, no prestige possible`);
+  const warnings = [];
+  const players = {};
+  for (const kind of PLAYERS) {
+    const runs = seeds.map((seed) => ({ seed, ...play(rules, kind, seed, seconds) }));
+    const times = Object.fromEntries(milestones.map((name) => [name, runs.map((run) => run.times[name] ?? null)]));
+    for (const run of runs) {
+      for (const problem of run.problems) errors.push(`${kind}, seed ${run.seed}: ${problem}`);
+      if (run.longestWait > maxWait) {
+        errors.push(`${kind}, seed ${run.seed}: no progress for ${formatDuration(run.longestWait)} (allowed: ${formatDuration(maxWait)})`);
+      }
+    }
+    players[kind] = { times, longestWait: Math.max(...runs.map((run) => run.longestWait)) };
+    const targets = settings.targets?.[kind] ?? {};
+    for (const [name, [min, max]] of Object.entries(targets)) {
+      for (const [index, value] of (times[name] ?? []).entries()) {
+        if (value === null || value < min || value > max) {
+          warnings.push(`${kind}, seed ${seeds[index]}: ${name} after ${formatDuration(value)}, target ${formatDuration(min)}–${formatDuration(max)}`);
         }
-        break;
-      }
-      // A hair of extra time absorbs rounding, so the purchase always succeeds.
-      const step = best.wait > 0 ? best.wait * (1 + 1e-9) + 1e-6 : 0;
-      state = advance(eco, state, scenario, step);
-      time += step;
-      const bought = best.kind === 'generator' ? eco.buyGenerator(state, best.id) : eco.buyUpgrade(state, best.id);
-      if (!bought) {
-        errors.push(`run ${run}: could not buy ${best.id} after saving up for it`);
-        break;
-      }
-      state = bought;
-
-      result.purchases += 1;
-      if (time - lastPurchase > result.longestWait) {
-        result.longestWait = time - lastPurchase;
-        result.longestWaitFor = `${best.id} at ${formatDuration(time - start)}`;
-      }
-      lastPurchase = time;
-      result.firstPurchase[best.id] ??= time - start;
-
-      if (!isSane(state)) {
-        errors.push(`run ${run}: invalid number (NaN, infinite or negative)`);
-        break;
-      }
-      maxNumber = Math.max(maxNumber, state.currency, state.lifetimeEarned);
-      if (maxNumber > MAX_NUMBER) {
-        errors.push(`run ${run}: number above ${MAX_NUMBER}`);
-        break;
-      }
-
-      if (previousLevel !== null && result.reachedPreviousAt === null && state.runEarned >= previousLevel) {
-        result.reachedPreviousAt = time - start;
-      }
-      const gain = eco.prestigeGain(state);
-      if (result.prestigeAvailableAt === null && gain >= 1) result.prestigeAvailableAt = time - start;
-      if (gain >= worthwhileGain(eco, state)) {
-        result.prestigeReason = 'worthwhile';
-        break;
       }
     }
-
-    const gain = eco.prestigeGain(state);
-    if (errors.length === 0 && gain >= 1) {
-      result.prestigeReason ??= 'time limit';
-      result.prestigeAt = time - start;
-      result.prestigeGain = gain;
-      previousLevel = state.runEarned;
-      state = eco.prestige(state);
-    }
-    results.push(result);
-    if (result.prestigeAt === null) break; // without a prestige the next run would just continue this one
   }
-
-  return { scenario: scenario.name, eco, runs: results, maxNumber, errors, hours: time / 3600 };
-}
-
-export function evaluateTargets(active) {
-  const [first, second] = active.runs;
-  const firstGenerator = active.eco.theme.generators[0].id;
-  const checks = [];
-  const add = (label, ok, value) => checks.push({ label, ok, value });
-
-  const firstBuy = first?.firstPurchase[firstGenerator];
-  add(`first generator within ${TARGETS.firstGeneratorSeconds} s`, firstBuy <= TARGETS.firstGeneratorSeconds, formatDuration(firstBuy));
-  add(
-    `longest wait in run 1 at most ${formatDuration(TARGETS.longestWaitSeconds)}`,
-    first?.longestWait <= TARGETS.longestWaitSeconds,
-    formatDuration(first?.longestWait),
-  );
-  const [min, max] = TARGETS.firstPrestigeMinutes;
-  const prestigeMinutes = first?.prestigeAt / 60;
-  add(`first prestige after ${min}–${max} min`, prestigeMinutes >= min && prestigeMinutes <= max, formatDuration(first?.prestigeAt));
-  // A second run that never reached the first run's level must not count as infinitely fast.
-  const reached = second?.reachedPreviousAt > 0;
-  const speedup = reached ? first.prestigeAt / second.reachedPreviousAt : Number.NaN;
-  add(
-    `second run at least ${TARGETS.secondRunSpeedup}x faster to the same level`,
-    reached && speedup >= TARGETS.secondRunSpeedup,
-    reached ? `${speedup.toFixed(2)}x` : 'not reached',
-  );
-  return checks;
+  return { seeds, seconds, milestones, players, errors, warnings };
 }
 
 export function formatDuration(seconds) {
-  if (!Number.isFinite(seconds)) return 'never';
-  const total = Math.round(seconds);
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = String(total % 60).padStart(2, '0');
+  if (seconds === null || seconds === undefined || !Number.isFinite(seconds)) return 'never';
+  const whole = Math.round(seconds);
+  const h = Math.floor(whole / 3600);
+  const m = Math.floor((whole % 3600) / 60);
+  const s = String(whole % 60).padStart(2, '0');
   return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`;
 }
 
-function formatNumber(value) {
-  return value < 1e6 ? value.toFixed(0) : value.toExponential(2);
+function spread(values) {
+  const reached = values.filter((value) => value !== null).sort((a, b) => a - b);
+  if (reached.length === 0) return 'never';
+  const fastest = formatDuration(reached[0]);
+  const slowest = reached.length < values.length ? 'never' : formatDuration(reached.at(-1));
+  return fastest === slowest ? fastest : `${fastest}–${slowest}`;
 }
 
-function describeRun(result, previous, generatorIds) {
-  const lines = [];
-  const firsts = Object.entries(result.firstPurchase)
-    .filter(([id]) => generatorIds.has(id))
-    .map(([id, at]) => `${id} ${formatDuration(at)}`);
-  lines.push(`  run ${result.run}: generators first bought: ${firsts.join(', ')}`);
-  lines.push(
-    `         purchases ${result.purchases}, longest wait ${formatDuration(result.longestWait)} (before ${result.longestWaitFor})`,
-  );
-  if (previous) {
-    const speedup = previous.prestigeAt / result.reachedPreviousAt;
-    const text = result.reachedPreviousAt === null ? 'never' : `${formatDuration(result.reachedPreviousAt)} (${speedup.toFixed(2)}x faster)`;
-    lines.push(`         reached the level of run ${previous.run}: ${text}`);
+export function formatReport(themeId, result) {
+  const lines = [`Theme "${themeId}", seeds ${result.seeds.join(', ')}, up to ${formatDuration(result.seconds)} each`, ''];
+  const width = Math.max(...result.milestones.map((name) => name.length), 'longest wait'.length) + 2;
+  lines.push(['milestone'.padEnd(width), ...PLAYERS.map((kind) => kind.padEnd(16))].join(''));
+  for (const name of result.milestones) {
+    lines.push([name.padEnd(width), ...PLAYERS.map((kind) => spread(result.players[kind].times[name]).padEnd(16))].join(''));
   }
-  lines.push(
-    `         prestige available ${formatDuration(result.prestigeAvailableAt)}, ` +
-      `taken ${formatDuration(result.prestigeAt)} with ${result.prestigeGain} points (${result.prestigeReason ?? 'none'})`,
-  );
-  return lines;
-}
-
-export function formatReport(themeId, reports, longRun, checks) {
-  const { theme } = reports[0].eco;
-  const generatorIds = new Set(theme.generators.map((generator) => generator.id));
-  const lines = [
-    `Theme ${themeId}: ${theme.generators.length} generators, ${theme.upgrades?.length ?? 0} upgrades, ` +
-      `${theme.achievements?.length ?? 0} achievements`,
-  ];
-  for (const report of reports) {
-    const scenario = SCENARIOS[report.scenario];
-    const clicks = scenario.clickOnlyUntilFirstGenerator ? 'clicks only until something produces' : `${scenario.clicksPerSecond} clicks/s`;
-    lines.push('', `Scenario "${report.scenario}" (${clicks})`);
-    report.runs.forEach((result, index) => lines.push(...describeRun(result, report.runs[index - 1], generatorIds)));
-  }
-  const stuck = longRun.runs.filter((result) => result.prestigeReason === 'stuck').length;
-  lines.push(
-    '',
-    `Long run (idle, ${LONG_RUN_DAYS} days): ${longRun.runs.length} runs (${stuck} ended because nothing was ` +
-      `affordable within 24 h), largest number ${formatNumber(longRun.maxNumber)}`,
-  );
-  lines.push('', 'Targets (active scenario, warnings only)');
-  for (const check of checks) lines.push(`  ${check.ok ? 'OK  ' : 'WARN'}  ${check.label}: ${check.value}`);
+  lines.push(['longest wait'.padEnd(width), ...PLAYERS.map((kind) => formatDuration(result.players[kind].longestWait).padEnd(16))].join(''));
   return lines.join('\n');
 }
 
 async function main(themeId) {
+  if (!/^[a-z0-9-]+$/.test(themeId)) throw new Error(`Invalid theme name: "${themeId}"`);
   const theme = JSON.parse(await readFile(join(ROOT, 'themes', themeId, 'theme.json'), 'utf8'));
-  const reports = [simulate(theme, SCENARIOS.active), simulate(theme, SCENARIOS.idle)];
-  const longRun = simulate(theme, SCENARIOS.idle, {
-    runs: Number.POSITIVE_INFINITY,
-    maxRunHours: LONG_RUN_DAYS * 24,
-    maxTotalHours: LONG_RUN_DAYS * 24,
-  });
-  const checks = evaluateTargets(reports[0]);
-  console.log(formatReport(themeId, reports, longRun, checks));
-
-  const errors = [...reports, longRun].flatMap((report) => report.errors.map((error) => `${report.scenario}: ${error}`));
-  const warnings = checks.filter((check) => !check.ok).length;
+  const result = simulate(theme);
+  console.log(formatReport(themeId, result));
   console.log('');
-  for (const error of errors) console.log(`FAIL  ${error}`);
-  console.log(`Result: ${errors.length === 0 ? 'OK' : 'FAILED'} (${errors.length} errors, ${warnings} warnings)`);
-  return errors.length === 0;
+  for (const warning of result.warnings) console.log(`WARN  ${warning}`);
+  for (const error of result.errors) console.log(`FAIL  ${error}`);
+  console.log(`Result: ${result.errors.length === 0 ? 'OK' : 'FAILED'} (${result.errors.length} errors, ${result.warnings.length} warnings)`);
+  return result.errors.length === 0;
 }
 
 // Run as a command, also when called through a symlinked path.

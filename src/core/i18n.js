@@ -22,8 +22,10 @@ export function mergeTexts(core, theme) {
   return Object.fromEntries(LANGUAGES.map((language) => [language, { ...core[language], ...theme[language] }]));
 }
 
-export function createI18n(texts, language = DEFAULT_LANGUAGE) {
+// onMissing(key) is called once per key that has no text in any language.
+export function createI18n(texts, language = DEFAULT_LANGUAGE, { onMissing } = {}) {
   let current = LANGUAGES.includes(language) ? language : DEFAULT_LANGUAGE;
+  const reported = new Set();
 
   function template(key) {
     return texts[current]?.[key] ?? texts[DEFAULT_LANGUAGE]?.[key];
@@ -42,7 +44,12 @@ export function createI18n(texts, language = DEFAULT_LANGUAGE) {
     },
     // Replaces {name} placeholders with params.name; unknown ones stay visible.
     t(key, params = {}, fallback = key) {
-      const text = template(key) ?? fallback;
+      const found = template(key);
+      if (found === undefined && onMissing && !reported.has(key)) {
+        reported.add(key);
+        onMissing(key);
+      }
+      const text = found ?? fallback;
       return text.replace(/\{(\w+)\}/g, (placeholder, name) => (name in params ? String(params[name]) : placeholder));
     },
   };

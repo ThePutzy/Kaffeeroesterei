@@ -4,9 +4,9 @@ import { expect, openGame, test } from './helpers.js';
 
 const targets = JSON.parse(readFileSync(new URL('../../config/targets.json', import.meta.url), 'utf8'));
 
-function generatorCount(themeId) {
+function itemCount(themeId) {
   const theme = JSON.parse(readFileSync(new URL(`../../themes/${themeId}/theme.json`, import.meta.url), 'utf8'));
-  return String(theme.generators.length);
+  return String(theme.items.length);
 }
 
 // Packages are served from a sub path, which only works with relative paths.
@@ -15,14 +15,14 @@ for (const [name, target] of Object.entries(targets)) {
   test(`package "${name}" loads its own config and theme`, async ({ page }) => {
     await openGame(page, `/dist/${name}/`);
     await expect(page.locator('html')).toHaveAttribute('data-target', name);
-    await expect(page.locator('html')).toHaveAttribute('data-generators', generatorCount(target.runtime.theme));
+    await expect(page.locator('html')).toHaveAttribute('data-items', itemCount(target.runtime.theme));
   });
 }
 
 test('source version loads with the development config', async ({ page }) => {
   await openGame(page);
   await expect(page.locator('html')).toHaveAttribute('data-target', 'dev');
-  await expect(page.locator('html')).toHaveAttribute('data-generators', generatorCount(devConfig.theme));
+  await expect(page.locator('html')).toHaveAttribute('data-items', itemCount(devConfig.theme));
 });
 
 test.describe('with a German browser', () => {

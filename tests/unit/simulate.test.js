@@ -1,72 +1,51 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { SCENARIOS, evaluateTargets, formatDuration, simulate } from '../../tools/simulate.mjs';
+import { formatDuration, formatReport, simulate } from '../../tools/simulate.mjs';
 
-const mini = JSON.parse(readFileSync(new URL('../fixtures/mini-theme.json', import.meta.url), 'utf8'));
+const theme = JSON.parse(readFileSync(new URL('../../themes/kaffeeroesterei/theme.json', import.meta.url), 'utf8'));
+const copy = (value) => JSON.parse(JSON.stringify(value));
 
-test('the simulator plays the fixture theme through two runs', () => {
-  const report = simulate(mini, SCENARIOS.active);
-  assert.deepEqual(report.errors, []);
-  const [first, second] = report.runs;
-  assert.ok(first.firstPurchase.ga >= 0 && first.firstPurchase.gb > first.firstPurchase.ga);
-  assert.equal(first.prestigeReason, 'worthwhile');
-  assert.ok(first.prestigeGain >= 10); // doubles the prestige multiplier (bonus 0.1 per point)
-  assert.ok(second.reachedPreviousAt < first.prestigeAt, 'second run reaches the first run level sooner');
+test('the simulator plays the theme with both players and finds no problems', () => {
+  const result = simulate(theme);
+  assert.deepEqual(result.errors, []);
+  assert.deepEqual(result.warnings, []);
+  for (const kind of ['active', 'casual']) {
+    assert.ok(result.players[kind].times.cafe.every((time) => time !== null), `${kind} opens the café with every seed`);
+  }
+  const report = formatReport('kaffeeroesterei', result);
+  assert.match(report, /milestone\s+active\s+casual/);
+  assert.match(report, /cafe\s+\d:\d\d/);
 });
 
-test('the idle scenario stops clicking once something produces', () => {
-  const active = simulate(mini, SCENARIOS.active).runs[0];
-  const idle = simulate(mini, SCENARIOS.idle).runs[0];
-  assert.equal(idle.firstPurchase.ga, active.firstPurchase.ga); // both click for the first generator
-  assert.ok(idle.prestigeAt > active.prestigeAt);
+test('a goal nobody can reach is reported as a stall and a missed target', () => {
+  const stuck = copy(theme);
+  stuck.items.find((item) => item.id === 'cafe').cost = [1e9];
+  stuck.simulation = { ...stuck.simulation, seeds: [1], seconds: 600 };
+  const result = simulate(stuck);
+  assert.ok(result.errors.some((error) => error.includes('no progress for')), result.errors.join(' | '));
+  assert.ok(result.warnings.some((warning) => warning.includes('cafe after never')), result.warnings.join(' | '));
 });
 
-test('a theme without any progress within a day is reported as a stall', () => {
-  const theme = structuredClone(mini);
-  theme.click.base = 1e-6;
-  for (const generator of theme.generators) generator.baseCost = 1e9;
-  const report = simulate(theme, SCENARIOS.active);
-  assert.equal(report.errors.length, 1);
-  assert.match(report.errors[0], /stall/);
+test('missed targets are warnings, not errors', () => {
+  const strict = copy(theme);
+  strict.simulation = { ...strict.simulation, seeds: [1], targets: { active: { helper: [0, 5] } } };
+  const result = simulate(strict);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.warnings.length, 1);
+  assert.match(result.warnings[0], /active, seed 1: helper after 0:\d\d, target 0:00–0:05/);
 });
 
-test('numbers above the safe range are reported', () => {
-  const theme = structuredClone(mini);
-  theme.generators[0] = { id: 'ga', baseCost: 1, costGrowth: 10, baseRate: 1e299 };
-  theme.prestige.threshold = 1e305; // no prestige gets in the way
-  const report = simulate(theme, SCENARIOS.active);
-  assert.equal(report.errors.length, 1);
-  assert.match(report.errors[0], /above 1e\+300/);
-});
-
-test('targets are checked against the active scenario', () => {
-  const report = {
-    eco: { theme: { generators: [{ id: 'g1' }] } },
-    runs: [
-      { firstPurchase: { g1: 20 }, longestWait: 120, prestigeAt: 50 * 60 },
-      { reachedPreviousAt: 20 * 60 },
-    ],
-  };
-  const checks = evaluateTargets(report);
-  assert.deepEqual(
-    checks.map((check) => check.ok),
-    [false, true, true, true], // 20 s > 15 s; 2 min wait; 50 min; 2.5x
-  );
-
-  // No prestige and a second run that never caught up are misses, not successes.
-  report.runs[0].prestigeAt = null;
-  report.runs[1].reachedPreviousAt = null;
-  const missed = evaluateTargets(report);
-  assert.equal(missed[2].ok, false);
-  assert.equal(missed[3].ok, false);
-  assert.equal(missed[3].value, 'not reached');
+test('an invalid theme is refused', () => {
+  const broken = copy(theme);
+  broken.roasters.pan.roastSeconds = -1;
+  assert.throws(() => simulate(broken), /roasters\.pan\.roastSeconds/);
 });
 
 test('durations are formatted as m:ss or h:mm:ss; missing ones as never', () => {
-  assert.equal(formatDuration(0), '0:00');
-  assert.equal(formatDuration(7), '0:07');
+  assert.equal(formatDuration(5.4), '0:05');
+  assert.equal(formatDuration(65), '1:05');
   assert.equal(formatDuration(3725), '1:02:05');
-  assert.equal(formatDuration(null), 'never'); // e.g. prestige never became available
-  assert.equal(formatDuration(Number.POSITIVE_INFINITY), 'never');
+  assert.equal(formatDuration(null), 'never');
+  assert.equal(formatDuration(Infinity), 'never');
 });

@@ -1,60 +1,72 @@
 {
   "id": "kaffeeroesterei",
   "stylesheet": "theme.css",
-  "art": { "currency": "art/bean.svg", "click": "art/bean.svg", "logo": "art/logo.svg" },
-  "click": { "base": 1 },
-  "generators": [
-    { "id": "pan", "icon": "art/pan.svg", "baseCost": 20, "costGrowth": 1.14, "baseRate": 0.2 },
-    { "id": "hand_drum", "icon": "art/hand_drum.svg", "baseCost": 220, "costGrowth": 1.14, "baseRate": 1.4 },
-    { "id": "drum_roaster", "icon": "art/drum_roaster.svg", "baseCost": 2400, "costGrowth": 1.14, "baseRate": 10 },
-    { "id": "coffee_cart", "icon": "art/coffee_cart.svg", "baseCost": 27000, "costGrowth": 1.14, "baseRate": 70 },
-    { "id": "cafe", "icon": "art/cafe.svg", "baseCost": 290000, "costGrowth": 1.14, "baseRate": 480 },
-    { "id": "roastery", "icon": "art/roastery.svg", "baseCost": 3200000, "costGrowth": 1.14, "baseRate": 3400 },
-    { "id": "plantation", "icon": "art/plantation.svg", "baseCost": 35000000, "costGrowth": 1.14, "baseRate": 24000 },
-    { "id": "cargo_ship", "icon": "art/cargo_ship.svg", "baseCost": 390000000, "costGrowth": 1.14, "baseRate": 165000 }
+  "scene": "scene.js",
+  "roast": {
+    "firstCrack": 0.4,
+    "secondCrack": 0.76,
+    "levels": [
+      { "id": "light", "until": 0.58, "target": 0.49, "wish": 0.3, "color": "#F2C14E" },
+      { "id": "medium", "until": 0.76, "target": 0.67, "wish": 0.45, "color": "#E0803C" },
+      { "id": "dark", "until": 1, "target": 0.86, "wish": 0.25, "color": "#9C3F63" }
+    ],
+    "defaultLevel": "medium"
+  },
+  "roasters": {
+    "pan": { "roastSeconds": 12, "tapHeat": 0.03, "coolSeconds": 1.2, "loadDelay": 0.8, "bags": 1 },
+    "drum": { "roastSeconds": 10, "tapHeat": 0.02, "coolSeconds": 1.5, "loadDelay": 1.2, "bags": 3 }
+  },
+  "sales": { "basePrice": 5, "matchFactor": 1.5, "capacity": 8, "incomeWindowSeconds": 30 },
+  "guests": {
+    "firstArrival": 3,
+    "arrivalSeconds": 4.5,
+    "arrivalSpread": 0.5,
+    "firstWish": "medium",
+    "slots": [850, 895, 940],
+    "spawnX": 1090,
+    "exitX": 1120,
+    "turnX": 885,
+    "walkSpeed": 170,
+    "buySeconds": 0.5
+  },
+  "delivery": {
+    "firstAt": 150,
+    "gapSeconds": [100, 160],
+    "stopX": 945,
+    "offstageX": 1180,
+    "speed": 300,
+    "waitSeconds": 8,
+    "rewardIncomeSeconds": 20,
+    "minReward": 25
+  },
+  "items": [
+    { "id": "biggerPan", "cost": [8], "reveal": { "stat": "sales" }, "effects": { "panBags": 2 } },
+    { "id": "sign", "cost": [20], "reveal": { "owned": "biggerPan" }, "effects": { "arrivalFactor": 0.62 } },
+    { "id": "helper", "cost": [85], "reveal": { "owned": "sign" }, "effects": { "panAutomatic": true } },
+    { "id": "drum", "cost": [150, 400], "reveal": { "owned": "helper" }, "effects": { "roaster": "drum" } },
+    { "id": "profile", "cost": [200], "reveal": { "owned": "drum" }, "effects": { "followWishes": true } },
+    { "id": "cafe", "cost": [320], "reveal": { "owned": "profile" }, "effects": { "capacity": 12, "priceFactor": 1.5, "arrivalFactor": 0.62 } }
   ],
-  "upgrades": [
-    { "id": "pan_1", "cost": 500, "effect": { "type": "generatorMultiplier", "generator": "pan", "factor": 2 }, "unlock": { "type": "owned", "generator": "pan", "value": 10 } },
-    { "id": "pan_2", "cost": 10000, "effect": { "type": "generatorMultiplier", "generator": "pan", "factor": 2 }, "unlock": { "type": "owned", "generator": "pan", "value": 25 } },
-    { "id": "hand_drum_1", "cost": 5500, "effect": { "type": "generatorMultiplier", "generator": "hand_drum", "factor": 2 }, "unlock": { "type": "owned", "generator": "hand_drum", "value": 10 } },
-    { "id": "hand_drum_2", "cost": 110000, "effect": { "type": "generatorMultiplier", "generator": "hand_drum", "factor": 2 }, "unlock": { "type": "owned", "generator": "hand_drum", "value": 25 } },
-    { "id": "drum_roaster_1", "cost": 60000, "effect": { "type": "generatorMultiplier", "generator": "drum_roaster", "factor": 2 }, "unlock": { "type": "owned", "generator": "drum_roaster", "value": 10 } },
-    { "id": "drum_roaster_2", "cost": 1200000, "effect": { "type": "generatorMultiplier", "generator": "drum_roaster", "factor": 2 }, "unlock": { "type": "owned", "generator": "drum_roaster", "value": 25 } },
-    { "id": "coffee_cart_1", "cost": 675000, "effect": { "type": "generatorMultiplier", "generator": "coffee_cart", "factor": 2 }, "unlock": { "type": "owned", "generator": "coffee_cart", "value": 10 } },
-    { "id": "coffee_cart_2", "cost": 13500000, "effect": { "type": "generatorMultiplier", "generator": "coffee_cart", "factor": 2 }, "unlock": { "type": "owned", "generator": "coffee_cart", "value": 25 } },
-    { "id": "cafe_1", "cost": 7250000, "effect": { "type": "generatorMultiplier", "generator": "cafe", "factor": 2 }, "unlock": { "type": "owned", "generator": "cafe", "value": 10 } },
-    { "id": "cafe_2", "cost": 145000000, "effect": { "type": "generatorMultiplier", "generator": "cafe", "factor": 2 }, "unlock": { "type": "owned", "generator": "cafe", "value": 25 } },
-    { "id": "roastery_1", "cost": 80000000, "effect": { "type": "generatorMultiplier", "generator": "roastery", "factor": 2 }, "unlock": { "type": "owned", "generator": "roastery", "value": 10 } },
-    { "id": "roastery_2", "cost": 1600000000, "effect": { "type": "generatorMultiplier", "generator": "roastery", "factor": 2 }, "unlock": { "type": "owned", "generator": "roastery", "value": 25 } },
-    { "id": "plantation_1", "cost": 875000000, "effect": { "type": "generatorMultiplier", "generator": "plantation", "factor": 2 }, "unlock": { "type": "owned", "generator": "plantation", "value": 10 } },
-    { "id": "plantation_2", "cost": 17500000000, "effect": { "type": "generatorMultiplier", "generator": "plantation", "factor": 2 }, "unlock": { "type": "owned", "generator": "plantation", "value": 25 } },
-    { "id": "cargo_ship_1", "cost": 9750000000, "effect": { "type": "generatorMultiplier", "generator": "cargo_ship", "factor": 2 }, "unlock": { "type": "owned", "generator": "cargo_ship", "value": 10 } },
-    { "id": "cargo_ship_2", "cost": 195000000000, "effect": { "type": "generatorMultiplier", "generator": "cargo_ship", "factor": 2 }, "unlock": { "type": "owned", "generator": "cargo_ship", "value": 25 } },
-    { "id": "click_1", "cost": 100, "effect": { "type": "clickMultiplier", "factor": 2 }, "unlock": { "type": "clicks", "value": 30 } },
-    { "id": "click_2", "cost": 3000, "effect": { "type": "clickMultiplier", "factor": 3 }, "unlock": { "type": "clicks", "value": 300 } },
-    { "id": "global_1", "cost": 40000, "effect": { "type": "globalMultiplier", "factor": 1.5 }, "unlock": { "type": "runEarned", "value": 50000 } },
-    { "id": "global_2", "cost": 4000000, "effect": { "type": "globalMultiplier", "factor": 1.5 }, "unlock": { "type": "runEarned", "value": 5000000 } },
-    { "id": "global_3", "cost": 400000000, "effect": { "type": "globalMultiplier", "factor": 2 }, "unlock": { "type": "runEarned", "value": 500000000 } }
+  "goals": [
+    { "id": "stir", "reward": 2, "done": { "stat": "taps" } },
+    { "id": "eject", "reward": 3, "done": { "stat": "manualEjects" } },
+    { "id": "sell", "reward": 3, "done": { "stat": "sales" } },
+    { "id": "biggerPan", "reward": 5, "done": { "owned": "biggerPan" } },
+    { "id": "match", "reward": 5, "done": { "stat": "matched" } },
+    { "id": "sign", "reward": 10, "done": { "owned": "sign" } },
+    { "id": "helper", "reward": 20, "done": { "owned": "helper" } },
+    { "id": "drum", "reward": 30, "done": { "owned": "drum" } },
+    { "id": "profile", "reward": 50, "done": { "owned": "profile" } },
+    { "id": "cafe", "reward": 80, "done": { "owned": "cafe" } }
   ],
-  "achievements": [
-    { "id": "first_crack", "condition": { "type": "owned", "generator": "pan", "value": 1 } },
-    { "id": "pan_handler", "condition": { "type": "owned", "generator": "pan", "value": 25 } },
-    { "id": "drum_roll", "condition": { "type": "owned", "generator": "drum_roaster", "value": 10 } },
-    { "id": "on_the_road", "condition": { "type": "owned", "generator": "coffee_cart", "value": 1 } },
-    { "id": "grand_opening", "condition": { "type": "owned", "generator": "cafe", "value": 1 } },
-    { "id": "big_league", "condition": { "type": "owned", "generator": "roastery", "value": 1 } },
-    { "id": "from_the_source", "condition": { "type": "owned", "generator": "plantation", "value": 1 } },
-    { "id": "set_sail", "condition": { "type": "owned", "generator": "cargo_ship", "value": 1 } },
-    { "id": "full_sack", "condition": { "type": "lifetimeEarned", "value": 1000 } },
-    { "id": "bean_millionaire", "condition": { "type": "lifetimeEarned", "value": 1000000 } },
-    { "id": "coffee_empire", "condition": { "type": "lifetimeEarned", "value": 1000000000 } },
-    { "id": "bean_galaxy", "condition": { "type": "lifetimeEarned", "value": 1000000000000 } },
-    { "id": "busy_hands", "condition": { "type": "clicks", "value": 100 } },
-    { "id": "roasting_marathon", "condition": { "type": "clicks", "value": 1000 } },
-    { "id": "fresh_start", "condition": { "type": "prestiges", "value": 1 } },
-    { "id": "old_hand", "condition": { "type": "prestiges", "value": 5 } }
-  ],
-  "prestige": { "threshold": 50000, "exponent": 0.5, "bonusPerPoint": 0.1 },
-  "offline": { "maxHours": 8, "rate": 0.5 },
-  "boost": { "factor": 2, "seconds": 600, "priceSeconds": 300 }
+  "goalPauseSeconds": 1.2,
+  "simulation": {
+    "seeds": [1, 2, 3, 4, 5],
+    "seconds": 420,
+    "maxSecondsWithoutProgress": 120,
+    "targets": {
+      "active": { "firstSale": [0, 15], "biggerPan": [0, 20], "helper": [25, 75], "drum": [0, 150], "cafe": [0, 300] },
+      "casual": { "helper": [0, 90], "cafe": [0, 360] }
+    }
+  }
 }
