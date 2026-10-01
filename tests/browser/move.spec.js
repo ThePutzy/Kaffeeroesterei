@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { formatNumber } from '../../src/core/format.js';
 import { AUTOMATED, expect, openAt, saveText, seedSave, test } from './helpers.js';
 
 // The move to the next location (prestige). Console errors and foreign
@@ -9,21 +10,23 @@ const [, harbor] = theme.locations;
 const html = (page) => page.locator('html');
 const moveCard = (page) => page.locator('.item.move');
 
-// A run that reached the café and has saved enough for the move.
+// A run that bought every upgrade and has saved enough for the move.
 const FINISHED = {
   ...AUTOMATED,
   money: harbor.moveCost + 100,
-  owned: { biggerPan: 1, sign: 1, helper: 1, drum: 2, profile: 1, cafe: 1 },
+  owned: Object.fromEntries(theme.items.map((item) => [item.id, item.cost.length])),
   goal: theme.goals.length,
 };
+const lastItem = theme.items.at(-1);
 
-test('the move shows up locked at the end of the upgrades until the café is bought', async ({ page }) => {
-  const beforeCafe = { ...FINISHED, owned: { ...FINISHED.owned, cafe: 0 }, goal: 9 };
-  await seedSave(page, saveText({ state: beforeCafe }));
+test('the move shows up locked at the end of the upgrades until its condition is met', async ({ page }) => {
+  expect(harbor.reveal).toEqual({ owned: lastItem.id });
+  const before = { ...FINISHED, owned: { ...FINISHED.owned, [lastItem.id]: 0 }, goal: theme.goals.findIndex((goal) => goal.id === lastItem.id) };
+  await seedSave(page, saveText({ state: before }));
   await openAt(page);
   await expect(moveCard(page)).toHaveClass(/locked/);
   await expect(moveCard(page)).toContainText('Move to the harbor district');
-  await expect(moveCard(page)).toContainText('After: Café');
+  await expect(moveCard(page)).toContainText('After: Roasting course');
   await expect(moveCard(page).locator('button')).toHaveCount(0);
 });
 
@@ -32,7 +35,8 @@ test('moving starts over at the harbor, where guests pay twice as much', async (
   await openAt(page);
   await expect(page.locator('[data-ref="goal-text"]')).toHaveText('Save up for the move to the harbor district.');
   await expect(moveCard(page)).toContainText('Guests pay twice as much there');
-  const button = moveCard(page).getByRole('button', { name: `Move to the harbor district: needs ${harbor.moveCost}` });
+  const cost = formatNumber(harbor.moveCost, 'en', { rounding: 'ceil' });
+  const button = moveCard(page).getByRole('button', { name: `Move to the harbor district: needs ${cost}` });
   await expect(button).toBeEnabled();
   await expect(page.locator('[data-ref="stats-location"]')).toHaveText('Old town');
   await expect(page.locator('.harbor')).toHaveClass(/hidden/);

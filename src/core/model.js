@@ -7,7 +7,7 @@
 // scene only has to draw them.
 
 const STATS = ['taps', 'manualEjects', 'ejects', 'sales', 'matched', 'lost', 'revenue'];
-const EFFECTS = ['panBags', 'capacity', 'priceFactor', 'arrivalFactor', 'panAutomatic', 'followWishes', 'roaster'];
+const EFFECTS = ['panBags', 'capacity', 'priceFactor', 'arrivalFactor', 'roastFactor', 'panAutomatic', 'followWishes', 'roaster'];
 const ROASTER_FIELDS = ['roastSeconds', 'tapHeat', 'coolSeconds', 'loadDelay', 'bags'];
 
 const isPositive = (value) => Number.isFinite(value) && value > 0;
@@ -88,7 +88,7 @@ export function validateTheme(theme) {
     const effects = item?.effects ?? {};
     for (const key of Object.keys(effects)) check(EFFECTS.includes(key), `${name}: unknown effect "${key}"`);
     if ('roaster' in effects) check(effects.roaster !== 'pan' && effects.roaster in roasters, `${name}: unknown roaster "${effects.roaster}"`);
-    for (const key of ['panBags', 'capacity', 'priceFactor', 'arrivalFactor']) {
+    for (const key of ['panBags', 'capacity', 'priceFactor', 'arrivalFactor', 'roastFactor']) {
       if (key in effects) check(isPositive(effects[key]), `${name}: ${key} must be above 0`);
     }
     if (!('roaster' in effects)) check(item?.cost?.length === 1, `${name}: only roasters can be bought more than once`);
@@ -424,7 +424,7 @@ export function createRules(theme) {
       r.timer -= dt;
       if (r.timer <= 0) load(s, r, which);
     } else if (r.phase === 'roasting') {
-      heat(s, r, which, dt / spec.roastSeconds);
+      heat(s, r, which, dt / (spec.roastSeconds * product(s, 'roastFactor')));
       // A batch left alone ends as the darkest roast; nothing is ever lost.
       const target = automatic ? ejectTarget(s) : 1;
       if (r.p >= target || r.p >= 1) finish(s, r, which);
@@ -569,9 +569,10 @@ export function createRules(theme) {
 
   // ---- Goals ---------------------------------------------------------------------
 
+  // done: whether the goal is reached and shows "Done!"; condition: what it asks for.
   function currentGoal(s) {
     const goal = GOALS[s.goal.index];
-    return goal ? { ...goal, done: s.goal.doneTimer > 0 } : null;
+    return goal ? { ...goal, condition: goal.done, done: s.goal.doneTimer > 0 } : null;
   }
 
   function stepGoal(s, dt) {

@@ -8,7 +8,9 @@ Browser-Idle-Spiel, Thema 1: Kaffeerösterei. Reines HTML, CSS und JavaScript (E
 - Themenformat, Formeln und Balance-Simulator: [docs/themenformat.md](docs/themenformat.md)
 - Entwürfe für die eigene Seite (Anleitung, Über uns, Datenschutz, Impressum): [docs/entwuerfe/](docs/entwuerfe/README.md)
 
-Stand: Schritt 4a des [Plans für das neue Spiel](docs/umsetzungsplan-neues-spiel.md). Das Spiel ist die sichtbare Rösterei aus dem Prototyp: rösten, beim ersten Crack auswerfen, Gäste am Wagen bedienen, mit Helferin und Trommelröstern automatisieren. Englisch und Deutsch, Handy und Desktop. Der Inhalt reicht bis zum Café, etwa fünf Minuten. Danach kann man ins Hafenviertel umziehen (Prestige): Der Durchgang beginnt neu, die Gäste zahlen dort das Doppelte. Das Spiel speichert im Browser, zahlt einen Offline-Ertrag und bietet Boost und Offline-Verdopplung an, per Werbung oder als Kauf.
+Stand: Schritt 4b des [Plans für das neue Spiel](docs/umsetzungsplan-neues-spiel.md). Das Spiel ist die sichtbare Rösterei aus dem Prototyp: rösten, beim ersten Crack auswerfen, Gäste am Wagen bedienen, mit Helferin und Trommelröstern automatisieren. Englisch und Deutsch, Handy und Desktop.
+- **Ausbau:** Nach dem Café kommen Kundenstopper, Espressomaschine, Lastenrad, Gasbrenner und Röstkurs.
+- **Umzug (Prestige):** Danach kann man ins Hafenviertel umziehen, laut Simulator nach etwa 15 Minuten aktivem Spiel. Der Durchgang beginnt neu, die Gäste zahlen dort das Doppelte. Das Spiel speichert im Browser, zahlt einen Offline-Ertrag und bietet Boost und Offline-Verdopplung an, per Werbung oder als Kauf.
 
 Titel, vorläufig: **Full Roast Ahead**; er ist nicht markenrechtlich geprüft ([Titelrecherche](docs/recherche/spieltitel.md)). Entwürfe für Anleitung, Über uns, Datenschutz und Impressum liegen in `docs/entwuerfe/`; sie beschreiben noch das Spiel vor der Neuausrichtung.
 

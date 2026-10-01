@@ -347,7 +347,9 @@ export function createApp({
     // After the last goal: save up for the move, or more is coming soon.
     const next = rules.moveOffered(state) ? rules.nextLocation(state) : null;
     let text = next ? t(`locations.${next.id}.goal`) : t('goal.allDone');
-    if (goal) text = goal.done ? `${t('goal.done')} ${t(`goals.${goal.id}`)}` : t(`goals.${goal.id}`);
+    // Goals that ask for an amount (e.g. "Earn {value} from sales") get it from theme.json.
+    const goalText = goal && t(`goals.${goal.id}`, { value: amount(goal.condition.min ?? 1) });
+    if (goal) text = goal.done ? `${t('goal.done')} ${goalText}` : goalText;
     ref('goal-text').textContent = text;
     ref('goal-reward').textContent = goal ? t('goal.reward', { value: money(goal.reward) }) : '';
   }

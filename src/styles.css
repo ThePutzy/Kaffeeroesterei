@@ -1022,6 +1022,50 @@ button {
   cursor: pointer;
 }
 
+/* The gas burner: a bigger flame with a blue ring. */
+.flame-wrap .gas-ring {
+  display: none;
+}
+
+.flame-wrap.strong .gas-ring {
+  display: inline;
+}
+
+.flame-wrap.strong .flame {
+  transform: scale(1.3);
+  transform-origin: 0 0;
+}
+
+/* The cargo bike rides past on the road every 24 seconds. */
+.cargo-bike .ride {
+  animation: cargo-ride 24s linear infinite;
+}
+
+@keyframes cargo-ride {
+  0% {
+    transform: translateX(1300px);
+  }
+
+  30%,
+  100% {
+    transform: translateX(-350px);
+  }
+}
+
+.espresso .steam {
+  animation: steam 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes steam {
+  from {
+    opacity: 0.2;
+  }
+
+  to {
+    opacity: 0.8;
+  }
+}
+
 .flame-wrap.off {
   display: none;
 }
