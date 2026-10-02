@@ -1075,6 +1075,12 @@ button {
   animation: steam 2.4s ease-in-out infinite alternate;
 }
 
+/* Steam only while the machine brews; with every cup made it rests. */
+.espresso.full .steam {
+  animation: none;
+  opacity: 0;
+}
+
 @keyframes steam {
   from {
     opacity: 0.2;

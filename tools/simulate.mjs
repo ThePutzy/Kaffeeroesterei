@@ -45,7 +45,7 @@ const GOAL_TAPS = {
 
 // Whether more espresso guests wait in line than cups are ready.
 function espressoWanted(rules, s) {
-  const waiting = rules.queue(s).filter((guest) => guest.phase === 'queue' && guest.order === rules.espresso).length;
+  const waiting = rules.queue(s).filter((guest) => guest.phase === 'queue' && guest.order === rules.espressoOrder).length;
   return waiting > s.espresso.cups;
 }
 
@@ -157,7 +157,7 @@ function waiting(rules, s) {
   let cups = s.espresso.cups;
   for (const guest of rules.queue(s)) {
     if (guest.phase !== 'queue') continue;
-    if (guest.order === rules.espresso) {
+    if (guest.order === rules.espressoOrder) {
       if (cups === 0) return true;
       cups -= 1;
       continue;
