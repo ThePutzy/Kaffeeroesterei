@@ -517,11 +517,11 @@ function ordersOver(s, seconds) {
 }
 
 test('with the espresso machine, about every third guest orders an espresso', () => {
-  assert.equal(ordersOver(createState(1), 600).includes(rules.espresso), false, 'not without the machine');
+  assert.equal(ordersOver(createState(1), 600).includes(rules.espressoOrder), false, 'not without the machine');
   const s = createState(1);
   s.owned.espresso = 1;
   const orders = ordersOver(s, 600);
-  const share = orders.filter((order) => order === rules.espresso).length / orders.length;
+  const share = orders.filter((order) => order === rules.espressoOrder).length / orders.length;
   assert.ok(share > 0.2 && share < 0.4, `share ${share} of ${orders.length} guests`);
 });
 
@@ -546,18 +546,18 @@ test('the espresso machine brews on its own up to its cups, and faster when tapp
 test('an espresso guest buys a cup; the roasters leave espresso to the machine', () => {
   const s = quiet(createState(1));
   Object.assign(s.owned, { cafe: 1, espresso: 1 });
-  const g = guest(s, rules.espresso);
+  const g = guest(s, rules.espressoOrder);
   guest(s, 'dark');
   assert.deepEqual(plan(s).open, ['dark'], 'no espresso in the roasters\' plan');
   advance(s, 0.2);
   assert.equal(g.phase, 'queue', 'no cup is ready yet');
   s.espresso.cups = 1;
   advance(s, 0.2);
-  assert.deepEqual([g.phase, g.bag], ['buying', rules.espresso]);
+  assert.deepEqual([g.phase, g.bag], ['buying', rules.espressoOrder]);
   assert.equal(s.espresso.cups, 0);
   assert.equal(s.stats.espressos, 1);
-  assert.equal(rules.price(s, rules.espresso), Math.round(theme.espresso.basePrice * 1.5), 'the café raises espresso prices too');
-  assert.equal(s.money, rules.price(s, rules.espresso));
+  assert.equal(rules.price(s, rules.espressoOrder), Math.round(theme.espresso.basePrice * 1.5), 'the café raises espresso prices too');
+  assert.equal(s.money, rules.price(s, rules.espressoOrder));
 });
 
 test('cups at the espresso machine are saved', () => {

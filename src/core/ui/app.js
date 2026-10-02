@@ -563,7 +563,7 @@ export function createApp({
     const espresso = state.owned.espresso > 0;
     ref('stats-espresso-label').hidden = !espresso;
     ref('stats-espresso').hidden = !espresso;
-    if (espresso) ref('stats-espresso').textContent = money(rules.price(state, rules.espresso));
+    if (espresso) ref('stats-espresso').textContent = money(rules.price(state, rules.espressoOrder));
     const lost = ref('stats-lost');
     lost.textContent = money(state.stats.lost);
     lost.classList.toggle('warn', state.t - state.stats.lostAt < 10);
