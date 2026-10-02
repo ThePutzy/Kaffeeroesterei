@@ -12,21 +12,40 @@ import { ROOT } from './build.mjs';
 import { createRules } from '../src/core/model.js';
 
 const STEP_SECONDS = 0.1;
-// Idle: a window of this many seconds in which the cart stood full at least
-// half the time and no guest ever waited for a bag. Roasting by hand changes
-// nothing then; the player can only wait for the next upgrade.
+// Idle: a window of this many seconds in which the roasters were held up by
+// full shelves at least half the time and no guest ever waited for their
+// roast. Roasting by hand changes nothing then; the player can only wait for
+// the next upgrade.
 const IDLE_WINDOW_SECONDS = 15;
+// How often the casual player looks at the drums' settings.
+const CASUAL_DRUM_SECONDS = 30;
 
 // Scripted players. Assumptions, not player data:
-// - "active" stirs three times a second and ejects when the roast matches the
-//   first guest's wish;
-// - "casual" never stirs and stops ejecting by hand once a helper does it.
-// Both save for the upgrade the current goal asks for; while the goal asks
-// for something else (or after the last goal) they buy what they can afford,
-// tap the special delivery when it waits and move to the next location as soon
-// as they can. Milestones after a move are reported as "2:<name>", counted
+// - "active" stirs three times a second, ejects when the roast reaches the
+//   wish on the gauge and sets every drum to the first open wish whenever it
+//   starts a batch;
+// - "casual" never stirs, stops ejecting by hand once a helper does it and
+//   sets the drums only every CASUAL_DRUM_SECONDS.
+// Both save for the upgrade the current goal asks for and do what a goal
+// asks them to tap; while the goal asks for something else (or after the
+// last goal) they buy what they can afford, tap the special delivery when it
+// waits and move to the next location as soon as they can. Drums on "auto"
+// stay on it. Milestones after a move are reported as "2:<name>", counted
 // from the move.
 export const PLAYERS = ['active', 'casual'];
+
+// Sets a drum, by tapping it as a player would, to the first wish in line
+// that nothing else covers. The drum itself is left out of the plan for that.
+function setDrum(rules, s, index) {
+  const d = s.drums[index];
+  const level = d.level;
+  if (level === 'auto') return;
+  d.level = 'auto';
+  const wish = rules.plan(s).open[0];
+  d.level = level;
+  if (!wish || wish === level) return;
+  while (d.level !== wish) rules.tapDrum(s, index);
+}
 
 export function play(rules, kind, seed, until) {
   const s = rules.createState(seed);
@@ -38,6 +57,7 @@ export function play(rules, kind, seed, until) {
     times[key] ??= movedAt === null ? s.t : s.t - movedAt;
   };
   let sinceTap = 0;
+  let sinceDrums = 0;
   let lastProgress = 0;
   let longestWait = 0;
   const idle = { steps: 0, full: 0, starved: 0, windows: 0, idleWindows: 0, run: 0, longest: 0 };
@@ -45,7 +65,7 @@ export function play(rules, kind, seed, until) {
   let lost = 0;
   while (s.t < until) {
     const pan = s.pan;
-    const wish = rules.levelTarget(rules.queue(s)[0]?.order ?? rules.theme.roast.defaultLevel);
+    const wish = rules.levelTarget(rules.plan(s).pan ?? rules.theme.roast.defaultLevel);
     if (pan.phase === 'empty' && !rules.isAutomatic(s, 'pan')) rules.tapPan(s);
     if (pan.phase === 'roasting') {
       const byHand = kind === 'active' || !rules.isAutomatic(s, 'pan');
@@ -55,7 +75,16 @@ export function play(rules, kind, seed, until) {
         rules.tapPan(s);
       }
     }
+    if (kind === 'active') {
+      s.drums.forEach((d, index) => {
+        if (d.phase === 'empty') setDrum(rules, s, index);
+      });
+    } else if ((sinceDrums += STEP_SECONDS) >= CASUAL_DRUM_SECONDS) {
+      sinceDrums = 0;
+      s.drums.forEach((d, index) => setDrum(rules, s, index));
+    }
     const goal = rules.currentGoal(s);
+    if (goal && !goal.done && goal.condition.stat === 'switches' && s.drums.length > 0) rules.tapDrum(s, 0);
     const goalItem = goal && rules.items.find((item) => item.id === goal.id);
     const wanted = goalItem ? [goalItem] : rules.visibleItems(s);
     for (const item of wanted) {
@@ -100,10 +129,22 @@ export function play(rules, kind, seed, until) {
   return { s, times, longestWait, longestIdle: idle.longest, idleShare, lostShare, problems };
 }
 
+// Whether a guest in line waits for a roast the cart does not have.
+function waiting(rules, s) {
+  const stock = [...s.stock];
+  for (const guest of rules.queue(s)) {
+    if (guest.phase !== 'queue') continue;
+    const at = stock.indexOf(guest.order);
+    if (at < 0) return true;
+    stock.splice(at, 1);
+  }
+  return false;
+}
+
 function countIdle(rules, s, idle) {
   idle.steps += 1;
-  if (s.stock.length >= rules.capacity(s)) idle.full += 1;
-  if (s.stock.length === 0 && rules.queue(s).some((guest) => guest.phase === 'queue')) idle.starved += 1;
+  if (s.stock.length >= rules.cartCapacity(s) || [s.pan, ...s.drums].some((r) => r.phase === 'waiting')) idle.full += 1;
+  if (waiting(rules, s)) idle.starved += 1;
   if (idle.steps * STEP_SECONDS < IDLE_WINDOW_SECONDS - 1e-9) return;
   const wasIdle = idle.full >= idle.steps / 2 && idle.starved === 0;
   idle.windows += 1;
