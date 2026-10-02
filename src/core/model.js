@@ -6,8 +6,10 @@
 // Positions of guests and the delivery bike are scene units, so the theme's
 // scene only has to draw them.
 
-const STATS = ['taps', 'switches', 'manualEjects', 'ejects', 'sales', 'lost', 'revenue'];
-const EFFECTS = ['panBags', 'capacity', 'priceFactor', 'arrivalFactor', 'roastFactor', 'panAutomatic', 'followWishes', 'roaster'];
+const STATS = ['taps', 'switches', 'brews', 'manualEjects', 'ejects', 'sales', 'espressos', 'lost', 'revenue'];
+const EFFECTS = ['panBags', 'capacity', 'priceFactor', 'arrivalFactor', 'roastFactor', 'panAutomatic', 'followWishes', 'espresso', 'roaster'];
+// What a guest orders when they want an espresso instead of a roast.
+const ESPRESSO = 'espresso';
 const ROASTER_FIELDS = ['roastSeconds', 'tapHeat', 'coolSeconds', 'loadDelay', 'bags'];
 
 const isPositive = (value) => Number.isFinite(value) && value > 0;
@@ -91,7 +93,18 @@ export function validateTheme(theme) {
     for (const key of ['panBags', 'capacity', 'priceFactor', 'arrivalFactor', 'roastFactor']) {
       if (key in effects) check(isPositive(effects[key]), `${name}: ${key} must be above 0`);
     }
+    for (const key of ['panAutomatic', 'followWishes', 'espresso']) {
+      if (key in effects) check(effects[key] === true, `${name}: ${key} must be true`);
+    }
     if (!('roaster' in effects)) check(item?.cost?.length === 1, `${name}: only roasters can be bought more than once`);
+  }
+
+  if (items.some((item) => item?.effects?.espresso !== undefined)) {
+    const espresso = theme?.espresso ?? {};
+    check(espresso.share > 0 && espresso.share < 1, 'espresso.share must be between 0 and 1');
+    for (const field of ['brewSeconds', 'tapBrew', 'basePrice']) check(isPositive(espresso[field]), `espresso.${field} must be above 0`);
+    check(Number.isInteger(espresso.cups) && espresso.cups > 0, 'espresso.cups must be a whole number above 0');
+    check(!levelIds.has(ESPRESSO), `no roast level may be called "${ESPRESSO}"`);
   }
 
   const goals = Array.isArray(theme?.goals) ? theme.goals : [];
@@ -248,6 +261,7 @@ export function createRules(theme) {
       location: 0, // index in theme.locations
       boost: 0, // seconds left of a running boost
       adBoosts: { day: null, count: 0 }, // boosts by ad on that calendar day
+      espresso: { p: 0, cups: 0 }, // the cup being brewed (0 to 1) and the cups ready
       events: [],
     };
     // The first guest already waits at the cart, so the first batch sells at once.
@@ -282,10 +296,11 @@ export function createRules(theme) {
     return s.stock.reduce((count, bag) => (bag === level ? count + 1 : count), 0);
   }
 
-  // The location and the boost multiply the rounded price, so "twice as much"
-  // is exactly twice as much.
-  function price(s) {
-    const local = Math.round(sales.basePrice * product(s, 'priceFactor'));
+  // The price of a bag, or of an espresso. The location and the boost
+  // multiply the rounded price, so "twice as much" is exactly twice as much.
+  function price(s, order = null) {
+    const base = order === ESPRESSO ? theme.espresso.basePrice : sales.basePrice;
+    const local = Math.round(base * product(s, 'priceFactor'));
     return Math.round(local * (locationOf(s).priceFactor ?? 1)) * boostFactor(s);
   }
 
@@ -395,6 +410,7 @@ export function createRules(theme) {
     const aims = plan(s, dt);
     stepRoaster(s, s.pan, 'pan', dt, aims.pan);
     s.drums.forEach((d, index) => stepRoaster(s, d, index, dt, aims.drums[index]));
+    stepEspresso(s, dt);
     stepCustomers(s, dt);
     stepDelivery(s, dt);
     stepGoal(s, dt);
@@ -449,7 +465,7 @@ export function createRules(theme) {
   // shows the player.
   function plan(s, dt = 0) {
     const open = queue(s)
-      .filter((guest) => guest.phase === 'queue')
+      .filter((guest) => guest.phase === 'queue' && guest.order !== ESPRESSO)
       .map((guest) => guest.order);
     const have = Object.fromEntries(LEVELS.map((level) => [level, 0]));
     const cover = (level, count) => {
@@ -546,7 +562,9 @@ export function createRules(theme) {
     return s.customers.filter((c) => c.phase === 'queue' || c.phase === 'buying');
   }
 
+  // With the espresso machine, some guests order an espresso instead.
   function pickOrder(s) {
+    if (anyOwned(s, 'espresso') && random(s) < theme.espresso.share) return ESPRESSO;
     const total = roast.levels.reduce((sum, level) => sum + level.wish, 0);
     let roll = random(s) * total;
     for (const level of roast.levels) {
@@ -578,10 +596,20 @@ export function createRules(theme) {
     s.customers.push(newCustomer(s, order, guests.spawnX, 'queue'));
   }
 
-  // Guests buy only the roast they wish for.
+  function available(s, order) {
+    return order === ESPRESSO ? s.espresso.cups > 0 : s.stock.includes(order);
+  }
+
+  // Guests buy only the roast they wish for, or an espresso.
   function sell(s, guest) {
-    const [level] = s.stock.splice(s.stock.indexOf(guest.order), 1);
-    const earned = price(s);
+    const level = guest.order;
+    if (level === ESPRESSO) {
+      s.espresso.cups -= 1;
+      s.stats.espressos += 1;
+    } else {
+      s.stock.splice(s.stock.indexOf(level), 1);
+    }
+    const earned = price(s, level);
     s.money += earned;
     s.stats.sales += 1;
     s.stats.revenue += earned;
@@ -607,7 +635,7 @@ export function createRules(theme) {
     // One guest at a time: the first in line who stands at their place and
     // whose roast is on the cart, even if the guests ahead still wait.
     if (!line.some((guest) => guest.phase === 'buying')) {
-      const next = line.find((guest, index) => guest.phase === 'queue' && guest.x === SLOTS[index] && s.stock.includes(guest.order));
+      const next = line.find((guest, index) => guest.phase === 'queue' && guest.x === SLOTS[index] && available(s, guest.order));
       if (next) sell(s, next);
     }
     // Patience runs out from the first sale on, so the first batches can
@@ -634,6 +662,38 @@ export function createRules(theme) {
       }
     }
     s.customers = s.customers.filter((guest) => !(guest.phase === 'out' && guest.x >= guests.exitX));
+  }
+
+  // ---- Espresso machine --------------------------------------------------------------
+  //
+  // With the machine, theme.espresso.share of the guests order an espresso.
+  // It brews one cup after another on its own while fewer than
+  // theme.espresso.cups wait next to it; every tap adds tapBrew of a cup.
+
+  function brew(s, amount) {
+    const m = s.espresso;
+    if (m.cups >= theme.espresso.cups) {
+      m.p = 0;
+      return;
+    }
+    m.p += amount;
+    if (m.p >= 1) {
+      m.p = 0;
+      m.cups += 1;
+      emit(s, 'brewed');
+    }
+  }
+
+  function stepEspresso(s, dt) {
+    if (anyOwned(s, 'espresso')) brew(s, dt / theme.espresso.brewSeconds);
+  }
+
+  function tapEspresso(s) {
+    if (!anyOwned(s, 'espresso') || s.espresso.cups >= theme.espresso.cups) return false;
+    s.stats.brews += 1;
+    brew(s, theme.espresso.tapBrew);
+    emit(s, 'brewTap');
+    return true;
   }
 
   // ---- Special delivery ----------------------------------------------------------
@@ -840,6 +900,7 @@ export function createRules(theme) {
       owned: { ...s.owned },
       drumLevels: s.drums.map((d) => d.level),
       stock: [...s.stock],
+      espressoCups: s.espresso.cups,
       stats: { ...s.stats, lostAt: Number.isFinite(s.stats.lostAt) ? s.stats.lostAt : null },
       goal: s.goal.doneTimer > 0 ? s.goal.index + 1 : s.goal.index,
       nextDeliveryAt: s.nextDeliveryAt,
@@ -881,6 +942,10 @@ export function createRules(theme) {
     s.stats.lostAt = Number.isFinite(saved.stats?.lostAt) ? saved.stats.lostAt : -Infinity;
     const stock = Array.isArray(saved.stock) ? saved.stock.filter((level) => LEVELS.includes(level)) : [];
     s.stock = stock.filter((level, index) => stock.slice(0, index).filter((other) => other === level).length < capacity(s));
+    // Cups ready at the espresso machine stay; saves from before have none.
+    const cups = saved.espressoCups ?? 0;
+    if (!Number.isInteger(cups) || cups < 0) return null;
+    s.espresso.cups = anyOwned(s, 'espresso') ? Math.min(cups, theme.espresso.cups) : 0;
     const goal = saved.goal ?? 0;
     if (!Number.isInteger(goal) || goal < 0) return null;
     s.goal.index = Math.min(goal, GOALS.length);
@@ -941,6 +1006,7 @@ export function createRules(theme) {
     tapPan,
     tapDrum,
     drumLevels,
+    tapEspresso,
     eject,
     itemCount,
     itemPrice,
@@ -952,6 +1018,7 @@ export function createRules(theme) {
     step,
     plan,
     queue,
+    espresso: ESPRESSO,
     currentGoal,
     serializeState,
     sanitizeState,
