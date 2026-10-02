@@ -30,6 +30,7 @@
     "buySeconds": 0.5,
     "patienceSeconds": 15
   },
+  "espresso": { "share": 0.3, "brewSeconds": 3, "tapBrew": 0.12, "cups": 3, "basePrice": 12 },
   "delivery": {
     "firstAt": 150,
     "gapSeconds": [100, 160],
@@ -49,7 +50,7 @@
     { "id": "profile", "cost": [200], "reveal": { "owned": "drum" }, "effects": { "followWishes": true } },
     { "id": "cafe", "cost": [320], "reveal": { "owned": "profile" }, "effects": { "capacity": 4, "priceFactor": 1.5, "arrivalFactor": 0.62 } },
     { "id": "cargoBike", "cost": [1100], "reveal": { "owned": "cafe" }, "effects": { "capacity": 5, "arrivalFactor": 0.75 } },
-    { "id": "espresso", "cost": [1600], "reveal": { "owned": "cargoBike" }, "effects": { "priceFactor": 1.4 } },
+    { "id": "espresso", "cost": [1600], "reveal": { "owned": "cargoBike" }, "effects": { "espresso": true, "arrivalFactor": 0.85 } },
     { "id": "burner", "cost": [2200], "reveal": { "owned": "espresso" }, "effects": { "roastFactor": 0.7 } },
     { "id": "diploma", "cost": [2500], "reveal": { "owned": "burner" }, "effects": { "priceFactor": 1.3 } }
   ],
@@ -69,6 +70,7 @@
     { "id": "cargoBike", "reward": 100, "done": { "owned": "cargoBike" } },
     { "id": "earn2", "reward": 100, "done": { "stat": "revenue", "min": 2450 } },
     { "id": "espresso", "reward": 150, "done": { "owned": "espresso" } },
+    { "id": "brew", "reward": 50, "done": { "stat": "brews" } },
     { "id": "earn3", "reward": 150, "done": { "stat": "revenue", "min": 3900 } },
     { "id": "burner", "reward": 200, "done": { "owned": "burner" } },
     { "id": "earn4", "reward": 200, "done": { "stat": "revenue", "min": 5600 } },

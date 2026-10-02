@@ -503,3 +503,84 @@ test('the current goal tells what it asks for', () => {
   assert.ok(goal.condition.min > 1);
   assert.equal(goal.done, false);
 });
+
+// ---- Espresso -------------------------------------------------------------------
+
+// Every guest who shows up in the given time, with their order.
+function ordersOver(s, seconds) {
+  const seen = new Map();
+  for (let t = 0; t < seconds; t += 0.1) {
+    step(s, 0.1);
+    for (const c of s.customers) seen.set(c.id, c.order);
+  }
+  return [...seen.values()];
+}
+
+test('with the espresso machine, about every third guest orders an espresso', () => {
+  assert.equal(ordersOver(createState(1), 600).includes(rules.espresso), false, 'not without the machine');
+  const s = createState(1);
+  s.owned.espresso = 1;
+  const orders = ordersOver(s, 600);
+  const share = orders.filter((order) => order === rules.espresso).length / orders.length;
+  assert.ok(share > 0.2 && share < 0.4, `share ${share} of ${orders.length} guests`);
+});
+
+test('the espresso machine brews on its own up to its cups, and faster when tapped', () => {
+  const s = quiet(createState(1));
+  assert.equal(rules.tapEspresso(s), false, 'no machine yet');
+  s.owned.espresso = 1;
+  const { brewSeconds, cups, tapBrew } = theme.espresso;
+  advance(s, brewSeconds + 0.05);
+  assert.equal(s.espresso.cups, 1);
+  advance(s, brewSeconds * cups);
+  assert.equal(s.espresso.cups, cups, 'no more cups than fit next to it');
+  assert.equal(rules.tapEspresso(s), false, 'nothing to brew while it is full');
+  s.espresso.cups = 0;
+  s.espresso.p = 0;
+  const taps = Math.ceil(1 / tapBrew);
+  for (let i = 0; i < taps; i += 1) assert.equal(rules.tapEspresso(s), true);
+  assert.equal(s.espresso.cups, 1, 'tapping brews a cup without waiting');
+  assert.equal(s.stats.brews, taps);
+});
+
+test('an espresso guest buys a cup; the roasters leave espresso to the machine', () => {
+  const s = quiet(createState(1));
+  Object.assign(s.owned, { cafe: 1, espresso: 1 });
+  const g = guest(s, rules.espresso);
+  guest(s, 'dark');
+  assert.deepEqual(plan(s).open, ['dark'], 'no espresso in the roasters\' plan');
+  advance(s, 0.2);
+  assert.equal(g.phase, 'queue', 'no cup is ready yet');
+  s.espresso.cups = 1;
+  advance(s, 0.2);
+  assert.deepEqual([g.phase, g.bag], ['buying', rules.espresso]);
+  assert.equal(s.espresso.cups, 0);
+  assert.equal(s.stats.espressos, 1);
+  assert.equal(rules.price(s, rules.espresso), Math.round(theme.espresso.basePrice * 1.5), 'the café raises espresso prices too');
+  assert.equal(s.money, rules.price(s, rules.espresso));
+});
+
+test('cups at the espresso machine are saved', () => {
+  const s = createState(1);
+  s.owned.espresso = 1;
+  s.espresso.cups = 2;
+  const saved = copy(rules.serializeState(s));
+  assert.equal(rules.sanitizeState(saved).espresso.cups, 2);
+  assert.equal(rules.sanitizeState({ ...saved, espressoCups: 99 }).espresso.cups, theme.espresso.cups);
+  assert.equal(rules.sanitizeState({ ...saved, owned: {} }).espresso.cups, 0, 'no machine, no cups');
+  assert.equal(rules.sanitizeState({ ...saved, espressoCups: undefined }).espresso.cups, 0, 'saves from before have none');
+  assert.equal(rules.sanitizeState({ ...saved, espressoCups: -1 }), null);
+});
+
+test('the espresso numbers are checked when an item brings the machine', () => {
+  const broken = copy(theme);
+  broken.espresso.share = 1.5;
+  delete broken.espresso.brewSeconds;
+  const problems = validateTheme(broken);
+  assert.ok(problems.some((problem) => problem.includes('espresso.share')), problems.join(' | '));
+  assert.ok(problems.some((problem) => problem.includes('espresso.brewSeconds')), problems.join(' | '));
+  const without = copy(theme);
+  delete without.espresso;
+  without.items.find((item) => item.id === 'espresso').effects = { priceFactor: 1.4 };
+  assert.deepEqual(validateTheme(without), [], 'a theme without espresso needs no espresso numbers');
+});

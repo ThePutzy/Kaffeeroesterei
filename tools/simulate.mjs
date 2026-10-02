@@ -21,10 +21,12 @@ const IDLE_WINDOW_SECONDS = 15;
 const CASUAL_DRUM_SECONDS = 30;
 
 // Scripted players. Assumptions, not player data:
-// - "active" stirs three times a second, ejects when the roast reaches the
-//   wish on the gauge and sets every drum to the first open wish whenever it
-//   starts a batch;
-// - "casual" never stirs, stops ejecting by hand once a helper does it and
+// - "active" taps three times a second: the espresso machine while espresso
+//   guests wait for more cups than are ready, otherwise the pan (stirring).
+//   It ejects when the roast reaches the wish on the gauge and sets every
+//   drum to the first open wish whenever it starts a batch;
+// - "casual" never stirs or taps the espresso machine, stops ejecting by
+//   hand once a helper does it and
 //   looks at the drums only every CASUAL_DRUM_SECONDS, then sets each one
 //   when it starts its next batch.
 // Both save for the upgrade the current goal asks for and do what a goal
@@ -34,6 +36,18 @@ const CASUAL_DRUM_SECONDS = 30;
 // stay on it. Milestones after a move are reported as "2:<name>", counted
 // from the move.
 export const PLAYERS = ['active', 'casual'];
+
+// What a goal asks the players to tap, by the stat it counts.
+const GOAL_TAPS = {
+  switches: (rules, s) => s.drums.length > 0 && rules.tapDrum(s, 0),
+  brews: (rules, s) => rules.tapEspresso(s),
+};
+
+// Whether more espresso guests wait in line than cups are ready.
+function espressoWanted(rules, s) {
+  const waiting = rules.queue(s).filter((guest) => guest.phase === 'queue' && guest.order === rules.espresso).length;
+  return waiting > s.espresso.cups;
+}
 
 // Sets an empty drum, by tapping it as a player would, to the first wish in
 // line that nothing else covers. Put on "auto" for a moment, an empty drum
@@ -75,8 +89,11 @@ export function play(rules, kind, seed, until) {
       if (byHand && pan.p >= Math.max(rules.firstCrack, wish)) rules.eject(s, 'pan');
       else if (kind === 'active' && (sinceTap += STEP_SECONDS) >= 0.33) {
         sinceTap = 0;
-        rules.tapPan(s);
+        if (!(espressoWanted(rules, s) && rules.tapEspresso(s))) rules.tapPan(s);
       }
+    } else if (kind === 'active' && espressoWanted(rules, s) && (sinceTap += STEP_SECONDS) >= 0.33) {
+      sinceTap = 0;
+      rules.tapEspresso(s);
     }
     if (kind === 'active' || (sinceDrums += STEP_SECONDS) >= CASUAL_DRUM_SECONDS) {
       sinceDrums = 0;
@@ -88,7 +105,7 @@ export function play(rules, kind, seed, until) {
       drumsDue.delete(index);
     }
     const goal = rules.currentGoal(s);
-    if (goal && !goal.done && goal.condition.stat === 'switches' && s.drums.length > 0) rules.tapDrum(s, 0);
+    if (goal && !goal.done) GOAL_TAPS[goal.condition.stat]?.(rules, s);
     const goalItem = goal && rules.items.find((item) => item.id === goal.id);
     const wanted = goalItem ? [goalItem] : rules.visibleItems(s);
     for (const item of wanted) {
@@ -133,11 +150,18 @@ export function play(rules, kind, seed, until) {
   return { s, times, longestWait, longestIdle: idle.longest, idleShare, lostShare, problems };
 }
 
-// Whether a guest in line waits for a roast the cart does not have.
+// Whether a guest in line waits for a roast the cart does not have, or for
+// an espresso that is not ready.
 function waiting(rules, s) {
   const stock = [...s.stock];
+  let cups = s.espresso.cups;
   for (const guest of rules.queue(s)) {
     if (guest.phase !== 'queue') continue;
+    if (guest.order === rules.espresso) {
+      if (cups === 0) return true;
+      cups -= 1;
+      continue;
+    }
     const at = stock.indexOf(guest.order);
     if (at < 0) return true;
     stock.splice(at, 1);
