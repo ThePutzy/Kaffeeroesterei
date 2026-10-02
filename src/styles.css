@@ -1224,16 +1224,25 @@ button {
 }
 
 .guest .sigh,
-.guest.passing .wish {
+.guest .wish-cup,
+.guest.espresso .wish,
+.guest.passing .wish,
+.guest.passing .wish-cup {
   display: none;
 }
 
-.guest.passing .sigh {
+.guest.passing .sigh,
+.guest.espresso:not(.passing) .wish-cup {
   display: inline;
 }
 
-.guest.served .carried {
+.guest.served .carried,
+.guest.served.espresso .carried-cup {
   opacity: 1;
+}
+
+.guest.served.espresso .carried {
+  opacity: 0;
 }
 
 .guest.impatient .bubble-shape {

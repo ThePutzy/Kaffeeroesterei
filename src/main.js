@@ -103,6 +103,7 @@ async function start() {
     firstCrack: rules.firstCrack,
     slots: rules.slots,
     levels: theme.roast.levels,
+    espresso: { order: rules.espresso, cups: theme.espresso?.cups ?? 0 },
   });
   const app = createApp({
     rules,

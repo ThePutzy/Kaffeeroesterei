@@ -100,6 +100,8 @@ export function createAudio({ muted: startMuted = false } = {}) {
       tone({ at: 0.07, freq: 1319, type: 'triangle', gain: 0.12, decay: 0.22 });
       tone({ at: 0.14, freq: 1568, type: 'triangle', gain: 0.12, decay: 0.3 });
     },
+    steam: () => hiss({ freq: vary(3400, 0.2), q: 0.7, type: 'highpass', gain: 0.07, attack: 0.01, decay: 0.16 }),
+    cup: () => tone({ freq: vary(1180, 0.03), type: 'triangle', gain: 0.07, decay: 0.12 }),
     switch: () => {
       tone({ freq: 520, type: 'square', gain: 0.05, decay: 0.04 });
       tone({ at: 0.05, freq: 780, type: 'square', gain: 0.05, decay: 0.05 });
