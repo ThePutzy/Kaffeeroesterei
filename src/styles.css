@@ -211,12 +211,6 @@ button {
   color: var(--gold);
 }
 
-.floater.perfect {
-  color: #ffe38a;
-  font-size: 24px;
-  animation-delay: 0.08s;
-}
-
 .floater.note {
   padding: 4px 12px;
   border-radius: 999px;
@@ -396,10 +390,6 @@ button {
 
 .target.show {
   display: block;
-}
-
-.gauge.goal-match .target {
-  animation: pulse 0.9s ease-in-out infinite alternate;
 }
 
 .needle {
@@ -1183,8 +1173,13 @@ button {
   animation: spin 1.4s linear infinite;
 }
 
-.drum.stirred .machine {
-  animation: shake 0.2s ease-out;
+.drum-sign .sign-auto,
+.drum-sign.auto .sign-level {
+  display: none;
+}
+
+.drum-sign.auto .sign-auto {
+  display: inline;
 }
 
 .sign .swing {
@@ -1239,6 +1234,18 @@ button {
 
 .guest.served .carried {
   opacity: 1;
+}
+
+.guest.impatient .bubble-shape {
+  stroke: var(--ember);
+  stroke-opacity: 0.9;
+  stroke-width: 3;
+}
+
+.guest.impatient .bubble-body {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: impatient 0.45s ease-in-out infinite alternate;
 }
 
 .bike-wrap.leaving .bike {
@@ -1315,16 +1322,12 @@ button {
   }
 }
 
-@keyframes shake {
-  0%,
-  100% {
-    transform: translateX(0);
+@keyframes impatient {
+  from {
+    transform: rotate(-5deg);
   }
-  30% {
-    transform: translateX(-3px);
-  }
-  65% {
-    transform: translateX(3px);
+  to {
+    transform: rotate(5deg);
   }
 }
 
@@ -1467,15 +1470,6 @@ button {
     box-shadow:
       0 5px 0 var(--teal-deep),
       0 0 0 8px rgb(47 163 154 / 0);
-  }
-}
-
-@keyframes pulse {
-  from {
-    box-shadow: 0 0 0 0 rgb(242 193 78 / 0.8);
-  }
-  to {
-    box-shadow: 0 0 0 7px rgb(242 193 78 / 0);
   }
 }
 

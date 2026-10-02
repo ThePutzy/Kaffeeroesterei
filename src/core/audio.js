@@ -95,10 +95,14 @@ export function createAudio({ muted: startMuted = false } = {}) {
       for (let i = 0; i < 16; i += 1) hiss({ at: 0.05 + i * 0.028 + Math.random() * 0.02, freq: vary(2400, 0.3), q: 2, gain: 0.06, decay: 0.03 });
     },
     bag: () => tone({ freq: vary(170), gain: 0.1, decay: 0.09, slide: 0.55 }),
-    sale: ({ matched }) => {
+    sale: () => {
       tone({ freq: 988, type: 'triangle', gain: 0.12, decay: 0.16 });
       tone({ at: 0.07, freq: 1319, type: 'triangle', gain: 0.12, decay: 0.22 });
-      if (matched) tone({ at: 0.14, freq: 1568, type: 'triangle', gain: 0.12, decay: 0.3 });
+      tone({ at: 0.14, freq: 1568, type: 'triangle', gain: 0.12, decay: 0.3 });
+    },
+    switch: () => {
+      tone({ freq: 520, type: 'square', gain: 0.05, decay: 0.04 });
+      tone({ at: 0.05, freq: 780, type: 'square', gain: 0.05, decay: 0.05 });
     },
     purchase: () => {
       [523, 659, 784, 1047].forEach((freq, i) => tone({ at: i * 0.06, freq, type: 'triangle', gain: 0.13, decay: 0.25 }));

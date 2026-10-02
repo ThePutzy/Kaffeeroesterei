@@ -50,8 +50,8 @@ export const AUTOMATED = {
   rng: 7,
   owned: { biggerPan: 1, sign: 1, helper: 1 },
   stock: [],
-  stats: { taps: 30, manualEjects: 8, ejects: 20, sales: 30, matched: 12, lost: 2, revenue: 260 },
-  goal: 7,
+  stats: { taps: 30, manualEjects: 8, ejects: 20, sales: 30, lost: 2, revenue: 260 },
+  goal: 6, // the chalkboard sign
   nextDeliveryAt: 420,
 };
 

@@ -23,6 +23,12 @@ let SLOTS = [850, 895, 940];
 let LABEL_COLORS = {};
 let LEVEL_DOTS = {};
 let LEVEL_ROAST = {};
+let SHELF_X = {};
+
+// The sign on a drum's hopper, where it shows its roast.
+const SIGN_Y = -200;
+// Guests with less patience left than this show it.
+const IMPATIENT_SECONDS = 5;
 
 const ROAST_STOPS = [
   [0, [143, 170, 92]],
@@ -465,6 +471,18 @@ function drumMarkup() {
     <g data-ref="full" opacity="0" transform="translate(40 -200)">
       <circle r="14" fill="#E0664F"/><path d="M0 -7V2M0 6V7" stroke="#FFF" stroke-width="3.5" stroke-linecap="round"/>
     </g>
+    <g transform="translate(0 ${SIGN_Y})"><g class="drum-sign" data-ref="sign">
+      <rect x="-25" y="-16" width="50" height="32" rx="6" fill="#F7EEDC" stroke="#8A6246" stroke-width="2.5"/>
+      <g class="sign-level">
+        <g transform="translate(-10 0) rotate(-25)"><ellipse data-ref="sign-bean" rx="7" ry="9.5" fill="#6E4023"/><path d="M0 -7Q-3 0 0 7" stroke="#F7EEDC" stroke-opacity=".7" stroke-width="1.6" fill="none"/></g>
+        <g data-ref="sign-dots"><circle cx="11" cy="-8" r="3.2"/><circle cx="11" cy="0" r="3.2"/><circle cx="11" cy="8" r="3.2"/></g>
+      </g>
+      <g class="sign-auto" fill="none" stroke="#2E8C84" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M-9.4 -3.4A10 10 0 0 1 9.4 -3.4M9.4 -3.4L10.5 -9M9.4 -3.4L4 -5"/>
+        <path d="M9.4 3.4A10 10 0 0 1 -9.4 3.4M-9.4 3.4L-10.5 9M-9.4 3.4L-4 5"/>
+        <g transform="rotate(-25)"><ellipse rx="3.6" ry="5" fill="#6E4023" stroke="none"/></g>
+      </g>
+    </g></g>
   </g>
   <g class="placeholder" data-ref="placeholder">
     <path d="M-66 -44V-156Q-66 -172 -50 -172H-28L-40 -226H40L28 -172H50Q66 -172 66 -156V-44Q66 -30 52 -30H-52Q-66 -30 -66 -44Z" fill="#FFFFFF" fill-opacity=".28" stroke="#BFAE93" stroke-width="3" stroke-dasharray="10 8"/>
@@ -583,14 +601,14 @@ function guestMarkup(look) {
       <g class="carried" opacity="0"><rect x="-9" y="-58" width="18" height="22" rx="3" fill="url(#g-kraft)"/><rect class="carried-label" x="-9" y="-50" width="18" height="6" fill="#E0803C"/></g>
     </g>
   </g></g>
-  <g class="bubble" transform="translate(0 -160)">
-    <path d="M-24 -20H24Q30 -20 30 -14V10Q30 16 24 16H6L0 24L-6 16H-24Q-30 16 -30 10V-14Q-30 -20 -24 -20Z" fill="#FFFDF8" stroke="#2A1D17" stroke-opacity=".15" stroke-width="2"/>
+  <g class="bubble" transform="translate(0 -160)"><g class="bubble-body">
+    <path class="bubble-shape" d="M-24 -20H24Q30 -20 30 -14V10Q30 16 24 16H6L0 24L-6 16H-24Q-30 16 -30 10V-14Q-30 -20 -24 -20Z" fill="#FFFDF8" stroke="#2A1D17" stroke-opacity=".15" stroke-width="2"/>
     <g class="wish">
       <g transform="translate(-9 -2) rotate(-25)"><ellipse class="wish-bean" rx="9" ry="12" fill="#6E4023"/><path d="M0 -9Q-4 0 0 9" stroke="#FFFDF8" stroke-opacity=".7" stroke-width="2" fill="none"/></g>
       <g class="wish-dots"><circle cx="15" cy="-8" r="3.6"/><circle cx="15" cy="0" r="3.6"/><circle cx="15" cy="8" r="3.6"/></g>
     </g>
     <text class="sigh" x="0" y="4" text-anchor="middle" font-size="22" font-weight="700" fill="#6B5B4E">…</text>
-  </g>`;
+  </g></g>`;
 }
 
 // ---- The scene ---------------------------------------------------------------
@@ -601,6 +619,8 @@ export function createScene(svg, { firstCrack, slots, levels }) {
   LABEL_COLORS = Object.fromEntries(levels.map((level) => [level.id, level.color]));
   LEVEL_DOTS = Object.fromEntries(levels.map((level, index) => [level.id, index + 1]));
   LEVEL_ROAST = Object.fromEntries(levels.map((level) => [level.id, level.target]));
+  // One shelf per roast level, side by side on the counter of the cart.
+  SHELF_X = Object.fromEntries(levels.map((level, index) => [level.id, 662 + ((index + 0.5) * 170) / levels.length]));
   svg.setAttribute('viewBox', '0 0 1000 700');
   svg.setAttribute('preserveAspectRatio', 'xMidYMax meet');
   el('defs', {}, svg).innerHTML = DEFS;
@@ -722,23 +742,33 @@ export function createScene(svg, { firstCrack, slots, levels }) {
     return `<path d="M-8 12V-8L-5 -12H5L8 -8V12Z" fill="url(#g-kraft)" stroke="#A47A45" stroke-width="1"/><rect x="-8" y="-1" width="16" height="6" fill="${LABEL_COLORS[level]}"/>`;
   }
 
-  function stockPosition(index) {
-    if (index < 8) return { x: 675 + index * 19, y: CART.counter - 12 };
-    const k = index - 8;
-    return { x: 704 + k * 19, y: CART.counter - 36 };
+  // The place of the slot-th bag on a roast's shelf: three in front, the
+  // rest in a row behind them.
+  function stockPosition(level, slot) {
+    const back = slot >= 3;
+    const k = back ? slot - 3 : slot - 1;
+    return { x: SHELF_X[level] + (back ? (k - 0.5) * 18 : k * 18), y: CART.counter - (back ? 36 : 12) };
   }
 
   function renderStock(stock) {
     const same = stock.length === stockShown.length && stock.every((level, i) => level === stockShown[i]);
     if (same) return;
     const grew = stock.length > stockShown.length;
-    stockLayer.replaceChildren();
-    stock.forEach((level, index) => {
-      const { x, y } = stockPosition(index);
-      const slot = group(stockLayer, '', { transform: `translate(${x} ${y})` });
-      const bag = group(slot, bagMarkup(level));
-      if (grew && index === stock.length - 1) bag.classList.add('pop');
+    const counts = {};
+    const bags = stock.map((level, index) => {
+      const slot = counts[level] ?? 0;
+      counts[level] = slot + 1;
+      return { level, slot, newest: grew && index === stock.length - 1 };
     });
+    // The back row first, so the front row covers it.
+    bags.sort((a, b) => Number(b.slot >= 3) - Number(a.slot >= 3));
+    stockLayer.replaceChildren();
+    for (const { level, slot, newest } of bags) {
+      const { x, y } = stockPosition(level, slot);
+      const place = group(stockLayer, '', { transform: `translate(${x} ${y})` });
+      const bag = group(place, bagMarkup(level));
+      if (newest) bag.classList.add('pop');
+    }
     stockShown = [...stock];
   }
 
@@ -764,6 +794,7 @@ export function createScene(svg, { firstCrack, slots, levels }) {
       node.g.classList.toggle('leaving', leaving);
       node.g.classList.toggle('passing', guest.phase === 'pass' || (leaving && !guest.bag));
       node.g.classList.toggle('served', Boolean(guest.bag));
+      node.g.classList.toggle('impatient', guest.phase === 'queue' && guest.patience < IMPATIENT_SECONDS);
       if (guest.bag && !node.bagSet) {
         node.g.querySelector('.carried-label').setAttribute('fill', LABEL_COLORS[guest.bag]);
         node.bagSet = true;
@@ -818,6 +849,17 @@ export function createScene(svg, { firstCrack, slots, levels }) {
       if (trayFull && state.batch) drum.ref('tray-beans').setAttribute('fill', roastColor(LEVEL_ROAST[state.batch.level]));
       drum.g.classList.toggle('cooling', trayFull);
       drum.ref('full').setAttribute('opacity', state.phase === 'waiting' ? '1' : '0');
+      if (drum.level !== state.level) {
+        drum.level = state.level;
+        const auto = state.level === 'auto';
+        drum.ref('sign').classList.toggle('auto', auto);
+        if (!auto) {
+          drum.ref('sign-bean').setAttribute('fill', roastColor(LEVEL_ROAST[state.level]));
+          [...drum.ref('sign-dots').children].forEach((dot, i) => {
+            dot.setAttribute('fill', i < LEVEL_DOTS[state.level] ? LABEL_COLORS[state.level] : '#E6DDD2');
+          });
+        }
+      }
     });
 
     cafe.classList.toggle('hidden', !(s.owned.cafe > 0));
@@ -867,13 +909,15 @@ export function createScene(svg, { firstCrack, slots, levels }) {
           pan.classList.remove('stirred');
           void pan.getBBox();
           pan.classList.add('stirred');
-        } else {
-          const g = drums[event.roaster]?.g;
-          g?.classList.remove('stirred');
-          void g?.getBBox();
-          g?.classList.add('stirred');
         }
         break;
+      case 'switch': {
+        const sign = drums[event.roaster]?.ref('sign');
+        sign?.classList.remove('pop');
+        void sign?.getBBox();
+        sign?.classList.add('pop');
+        break;
+      }
       case 'crack':
         burst(roasterPoint(event.roaster), '#FFE3A3', event.roaster === 'pan' ? 10 : 6);
         break;
@@ -887,8 +931,8 @@ export function createScene(svg, { firstCrack, slots, levels }) {
         break;
       }
       case 'bag': {
-        const index = Math.max(0, Math.min(s.stock.length - 1, 11));
-        flyBag(trayPoint(event.roaster), stockPosition(index), event.level);
+        const slot = Math.max(0, s.stock.filter((level) => level === event.level).length - 1);
+        flyBag(trayPoint(event.roaster), stockPosition(event.level, slot), event.level);
         break;
       }
       case 'purchase':
@@ -918,6 +962,7 @@ export function createScene(svg, { firstCrack, slots, levels }) {
       cart: { x: CART.x, y: CART.counter - 40 },
       queue: { x: SLOTS[1], y: FLOOR - 170 },
       drum: (index) => ({ x: DRUM_X[index], y: FLOOR - 120 }),
+      drumSign: (index) => ({ x: DRUM_X[index], y: FLOOR + SIGN_Y - 30 }),
       guest: (x) => ({ x, y: FLOOR - 130 }),
       bike: (x) => ({ x: x - 30, y: BIKE_Y - 90 }),
     },

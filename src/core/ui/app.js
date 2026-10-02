@@ -226,14 +226,17 @@ export function createApp({
         audio.play('bag', {}, 0.12);
         break;
       case 'sale': {
-        audio.play('sale', { matched: event.matched }, 0.04);
+        audio.play('sale', {}, 0.04);
         const guest = state.customers.find((c) => c.id === event.id);
         const point = scene.points.guest(guest?.x ?? rules.slots[0]);
         floater(point, t('goal.reward', { value: money(event.price) }), 'gold');
-        if (event.matched) floater({ x: point.x, y: point.y - 36 }, t('floaters.perfect'), 'perfect');
-        flyCoins(sceneClient(point), event.matched ? 3 : 2);
+        flyCoins(sceneClient(point), 3);
         break;
       }
+      case 'switch':
+        audio.play('switch', {}, 0.03);
+        floater(scene.points.drumSign(event.roaster), t(`levels.${event.level}`), 'note');
+        break;
       case 'lost':
         if (state.t - lastLostNote > 7) {
           lastLostNote = state.t;
@@ -356,15 +359,12 @@ export function createApp({
     ref('goal-reward').textContent = goal ? t('goal.reward', { value: money(goal.reward) }) : '';
   }
 
-  function wishLevel() {
-    return rules.queue(state)[0]?.order ?? null;
-  }
-
   function renderRoast() {
     const pan = state.pan;
     const roasting = pan.phase === 'roasting';
     const p = pan.phase === 'empty' ? 0 : pan.p;
-    const wish = wishLevel();
+    // What a guest in line waits for and the pan can still roast (see plan()).
+    const wish = rules.plan(state).pan;
     ref('needle').style.left = percent(p);
 
     const wishKey = `${wish}:${i18n.language}`;
@@ -392,7 +392,6 @@ export function createApp({
     }
     const inWish = roasting && wish !== null && rules.levelAt(p) === wish;
     ref('gauge').classList.toggle('hit', inWish);
-    ref('gauge').classList.toggle('goal-match', rules.currentGoal(state)?.id === 'match');
 
     let status;
     let alert = false;
@@ -407,7 +406,7 @@ export function createApp({
       status = t('status.waiting');
       alert = true;
     }
-    if (rules.isAutomatic(state, 'pan')) status = `${status} · ${state.owned.profile > 0 ? t('auto.profile') : t('auto.helper')}`;
+    if (rules.isAutomatic(state, 'pan')) status = `${status} · ${t('auto.helper')}`;
     const statusNode = ref('status');
     statusNode.textContent = status;
     statusNode.classList.toggle('alert', alert);
@@ -549,10 +548,10 @@ export function createApp({
   function renderStats() {
     ref('stats-location').textContent = t(`locations.${rules.locationOf(state).id}.name`);
     const cart = ref('stats-cart');
-    cart.textContent = t('stats.cartValue', { count: state.stock.length, capacity: rules.capacity(state) });
-    cart.classList.toggle('warn', state.stock.length >= rules.capacity(state));
+    cart.textContent = t('stats.cartValue', { count: state.stock.length, capacity: rules.cartCapacity(state) });
+    cart.classList.toggle('warn', state.stock.length >= rules.cartCapacity(state));
     ref('stats-guests').textContent = t('stats.guestsValue', { seconds: formatNumber(rules.arrivalInterval(state), i18n.language) });
-    ref('stats-price').textContent = t('stats.priceValue', { base: money(rules.price(state, false)), matched: money(rules.price(state, true)) });
+    ref('stats-price').textContent = money(rules.price(state));
     const lost = ref('stats-lost');
     lost.textContent = money(state.stats.lost);
     lost.classList.toggle('warn', state.t - state.stats.lostAt < 10);
@@ -589,9 +588,15 @@ export function createApp({
       placeHand(point.x, point.y);
       return;
     }
-    if (goal.id === 'eject' && pan.phase === 'roasting' && pan.p >= rules.firstCrack) {
+    if (goal.id === 'eject' && pan.phase === 'roasting' && ref('gauge').classList.contains('hit')) {
       const box = ref('eject').getBoundingClientRect();
       placeHand(box.left + box.width / 2, box.top + 6);
+      return;
+    }
+    // A goal that asks to tap a drum (the drum's roast).
+    if (goal.condition.stat === 'switches' && state.drums.length > 0) {
+      const point = sceneClient(scene.points.drumSign(0));
+      placeHand(point.x, point.y);
       return;
     }
     const item = rules.items.find((candidate) => candidate.id === goal.id);

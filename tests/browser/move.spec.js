@@ -57,7 +57,7 @@ test('moving starts over at the harbor, where guests pay twice as much', async (
   await expect(page.locator('.harbor')).not.toHaveClass(/hidden/);
   await expect(page.locator('[data-ref="banner"]')).toHaveText('Welcome to the harbor district!');
   await expect(page.locator('[data-ref="stats-location"]')).toHaveText('Harbor district');
-  await expect(page.locator('[data-ref="stats-price"]')).toHaveText('10 (wish: 16)');
+  await expect(page.locator('[data-ref="stats-price"]')).toHaveText('16');
   // The tutorial goals are skipped after a move.
   await expect(html(page)).toHaveAttribute('data-goal', theme.goals.find((goal) => !goal.tutorial).id);
   await expect(page.locator('.item.move')).toHaveCount(0);
