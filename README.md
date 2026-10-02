@@ -8,8 +8,9 @@ Browser-Idle-Spiel, Thema 1: Kaffeerösterei. Reines HTML, CSS und JavaScript (E
 - Themenformat, Formeln und Balance-Simulator: [docs/themenformat.md](docs/themenformat.md)
 - Entwürfe für die eigene Seite (Anleitung, Über uns, Datenschutz, Impressum): [docs/entwuerfe/](docs/entwuerfe/README.md)
 
-Stand: Schritt 5b des [Plans für das neue Spiel](docs/umsetzungsplan-neues-spiel.md), danach strenge Wünsche und einstellbare Trommelröster (02.10.2026). Das Spiel ist die sichtbare Rösterei aus dem Prototyp: rösten, im gewünschten Röstgrad auswerfen, Gäste am Wagen bedienen, mit Helferin und Trommelröstern automatisieren. Englisch und Deutsch, Handy und Desktop.
+Stand: Schritt 5b des [Plans für das neue Spiel](docs/umsetzungsplan-neues-spiel.md), danach strenge Wünsche, einstellbare Trommelröster und Espresso (02.10.2026). Das Spiel ist die sichtbare Rösterei aus dem Prototyp: rösten, im gewünschten Röstgrad auswerfen, Gäste am Wagen bedienen, mit Helferin und Trommelröstern automatisieren. Englisch und Deutsch, Handy und Desktop.
 - **Wünsche:** Gäste kaufen nur den Röstgrad, den sie sich wünschen, und gehen, wenn er zu lange nicht kommt. Der Wagen hat ein Fach je Röstgrad. Trommelröster stellt man per Antippen auf hell, mittel oder dunkel; das Röstprofil stellt sie auf „auto“ (siehe [Themenformat](docs/themenformat.md#wünsche-und-automatik)).
+- **Espresso:** Mit der Espressomaschine bestellt etwa jeder dritte Gast einen Espresso. Die Maschine brüht von selbst, Antippen brüht schneller.
 - **Ausbau:** Nach der Helferin kommen Kundenstopper, Trommelröster, Röstprofil und Café, danach Lastenrad, Espressomaschine, Gasbrenner und Röstkurs. Mehr Gäste und mehr Röster wechseln sich ab, damit sich Rühren lange lohnt.
 - **Umzug (Prestige):** Danach kann man ins Hafenviertel umziehen, laut Simulator nach etwa 15 Minuten aktivem Spiel. Der Durchgang beginnt neu, die Gäste zahlen dort das Doppelte. Das Spiel speichert im Browser, zahlt einen Offline-Ertrag und bietet Boost und Offline-Verdopplung an, per Werbung oder als Kauf.
 - **Logo:** Logo A „Röstetikett“ vom Design-Board. Es steht in der Mitte, solange das Spiel lädt, und dient als Symbol im Browser-Tab.
@@ -71,7 +72,7 @@ Zugangsdaten, Schlüssel und Publisher-IDs gehören nicht ins Repository, auch n
 
 ## Speicherstand
 
-- **Wo:** im `localStorage` des Browsers unter `kaffeeroesterei.save`. Gespeichert werden Standort, Geld, Ausbau, der Röstgrad jedes Trommelrösters, Säcke im Wagen, Statistiken, das aktuelle Ziel, die Restzeit eines Boosts, die Boosts per Werbung am aktuellen Tag und die Einstellungen, die der Spieler gewählt hat (Sprache, Ton). Gäste auf der Straße und Chargen im Röster beginnen nach dem Laden neu.
+- **Wo:** im `localStorage` des Browsers unter `kaffeeroesterei.save`. Gespeichert werden Standort, Geld, Ausbau, der Röstgrad jedes Trommelrösters, Säcke im Wagen, fertige Espresso-Tassen, Statistiken, das aktuelle Ziel, die Restzeit eines Boosts, die Boosts per Werbung am aktuellen Tag und die Einstellungen, die der Spieler gewählt hat (Sprache, Ton). Gäste auf der Straße und Chargen im Röster beginnen nach dem Laden neu.
 - **Wann:** beim Start, alle 10 Sekunden, solange das Spiel sichtbar ist, wenn der Tab verborgen oder geschlossen wird, nach jedem Kauf und nach dem Wechsel von Sprache oder Ton.
 - **Version 2:** Spielstände des ersten Spiels (Version 1) werden nicht übernommen, sondern unter `kaffeeroesterei.save:unreadable` beiseitegelegt.
 - **Neu starten:** löscht den Fortschritt, die Einstellungen bleiben.
