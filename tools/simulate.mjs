@@ -25,7 +25,8 @@ const CASUAL_DRUM_SECONDS = 30;
 //   wish on the gauge and sets every drum to the first open wish whenever it
 //   starts a batch;
 // - "casual" never stirs, stops ejecting by hand once a helper does it and
-//   sets the drums only every CASUAL_DRUM_SECONDS.
+//   looks at the drums only every CASUAL_DRUM_SECONDS, then sets each one
+//   when it starts its next batch.
 // Both save for the upgrade the current goal asks for and do what a goal
 // asks them to tap; while the goal asks for something else (or after the
 // last goal) they buy what they can afford, tap the special delivery when it
@@ -34,8 +35,9 @@ const CASUAL_DRUM_SECONDS = 30;
 // from the move.
 export const PLAYERS = ['active', 'casual'];
 
-// Sets a drum, by tapping it as a player would, to the first wish in line
-// that nothing else covers. The drum itself is left out of the plan for that.
+// Sets an empty drum, by tapping it as a player would, to the first wish in
+// line that nothing else covers. Put on "auto" for a moment, an empty drum
+// covers nothing in the plan, so it is left out.
 function setDrum(rules, s, index) {
   const d = s.drums[index];
   const level = d.level;
@@ -58,6 +60,7 @@ export function play(rules, kind, seed, until) {
   };
   let sinceTap = 0;
   let sinceDrums = 0;
+  const drumsDue = new Set();
   let lastProgress = 0;
   let longestWait = 0;
   const idle = { steps: 0, full: 0, starved: 0, windows: 0, idleWindows: 0, run: 0, longest: 0 };
@@ -75,13 +78,14 @@ export function play(rules, kind, seed, until) {
         rules.tapPan(s);
       }
     }
-    if (kind === 'active') {
-      s.drums.forEach((d, index) => {
-        if (d.phase === 'empty') setDrum(rules, s, index);
-      });
-    } else if ((sinceDrums += STEP_SECONDS) >= CASUAL_DRUM_SECONDS) {
+    if (kind === 'active' || (sinceDrums += STEP_SECONDS) >= CASUAL_DRUM_SECONDS) {
       sinceDrums = 0;
-      s.drums.forEach((d, index) => setDrum(rules, s, index));
+      s.drums.forEach((d, index) => drumsDue.add(index));
+    }
+    for (const index of drumsDue) {
+      if (s.drums[index]?.phase !== 'empty') continue;
+      setDrum(rules, s, index);
+      drumsDue.delete(index);
     }
     const goal = rules.currentGoal(s);
     if (goal && !goal.done && goal.condition.stat === 'switches' && s.drums.length > 0) rules.tapDrum(s, 0);

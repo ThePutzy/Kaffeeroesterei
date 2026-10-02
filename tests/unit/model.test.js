@@ -290,7 +290,7 @@ test('a cart with every shelf full counts as full', () => {
 
 test('the plan: the cart, trays and set drums cover wishes first', () => {
   const s = quiet(withDrums(1));
-  assert.deepEqual(plan(s), { pan: null, drums: ['medium'], open: [] });
+  assert.deepEqual(plan(s), { pan: null, wish: null, drums: ['medium'], open: [] });
   guest(s, 'dark');
   guest(s, 'light');
   guest(s, 'medium');
@@ -299,9 +299,13 @@ test('the plan: the cart, trays and set drums cover wishes first', () => {
   assert.deepEqual(plan(s).open, ['light']);
   s.owned.helper = 0;
   assert.equal(plan(s).pan, 'light', 'the pan without a helper shows the first open wish');
+  assert.equal(plan(s).wish, 'light');
+  guest(s, 'dark');
   s.pan.phase = 'roasting';
   s.pan.p = 0.7;
-  assert.equal(plan(s).pan, null, 'a light roast can no longer come from this batch');
+  assert.equal(plan(s).wish, 'dark', 'first a wish this batch can still become');
+  s.customers.pop();
+  assert.equal(plan(s).wish, 'light', 'then the first open one, even if this batch is past it');
 });
 
 test('the plan: the helper and drums on "auto" take open wishes, furthest along first', () => {
@@ -312,12 +316,22 @@ test('the plan: the helper and drums on "auto" take open wishes, furthest along 
   s.pan.p = 0.2;
   Object.assign(s.drums[0], { phase: 'roasting', p: 0.5 });
   Object.assign(s.drums[1], { phase: 'roasting', p: 0.7 });
-  const { pan, drums, open } = plan(s);
+  const { pan, wish, drums, open } = plan(s);
   // The drum at 0.7 can still make dark; the one at 0.5 takes three light
   // wishes, and the pan the light wish that is left.
   assert.deepEqual(drums, ['light', 'dark']);
   assert.equal(pan, 'light');
+  assert.equal(wish, 'light');
   assert.deepEqual(open, []);
+});
+
+test('the plan: the helper keeps the shelves stocked, but the gauge shows no wish then', () => {
+  const s = quiet(createState(1));
+  Object.assign(s.owned, { biggerPan: 1, sign: 1, helper: 1 });
+  Object.assign(s.pan, { phase: 'roasting', p: 0.1 });
+  assert.deepEqual([plan(s).pan, plan(s).wish], ['medium', null]);
+  guest(s, 'light');
+  assert.deepEqual([plan(s).pan, plan(s).wish], ['light', 'light']);
 });
 
 test('the plan: with nothing open, automatic roasters keep the shelves stocked', () => {
