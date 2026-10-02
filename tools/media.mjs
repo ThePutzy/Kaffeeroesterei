@@ -64,7 +64,7 @@ export const COVER_SCENE = {
     money: 3000,
     rng: 4,
     owned: ownAll(),
-    stats: { taps: 500, manualEjects: 70, ejects: 400, sales: 700, matched: 380, lost: 6, revenue: 12000 },
+    stats: { taps: 500, manualEjects: 70, ejects: 400, sales: 700, lost: 6, revenue: 12000 },
     goal: theme.goals.length,
     nextDeliveryAt: 2000,
   },
@@ -96,19 +96,15 @@ export const SHOTS = [
       money: 78,
       rng: 11,
       owned: { biggerPan: 1, sign: 1 },
-      stats: { taps: 40, manualEjects: 8, ejects: 8, sales: 12, matched: 5, lost: 0, revenue: 90 },
+      stats: { taps: 40, manualEjects: 8, ejects: 8, sales: 12, lost: 0, revenue: 90 },
       goal: goalIndex('helper'),
       nextDeliveryAt: 600,
     },
     async play(shot) {
       await shot.wait(0.3);
       await shot.tap(STIR); // loads the pan
-      // Stir until the roast the first guest wishes for, then eject.
-      const target = await shot.game(({ state, rules }) => {
-        const guest = state.customers.find((customer) => customer.phase === 'queue');
-        const level = rules.theme.roast.levels.find((candidate) => candidate.id === (guest?.order ?? rules.theme.roast.defaultLevel));
-        return level.target;
-      });
+      // Stir until the roast a guest is waiting for, then eject.
+      const target = await shot.game(({ state, rules }) => rules.levelTarget(rules.plan(state).pan ?? rules.theme.roast.defaultLevel));
       while ((await shot.game(({ state }) => state.pan.p)) < target) {
         await shot.wait(0.16);
         await shot.tap(STIR);
@@ -125,10 +121,10 @@ export const SHOTS = [
     warmup: 10,
     state: {
       t: 800,
-      money: 2330,
+      money: 2530,
       rng: 5,
       owned: ownAll(['diploma']),
-      stats: { taps: 400, manualEjects: 60, ejects: 300, sales: 500, matched: 260, lost: 4, revenue: 7000 },
+      stats: { taps: 400, manualEjects: 60, ejects: 300, sales: 500, lost: 4, revenue: 7000 },
       goal: goalIndex('diploma'),
       nextDeliveryAt: 2000,
     },
@@ -146,7 +142,7 @@ export const SHOTS = [
       money: theme.locations[1].moveCost + 60,
       rng: 3,
       owned: ownAll(),
-      stats: { taps: 500, manualEjects: 70, ejects: 400, sales: 700, matched: 380, lost: 6, revenue: 12000 },
+      stats: { taps: 500, manualEjects: 70, ejects: 400, sales: 700, lost: 6, revenue: 12000 },
       goal: theme.goals.length,
       nextDeliveryAt: 2000,
     },
@@ -167,7 +163,7 @@ export const SHOTS = [
       rng: 9,
       location: 1,
       owned: { biggerPan: 1, sign: 1, helper: 1, board: 1, drum: 2, profile: 1, cafe: 1 },
-      stats: { taps: 60, manualEjects: 6, ejects: 90, sales: 140, matched: 80, lost: 1, revenue: 1500 },
+      stats: { taps: 60, manualEjects: 6, ejects: 90, sales: 140, lost: 1, revenue: 1500 },
       goal: goalIndex('cargoBike'),
       nextDeliveryAt: 2000,
     },

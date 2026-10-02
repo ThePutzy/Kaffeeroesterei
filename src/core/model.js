@@ -6,7 +6,7 @@
 // Positions of guests and the delivery bike are scene units, so the theme's
 // scene only has to draw them.
 
-const STATS = ['taps', 'manualEjects', 'ejects', 'sales', 'matched', 'lost', 'revenue'];
+const STATS = ['taps', 'switches', 'manualEjects', 'ejects', 'sales', 'lost', 'revenue'];
 const EFFECTS = ['panBags', 'capacity', 'priceFactor', 'arrivalFactor', 'roastFactor', 'panAutomatic', 'followWishes', 'roaster'];
 const ROASTER_FIELDS = ['roastSeconds', 'tapHeat', 'coolSeconds', 'loadDelay', 'bags'];
 
@@ -46,11 +46,11 @@ export function validateTheme(theme) {
   }
 
   const sales = theme?.sales ?? {};
-  for (const field of ['basePrice', 'matchFactor', 'capacity', 'incomeWindowSeconds']) {
+  for (const field of ['basePrice', 'capacity', 'incomeWindowSeconds']) {
     check(isPositive(sales[field]), `sales.${field} must be above 0`);
   }
   const guests = theme?.guests ?? {};
-  for (const field of ['firstArrival', 'arrivalSeconds', 'walkSpeed', 'buySeconds']) {
+  for (const field of ['firstArrival', 'arrivalSeconds', 'walkSpeed', 'buySeconds', 'patienceSeconds']) {
     check(isPositive(guests[field]), `guests.${field} must be above 0`);
   }
   check(isCount(guests.arrivalSpread) && guests.arrivalSpread < 2, 'guests.arrivalSpread must be between 0 and 2');
@@ -163,6 +163,17 @@ export function createRules(theme) {
     return { kind, phase: 'empty', p: 0, timer: roasters[kind].loadDelay, batch: null, crack: false, second: false };
   }
 
+  // What a drum can be set to: a roast level, and with the roast profile
+  // "auto" (it follows the wishes in line, see plan()).
+  function drumLevels(s) {
+    return anyOwned(s, 'followWishes') ? [...LEVELS, 'auto'] : LEVELS;
+  }
+
+  // A new drum starts on "auto" if it can, otherwise on the default level.
+  function drum(s, kind) {
+    return { ...roaster(kind), level: drumLevels(s).at(-1) === 'auto' ? 'auto' : roast.defaultLevel };
+  }
+
   function emit(s, type, data = {}) {
     s.events.push({ type, t: s.t, ...data });
   }
@@ -257,14 +268,24 @@ export function createRules(theme) {
     return roasters[s.drums[which].kind].bags;
   }
 
+  // The cart has a shelf for every roast level: capacity is bags per shelf,
+  // so a full shelf never blocks the other roasts.
   function capacity(s) {
     return largest(s, 'capacity', sales.capacity);
   }
 
+  function cartCapacity(s) {
+    return capacity(s) * LEVELS.length;
+  }
+
+  function stockOf(s, level) {
+    return s.stock.reduce((count, bag) => (bag === level ? count + 1 : count), 0);
+  }
+
   // The location and the boost multiply the rounded price, so "twice as much"
   // is exactly twice as much.
-  function price(s, matched) {
-    const local = Math.round(sales.basePrice * product(s, 'priceFactor') * (matched ? sales.matchFactor : 1));
+  function price(s) {
+    const local = Math.round(sales.basePrice * product(s, 'priceFactor'));
     return Math.round(local * (locationOf(s).priceFactor ?? 1)) * boostFactor(s);
   }
 
@@ -287,12 +308,17 @@ export function createRules(theme) {
     }
   }
 
+  // Sets a drum to its next roast level (light, medium, dark, then "auto"
+  // with the roast profile). A batch under way aims for the new level too;
+  // if it is already past that level, it comes out now.
   function tapDrum(s, index) {
-    const drum = s.drums[index];
-    if (!drum || drum.phase !== 'roasting') return;
-    s.stats.taps += 1;
-    heat(s, drum, index, roasters[drum.kind].tapHeat);
-    emit(s, 'stir', { roaster: index });
+    const d = s.drums[index];
+    if (!d) return false;
+    const options = drumLevels(s);
+    d.level = options[(options.indexOf(d.level) + 1) % options.length];
+    s.stats.switches += 1;
+    emit(s, 'switch', { roaster: index, level: d.level });
+    return true;
   }
 
   // Ends a batch by hand. Possible from the first crack on.
@@ -328,7 +354,9 @@ export function createRules(theme) {
     if (cost === undefined || s.money < cost) return false;
     s.money -= cost;
     s.owned[id] = itemCount(s, id) + 1;
-    if (item.effects?.roaster) s.drums.push(roaster(item.effects.roaster));
+    if (item.effects?.roaster) s.drums.push(drum(s, item.effects.roaster));
+    // The roast profile puts every drum on "auto".
+    if (item.effects?.followWishes) for (const d of s.drums) d.level = 'auto';
     emit(s, 'purchase', { id });
     return true;
   }
@@ -364,13 +392,14 @@ export function createRules(theme) {
       s.boost = Math.max(0, s.boost - dt);
       if (s.boost === 0) emit(s, 'boostEnd');
     }
-    stepRoaster(s, s.pan, 'pan', dt);
-    s.drums.forEach((drum, index) => stepRoaster(s, drum, index, dt));
+    const aims = plan(s, dt);
+    stepRoaster(s, s.pan, 'pan', dt, aims.pan);
+    s.drums.forEach((d, index) => stepRoaster(s, d, index, dt, aims.drums[index]));
     stepCustomers(s, dt);
     stepDelivery(s, dt);
     stepGoal(s, dt);
     s.sales = s.sales.filter((sale) => s.t - sale.t <= sales.incomeWindowSeconds);
-    s.stockFullFor = s.stock.length >= capacity(s) ? s.stockFullFor + dt : 0;
+    s.stockFullFor = s.stock.length >= cartCapacity(s) ? s.stockFullFor + dt : 0;
   }
 
   function load(s, r, which) {
@@ -403,30 +432,77 @@ export function createRules(theme) {
     emit(s, 'eject', { roaster: which, level, bags });
   }
 
-  // With the roast profile, machines roast what the first guest without a
-  // matching bag in the cart wants; otherwise they aim for the default level.
-  function ejectTarget(s) {
-    if (!anyOwned(s, 'followWishes')) return TARGETS[roast.defaultLevel];
-    const inStock = Object.fromEntries(LEVELS.map((level) => [level, 0]));
-    for (const level of s.stock) inStock[level] += 1;
-    for (const guest of queue(s)) {
-      if (inStock[guest.order] > 0) inStock[guest.order] -= 1;
-      else return TARGETS[guest.order];
-    }
-    return TARGETS[roast.defaultLevel];
+  function roastRate(s, r) {
+    return 1 / (roasters[r.kind].roastSeconds * product(s, 'roastFactor'));
   }
 
-  function stepRoaster(s, r, which, dt) {
-    const spec = roasters[r.kind];
+  // Which roast level each roaster works toward, and the wishes in line that
+  // nothing covers yet ("open", in line order). The cart, the batches on the
+  // trays and the drums set to a level cover wishes first. Then the pan with
+  // a helper and the drums on "auto" each take the first open wish they can
+  // still reach within dt, the one furthest along first, and cover as many
+  // wishes of that level as their batch has bags. With no such wish they
+  // keep the cart stocked: the level it has least of, measured against how
+  // often guests wish for it. The pan without a helper gets the first wish
+  // left open, or null: what the player should roast next.
+  function plan(s, dt = 0) {
+    const open = queue(s)
+      .filter((guest) => guest.phase === 'queue')
+      .map((guest) => guest.order);
+    const have = Object.fromEntries(LEVELS.map((level) => [level, 0]));
+    const cover = (level, count) => {
+      have[level] += count;
+      for (let i = 0; i < count; i += 1) {
+        const at = open.indexOf(level);
+        if (at < 0) return;
+        open.splice(at, 1);
+      }
+    };
+    for (const level of s.stock) cover(level, 1);
+    const all = [['pan', s.pan], ...s.drums.map((d, index) => [index, d])];
+    for (const [, r] of all) if (r.batch) cover(r.batch.level, r.batch.bags);
+    const aims = { pan: null, drums: s.drums.map((d) => (d.level === 'auto' ? null : d.level)), open };
+    s.drums.forEach((d, index) => {
+      if (d.level !== 'auto' && (d.phase === 'empty' || d.phase === 'roasting')) cover(d.level, batchBags(s, index));
+    });
+    const stockUp = (next) => {
+      let best = null;
+      for (const level of roast.levels) {
+        if (!(level.wish > 0) || next >= RANGES[level.id][1]) continue;
+        const option = { id: level.id, room: have[level.id] < capacity(s), share: have[level.id] / level.wish, wish: level.wish };
+        const better = !best || (option.room && !best.room) || (option.room === best.room && (option.share < best.share || (option.share === best.share && option.wish > best.wish)));
+        if (better) best = option;
+      }
+      return best?.id ?? null;
+    };
+    const following = all
+      .filter(([which, r]) => r.phase === 'roasting' && isAutomatic(s, which) && (which === 'pan' || r.level === 'auto'))
+      .sort((a, b) => b[1].p - a[1].p);
+    for (const [which, r] of following) {
+      const next = r.p + roastRate(s, r) * dt;
+      const level = open.find((wish) => next < RANGES[wish][1]) ?? stockUp(next);
+      if (which === 'pan') aims.pan = level;
+      else aims.drums[which] = level;
+      if (level) cover(level, batchBags(s, which));
+    }
+    if (!(isAutomatic(s, 'pan') && s.pan.phase === 'roasting')) {
+      const p = s.pan.phase === 'roasting' ? s.pan.p : 0;
+      aims.pan = open.find((wish) => p < RANGES[wish][1]) ?? null;
+    }
+    return aims;
+  }
+
+  // aim: the level from plan(). Only automatic roasters eject on their own.
+  function stepRoaster(s, r, which, dt, aim) {
     const automatic = isAutomatic(s, which);
     if (r.phase === 'empty') {
       if (!automatic) return;
       r.timer -= dt;
       if (r.timer <= 0) load(s, r, which);
     } else if (r.phase === 'roasting') {
-      heat(s, r, which, dt / (spec.roastSeconds * product(s, 'roastFactor')));
+      heat(s, r, which, roastRate(s, r) * dt);
       // A batch left alone ends as the darkest roast; nothing is ever lost.
-      const target = automatic ? ejectTarget(s) : 1;
+      const target = automatic ? TARGETS[aim ?? roast.defaultLevel] : 1;
       if (r.p >= target || r.p >= 1) finish(s, r, which);
     } else if (r.phase === 'cooling') {
       r.timer -= dt;
@@ -439,9 +515,9 @@ export function createRules(theme) {
     }
   }
 
-  // Moves cooled bags to the cart; a full cart holds the roaster up.
+  // Moves cooled bags to the cart; a full shelf holds the roaster up.
   function unload(s, r, which) {
-    while (r.batch.bags > 0 && s.stock.length < capacity(s)) {
+    while (r.batch.bags > 0 && stockOf(s, r.batch.level) < capacity(s)) {
       s.stock.push(r.batch.level);
       r.batch.bags -= 1;
       emit(s, 'bag', { roaster: which, level: r.batch.level });
@@ -455,10 +531,11 @@ export function createRules(theme) {
 
   // ---- Guests ------------------------------------------------------------------
 
+  // patience: seconds a guest in line still waits for the roast they wish for.
   function newCustomer(s, order, x, phase) {
     const id = s.nextId;
     s.nextId += 1;
-    return { id, order, x, phase, timer: 0, bag: null, look: Math.floor(random(s) * 1000) };
+    return { id, order, x, phase, timer: 0, patience: guests.patienceSeconds, bag: null, look: Math.floor(random(s) * 1000) };
   }
 
   function queue(s) {
@@ -479,34 +556,36 @@ export function createRules(theme) {
     return guests.arrivalSeconds * product(s, 'arrivalFactor') * (locationOf(s).arrivalFactor ?? 1);
   }
 
+  function lose(s, guest) {
+    s.stats.lost += 1;
+    s.stats.lostAt = s.t;
+    emit(s, 'lost', { id: guest.id });
+  }
+
   function arrive(s) {
     const order = pickOrder(s);
     if (queue(s).length >= SLOTS.length) {
       // The line is full: this guest looks, turns around and leaves.
-      s.customers.push(newCustomer(s, order, guests.spawnX, 'pass'));
-      s.stats.lost += 1;
-      s.stats.lostAt = s.t;
-      emit(s, 'lost');
+      const guest = newCustomer(s, order, guests.spawnX, 'pass');
+      s.customers.push(guest);
+      lose(s, guest);
       return;
     }
     s.customers.push(newCustomer(s, order, guests.spawnX, 'queue'));
   }
 
+  // Guests buy only the roast they wish for.
   function sell(s, guest) {
-    let index = s.stock.indexOf(guest.order);
-    const matched = index >= 0;
-    if (!matched) index = 0;
-    const [level] = s.stock.splice(index, 1);
-    const earned = price(s, matched);
+    const [level] = s.stock.splice(s.stock.indexOf(guest.order), 1);
+    const earned = price(s);
     s.money += earned;
     s.stats.sales += 1;
     s.stats.revenue += earned;
-    if (matched) s.stats.matched += 1;
     s.sales.push({ t: s.t, price: earned });
     guest.phase = 'buying';
     guest.timer = guests.buySeconds;
     guest.bag = level;
-    emit(s, 'sale', { id: guest.id, level, price: earned, matched });
+    emit(s, 'sale', { id: guest.id, level, price: earned });
   }
 
   function stepCustomers(s, dt) {
@@ -521,8 +600,24 @@ export function createRules(theme) {
     line.forEach((guest, index) => {
       if (guest.phase === 'queue') guest.x = approach(guest.x, SLOTS[index], walk);
     });
-    const front = line[0];
-    if (front && front.phase === 'queue' && front.x === SLOTS[0] && s.stock.length > 0) sell(s, front);
+    // One guest at a time: the first in line who stands at their place and
+    // whose roast is on the cart, even if the guests ahead still wait.
+    if (!line.some((guest) => guest.phase === 'buying')) {
+      const next = line.find((guest, index) => guest.phase === 'queue' && guest.x === SLOTS[index] && s.stock.includes(guest.order));
+      if (next) sell(s, next);
+    }
+    // Patience runs out from the first sale on, so the first batches can
+    // take their time.
+    if (s.stats.sales > 0) {
+      for (const guest of line) {
+        if (guest.phase !== 'queue') continue;
+        guest.patience -= dt;
+        if (guest.patience <= 0) {
+          guest.phase = 'out';
+          lose(s, guest);
+        }
+      }
+    }
     for (const guest of s.customers) {
       if (guest.phase === 'buying') {
         guest.timer -= dt;
@@ -739,6 +834,7 @@ export function createRules(theme) {
       money: s.money,
       rng: s.rng,
       owned: { ...s.owned },
+      drumLevels: s.drums.map((d) => d.level),
       stock: [...s.stock],
       stats: { ...s.stats, lostAt: Number.isFinite(s.stats.lostAt) ? s.stats.lostAt : null },
       goal: s.goal.doneTimer > 0 ? s.goal.index + 1 : s.goal.index,
@@ -763,8 +859,16 @@ export function createRules(theme) {
       const count = saved.owned?.[item.id] ?? 0;
       if (!Number.isInteger(count) || count < 0) return null;
       s.owned[item.id] = Math.min(count, item.cost.length);
-      if (item.effects?.roaster) for (let i = 0; i < s.owned[item.id]; i += 1) s.drums.push(roaster(item.effects.roaster));
     }
+    // Drums after all purchases, so a new one knows about the roast profile.
+    for (const item of ITEMS) {
+      if (item.effects?.roaster) for (let i = 0; i < s.owned[item.id]; i += 1) s.drums.push(drum(s, item.effects.roaster));
+    }
+    // Saves from before the settings have none; unknown ones are dropped.
+    s.drums.forEach((d, index) => {
+      const level = Array.isArray(saved.drumLevels) ? saved.drumLevels[index] : undefined;
+      if (drumLevels(s).includes(level)) d.level = level;
+    });
     for (const stat of STATS) {
       const value = saved.stats?.[stat] ?? 0;
       if (!isCount(value)) return null;
@@ -772,7 +876,7 @@ export function createRules(theme) {
     }
     s.stats.lostAt = Number.isFinite(saved.stats?.lostAt) ? saved.stats.lostAt : -Infinity;
     const stock = Array.isArray(saved.stock) ? saved.stock.filter((level) => LEVELS.includes(level)) : [];
-    s.stock = stock.slice(0, capacity(s));
+    s.stock = stock.filter((level, index) => stock.slice(0, index).filter((other) => other === level).length < capacity(s));
     const goal = saved.goal ?? 0;
     if (!Number.isInteger(goal) || goal < 0) return null;
     s.goal.index = Math.min(goal, GOALS.length);
@@ -825,11 +929,14 @@ export function createRules(theme) {
     isAutomatic,
     batchBags,
     capacity,
+    cartCapacity,
+    stockOf,
     price,
     incomePerMinute,
     arrivalInterval,
     tapPan,
     tapDrum,
+    drumLevels,
     eject,
     itemCount,
     itemPrice,
@@ -839,7 +946,7 @@ export function createRules(theme) {
     tapDelivery,
     advance,
     step,
-    ejectTarget,
+    plan,
     queue,
     currentGoal,
     serializeState,
