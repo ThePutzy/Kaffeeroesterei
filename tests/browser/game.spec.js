@@ -33,7 +33,7 @@ test('the first batch: roast, first crack, eject, sell, buy the bigger pan', asy
   await eject.click();
 
   await page.clock.runFor(4000);
-  // Stirring +2, ejecting +3, selling +3 and a matched sale of 8.
+  // Stirring +2, ejecting +3, selling +3 and the sale of 8.
   await expect(html(page)).toHaveAttribute('data-money', '16');
   const buy = page.locator('.item-buy[data-id="biggerPan"]');
   await expect(buy).toBeEnabled();
