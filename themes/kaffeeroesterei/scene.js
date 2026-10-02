@@ -29,6 +29,10 @@ let SHELF_X = {};
 const SIGN_Y = -200;
 // Guests with less patience left than this show it.
 const IMPATIENT_SECONDS = 5;
+// The espresso machine in the café window, and what guests order from it.
+const MACHINE = { x: 712, y: 394 };
+let ESPRESSO_ORDER = 'espresso';
+let ESPRESSO_CUPS = 0;
 
 const ROAST_STOPS = [
   [0, [143, 170, 92]],
@@ -203,9 +207,18 @@ const BOARD = `
 </g>
 `;
 
-// Espresso machine in the top of the café window, above the cart's awning.
+// A cup of espresso on a saucer, standing on y = 0.
+function cupMarkup() {
+  return `<ellipse cy="-0.5" rx="7" ry="1.6" fill="#C9CFD4"/><path d="M-5 -10H5V-4Q5 0 0 0Q-5 0 -5 -4Z" fill="#F4E6CF" stroke="#8A6246" stroke-width="1.2"/><path d="M5 -8Q8.5 -8 8.5 -6Q8.5 -4 5 -4" stroke="#8A6246" stroke-width="1.2" fill="none"/><ellipse cy="-9.5" rx="4" ry="1.1" fill="#6E4023"/>`;
+}
+
+// Espresso machine in the top of the café window, above the cart's awning,
+// with the cups it has made next to it and how far the next one is above it.
 const ESPRESSO = `
 <g transform="translate(712 394)">
+  <rect x="-16" y="-45" width="32" height="5" rx="2.5" fill="#3A2A2A" opacity=".45"/>
+  <rect data-ref="brew-fill" x="-16" y="-45" width="0" height="5" rx="2.5" fill="#F2C14E"/>
+  <g data-ref="cups">${[30, 46, 62].map((x) => `<g class="ready-cup hidden" transform="translate(${x} 0)">${cupMarkup()}</g>`).join('')}</g>
   <rect x="-20" y="-36" width="40" height="36" rx="4" fill="#C9CFD4" stroke="#7A838B" stroke-width="2"/>
   <rect x="-20" y="-36" width="40" height="9" rx="4" fill="#8E979E"/>
   <rect x="-7" y="-25" width="14" height="7" rx="2" fill="#4A4646"/>
@@ -599,6 +612,7 @@ function guestMarkup(look) {
     <circle cx="-5" cy="-119" r="1.5" fill="#2A1A12"/>
     <g class="arm"><rect x="-5" y="-96" width="9" height="40" rx="4.5" fill="${darker(coat, 0.12)}"/><circle cx="-0.5" cy="-56" r="4.5" fill="${skin}"/>
       <g class="carried" opacity="0"><rect x="-9" y="-58" width="18" height="22" rx="3" fill="url(#g-kraft)"/><rect class="carried-label" x="-9" y="-50" width="18" height="6" fill="#E0803C"/></g>
+      <g class="carried-cup" opacity="0" transform="translate(0 -50)">${cupMarkup()}</g>
     </g>
   </g></g>
   <g class="bubble" transform="translate(0 -160)"><g class="bubble-body">
@@ -607,18 +621,21 @@ function guestMarkup(look) {
       <g transform="translate(-9 -2) rotate(-25)"><ellipse class="wish-bean" rx="9" ry="12" fill="#6E4023"/><path d="M0 -9Q-4 0 0 9" stroke="#FFFDF8" stroke-opacity=".7" stroke-width="2" fill="none"/></g>
       <g class="wish-dots"><circle cx="15" cy="-8" r="3.6"/><circle cx="15" cy="0" r="3.6"/><circle cx="15" cy="8" r="3.6"/></g>
     </g>
+    <g class="wish-cup" transform="translate(-1 9) scale(1.7)">${cupMarkup()}<path d="M-2 -13Q-4 -15 -2 -17M2 -13Q0 -15 2 -17" stroke="#C9B9A6" stroke-width="1" fill="none" stroke-linecap="round"/></g>
     <text class="sigh" x="0" y="4" text-anchor="middle" font-size="22" font-weight="700" fill="#6B5B4E">…</text>
   </g></g>`;
 }
 
 // ---- The scene ---------------------------------------------------------------
 
-export function createScene(svg, { firstCrack, slots, levels }) {
+export function createScene(svg, { firstCrack, slots, levels, espresso: espressoSettings = {} }) {
   FIRST_CRACK = firstCrack;
   SLOTS = slots;
   LABEL_COLORS = Object.fromEntries(levels.map((level) => [level.id, level.color]));
   LEVEL_DOTS = Object.fromEntries(levels.map((level, index) => [level.id, index + 1]));
   LEVEL_ROAST = Object.fromEntries(levels.map((level) => [level.id, level.target]));
+  ESPRESSO_ORDER = espressoSettings.order ?? ESPRESSO_ORDER;
+  ESPRESSO_CUPS = espressoSettings.cups ?? 0;
   // One shelf per roast level, side by side on the counter of the cart.
   SHELF_X = Object.fromEntries(levels.map((level, index) => [level.id, 662 + ((index + 0.5) * 170) / levels.length]));
   svg.setAttribute('viewBox', '0 0 1000 700');
@@ -664,11 +681,16 @@ export function createScene(svg, { firstCrack, slots, levels }) {
   drums.forEach(({ g }, index) => {
     el('rect', { x: -70, y: -240, width: 140, height: 250, fill: 'transparent', 'data-hit': `drum-${index}`, class: 'hit' }, g);
   });
+  // Big enough to tap on a phone (about 44 px), though the machine is small.
+  const espressoHit = el('rect', { x: MACHINE.x - 44, y: MACHINE.y - 90, width: 126, height: 114, fill: 'transparent', 'data-hit': 'espresso', class: 'hit hidden' }, svg);
   const fxLayer = group(svg, '', { class: 'fx' });
 
   const buildings = svg.querySelector('[data-ref="buildings"]');
   const harborBuildings = svg.querySelector('[data-ref="harbor-buildings"]');
   const panBeans = [...pan.querySelectorAll('.bean')];
+  const brewFill = espresso.querySelector('[data-ref="brew-fill"]');
+  const readyCups = [...espresso.querySelectorAll('.ready-cup')];
+  let cupsShown = 0;
   const sieveBeans = sieve.querySelector('[data-ref="sieve-beans"]');
   const guestNodes = new Map();
   const particles = [];
@@ -782,10 +804,14 @@ export function createScene(svg, { firstCrack, slots, levels }) {
       if (!node) {
         const g = group(guestsLayer, guestMarkup(guest.look), { class: 'guest' });
         node = { g, x: guest.x, dots: [...g.querySelectorAll('.wish-dots circle')] };
-        g.querySelector('.wish-bean').setAttribute('fill', roastColor(LEVEL_ROAST[guest.order]));
-        node.dots.forEach((dot, i) => {
-          dot.setAttribute('fill', i < LEVEL_DOTS[guest.order] ? LABEL_COLORS[guest.order] : '#E6DDD2');
-        });
+        if (guest.order === ESPRESSO_ORDER) {
+          g.classList.add('espresso');
+        } else {
+          g.querySelector('.wish-bean').setAttribute('fill', roastColor(LEVEL_ROAST[guest.order]));
+          node.dots.forEach((dot, i) => {
+            dot.setAttribute('fill', i < LEVEL_DOTS[guest.order] ? LABEL_COLORS[guest.order] : '#E6DDD2');
+          });
+        }
         guestNodes.set(guest.id, node);
       }
       const moving = Math.abs(guest.x - node.x) > 0.01;
@@ -796,7 +822,7 @@ export function createScene(svg, { firstCrack, slots, levels }) {
       node.g.classList.toggle('served', Boolean(guest.bag));
       node.g.classList.toggle('impatient', guest.phase === 'queue' && guest.patience < IMPATIENT_SECONDS);
       if (guest.bag && !node.bagSet) {
-        node.g.querySelector('.carried-label').setAttribute('fill', LABEL_COLORS[guest.bag]);
+        if (guest.bag !== ESPRESSO_ORDER) node.g.querySelector('.carried-label').setAttribute('fill', LABEL_COLORS[guest.bag]);
         node.bagSet = true;
       }
       node.x = guest.x;
@@ -865,7 +891,19 @@ export function createScene(svg, { firstCrack, slots, levels }) {
     cafe.classList.toggle('hidden', !(s.owned.cafe > 0));
     buildings.classList.toggle('hidden', s.owned.cafe > 0);
     board.classList.toggle('hidden', !(s.owned.board > 0));
-    espresso.classList.toggle('hidden', !(s.owned.espresso > 0 && s.owned.cafe > 0));
+    const machine = s.owned.espresso > 0 && s.owned.cafe > 0;
+    espresso.classList.toggle('hidden', !machine);
+    espressoHit.classList.toggle('hidden', !machine);
+    if (machine) {
+      const cups = Math.min(s.espresso.cups, readyCups.length);
+      if (cups !== cupsShown) {
+        readyCups.forEach((cup, i) => cup.classList.toggle('hidden', i >= cups));
+        if (cups > cupsShown) readyCups[cups - 1]?.classList.add('pop');
+        cupsShown = cups;
+      }
+      brewFill.setAttribute('width', String(32 * Math.min(1, s.espresso.p)));
+      espresso.classList.toggle('full', s.espresso.cups >= ESPRESSO_CUPS);
+    }
     cargoBike.classList.toggle('hidden', !(s.owned.cargoBike > 0));
     diploma.classList.toggle('hidden', !(s.owned.diploma > 0));
     flame.classList.toggle('strong', s.owned.burner > 0);
@@ -910,6 +948,9 @@ export function createScene(svg, { firstCrack, slots, levels }) {
           void pan.getBBox();
           pan.classList.add('stirred');
         }
+        break;
+      case 'brewTap':
+        puff({ x: MACHINE.x, y: MACHINE.y - 30 });
         break;
       case 'switch': {
         const sign = drums[event.roaster]?.ref('sign');
@@ -963,6 +1004,7 @@ export function createScene(svg, { firstCrack, slots, levels }) {
       queue: { x: SLOTS[1], y: FLOOR - 170 },
       drum: (index) => ({ x: DRUM_X[index], y: FLOOR - 120 }),
       drumSign: (index) => ({ x: DRUM_X[index], y: FLOOR + SIGN_Y - 30 }),
+      espresso: { x: MACHINE.x + 10, y: MACHINE.y - 40 },
       guest: (x) => ({ x, y: FLOOR - 130 }),
       bike: (x) => ({ x: x - 30, y: BIKE_Y - 90 }),
     },

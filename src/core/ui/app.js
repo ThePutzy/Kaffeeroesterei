@@ -115,6 +115,7 @@ export function createApp({
     ref('stats-cart-label').textContent = t('stats.cart');
     ref('stats-guests-label').textContent = t('stats.guests');
     ref('stats-price-label').textContent = t('stats.price');
+    ref('stats-espresso-label').textContent = t('stats.espresso');
     ref('stats-lost-label').textContent = t('stats.lost');
     ref('stats-location-label').textContent = t('stats.location');
     ref('language').textContent = t('settings.languageShort');
@@ -233,6 +234,12 @@ export function createApp({
         flyCoins(sceneClient(point), 3);
         break;
       }
+      case 'brewTap':
+        audio.play('steam', {}, 0.06);
+        break;
+      case 'brewed':
+        audio.play('cup', {}, 0.1);
+        break;
       case 'switch':
         audio.play('switch', {}, 0.03);
         floater(scene.points.drumSign(event.roaster), t(`levels.${event.level}`), 'note');
@@ -553,6 +560,10 @@ export function createApp({
     cart.classList.toggle('warn', state.stock.length >= rules.cartCapacity(state));
     ref('stats-guests').textContent = t('stats.guestsValue', { seconds: formatNumber(rules.arrivalInterval(state), i18n.language) });
     ref('stats-price').textContent = money(rules.price(state));
+    const espresso = state.owned.espresso > 0;
+    ref('stats-espresso-label').hidden = !espresso;
+    ref('stats-espresso').hidden = !espresso;
+    if (espresso) ref('stats-espresso').textContent = money(rules.price(state, rules.espresso));
     const lost = ref('stats-lost');
     lost.textContent = money(state.stats.lost);
     lost.classList.toggle('warn', state.t - state.stats.lostAt < 10);
@@ -594,9 +605,15 @@ export function createApp({
       placeHand(box.left + box.width / 2, box.top + 6);
       return;
     }
-    // A goal that asks to tap a drum (the drum's roast).
+    // Goals that ask to tap something in the scene: a drum (its roast) or
+    // the espresso machine.
     if (goal.condition.stat === 'switches' && state.drums.length > 0) {
       const point = sceneClient(scene.points.drumSign(0));
+      placeHand(point.x, point.y);
+      return;
+    }
+    if (goal.condition.stat === 'brews' && state.owned.espresso > 0) {
+      const point = sceneClient(scene.points.espresso);
       placeHand(point.x, point.y);
       return;
     }
@@ -806,6 +823,7 @@ export function createApp({
     const kind = hit.dataset.hit;
     if (kind === 'pan') rules.tapPan(state);
     else if (kind === 'delivery') rules.tapDelivery(state);
+    else if (kind === 'espresso') rules.tapEspresso(state);
     else if (kind.startsWith('drum-')) rules.tapDrum(state, Number(kind.slice(5)));
   });
 
