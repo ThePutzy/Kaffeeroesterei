@@ -68,7 +68,7 @@ Die Mechanik selbst gehört zum Spielkern: Röstcharge, erster und zweiter Crack
   - Zuerst decken der Wagen, die Chargen auf den Kühlblechen und die Trommelröster mit festem Röstgrad Wünsche ab.
   - Dann nehmen die Pfanne mit Helferin und die Trommelröster auf „auto“ je den ersten offenen Wunsch, den ihre Charge noch erreichen kann. Wer schon weiter geröstet hat, wählt zuerst. Jeder deckt so viele Wünsche dieses Röstgrads ab, wie seine Charge Säcke hat.
   - Ist nichts offen, füllen sie die Fächer auf: den Röstgrad, von dem im Wagen am wenigsten liegt, gemessen daran, wie oft er gewünscht wird.
-  - Die Pfanne ohne Helferin bekommt den ersten Wunsch, der offen bleibt. Die Skala zeigt ihn dem Spieler an.
+  - Die Pfanne ohne Helferin bekommt den ersten Wunsch, der offen bleibt, bevorzugt einen, den die laufende Charge noch erreichen kann. Die Skala zeigt ihn dem Spieler an. Füllt die Helferin nur Fächer auf, zeigt die Skala keinen Wunsch.
 
 ## Speicherstand und Offline-Ertrag
 
@@ -114,7 +114,7 @@ Die Mechanik selbst gehört zum Spielkern: Röstcharge, erster und zweiter Crack
 
 `npm run sim` spielt das Thema mit zwei gescripteten Spielern und mehreren Seeds (`simulation.seeds`) bis `simulation.seconds`:
 - **aktiv:** rührt dreimal pro Sekunde, wirft aus, wenn die Röstung den Wunsch auf der Skala erreicht, und stellt jeden Trommelröster vor jeder Charge auf den ersten offenen Wunsch.
-- **gemütlich:** rührt nie, wirft nur von Hand aus, bis die Helferin das übernimmt, und stellt die Trommelröster nur alle 30 Sekunden um.
+- **gemütlich:** rührt nie, wirft nur von Hand aus, bis die Helferin das übernimmt, und schaut nur alle 30 Sekunden nach den Trommelröstern; dann stellt er jeden vor seiner nächsten Charge um.
 
 Beide kaufen, was das aktuelle Ziel verlangt, tippen, was ein Ziel antippen lässt, danach kaufen sie alles, was sie sich leisten können, und tippen auf die Sonderlieferung. Trommelröster auf „auto“ lassen sie dort. Sobald sie umziehen können, ziehen sie um; Zeitpunkte danach heißen `2:<Meilenstein>` und zählen ab dem Umzug. Boosts und Verdoppeln nutzen sie nicht; das Tempo gilt also für Spieler ohne Werbung. Das sind Annahmen, keine Messungen echter Spieler.
 
@@ -138,10 +138,10 @@ Der Unit-Test des Simulators verlangt für das Thema null Warnungen; eine Warnun
 
 **Stand 02.10.2026 (strenge Wünsche, einstellbare Trommelröster):**
 - aktiv: Trommelröster nach 2:01 bis 2:10, Café nach 3:35 bis 3:53, Röstkurs nach 11:55 bis 12:24, Umzug nach 15:14 bis 16:08; im zweiten Durchgang Café nach 2:02 bis 2:16, Röstkurs nach 6:13 bis 6:39
-- gemütlich: Café nach 4:55 bis 5:13, Röstkurs nach 14:27 bis 15:10, Umzug nach 18:18 bis 18:51; im zweiten Durchgang Röstkurs nach 7:45 bis 8:05
-- längste Wartezeit ohne Kauf, Ziel oder Umzug: 1:36 (aktiv), 1:41 (gemütlich)
+- gemütlich: Café nach 4:59 bis 5:40, Röstkurs nach 14:41 bis 15:33, Umzug nach 18:18 bis 19:12; im zweiten Durchgang Röstkurs nach 7:32 bis 8:05
+- längste Wartezeit ohne Kauf, Ziel oder Umzug: 1:36 (aktiv), 1:30 (gemütlich)
 - Leerlauf: höchstens 0:15 am Stück und 1 % der Zeit (aktiv), keiner beim gemütlichen Spieler
-- verlorene Gäste: 7 % (aktiv), 19 % (gemütlich)
+- verlorene Gäste: 7 % (aktiv), 20 % (gemütlich)
 - keine Warnungen
 - **Was sich mit den strengen Wünschen geändert hat:**
   - Preis je Sack 7,5 statt 5 (ohne Wunsch) und 8 (mit Wunsch). Gerundet sind das am Anfang 8, mit Café 11, mit Espressomaschine 16 und mit Röstkurs 20.
@@ -152,4 +152,4 @@ Der Unit-Test des Simulators verlangt für das Thema null Warnungen; eine Warnun
   - Trommelröster (jetzt 12 statt 10 Sekunden bis zur dunkelsten Röstung), dann Röstprofil und Café: Nachfrage und Röster etwa gleich.
   - zweiter Trommelröster, dann das Lastenrad (mehr Gäste, mehr Platz): Danach warten wieder Gäste, bis der Gasbrenner die Röster beschleunigt. Die Espressomaschine und der Röstkurs heben dazwischen die Preise.
   - Die Ziele für Einnahmen liegen jeweils etwa in der Mitte zwischen zwei Käufen, damit keine Pause länger als zwei Minuten wird. Im Hafenviertel gelten dieselben Schwellen; mit den doppelten Preisen erreicht man sie schneller, der zweite Durchgang ist darum kürzer.
-- Automatik am Ende des simulierten zweiten Durchgangs: etwa 2.260 bis 2.360 pro Minute, also 540.000 bis 570.000 für 8 Stunden offline.
+- Automatik am Ende des simulierten zweiten Durchgangs: etwa 2.260 bis 2.380 pro Minute, also 540.000 bis 570.000 für 8 Stunden offline.

@@ -363,8 +363,9 @@ export function createApp({
     const pan = state.pan;
     const roasting = pan.phase === 'roasting';
     const p = pan.phase === 'empty' ? 0 : pan.p;
-    // What a guest in line waits for and the pan can still roast (see plan()).
-    const wish = rules.plan(state).pan;
+    // What a guest in line waits for, preferably one the pan can still roast
+    // (see plan()).
+    const wish = rules.plan(state).wish;
     ref('needle').style.left = percent(p);
 
     const wishKey = `${wish}:${i18n.language}`;

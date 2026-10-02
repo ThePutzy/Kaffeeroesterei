@@ -171,7 +171,7 @@ export function createRules(theme) {
 
   // A new drum starts on "auto" if it can, otherwise on the default level.
   function drum(s, kind) {
-    return { ...roaster(kind), level: drumLevels(s).at(-1) === 'auto' ? 'auto' : roast.defaultLevel };
+    return { ...roaster(kind), level: anyOwned(s, 'followWishes') ? 'auto' : roast.defaultLevel };
   }
 
   function emit(s, type, data = {}) {
@@ -443,8 +443,10 @@ export function createRules(theme) {
   // still reach within dt, the one furthest along first, and cover as many
   // wishes of that level as their batch has bags. With no such wish they
   // keep the cart stocked: the level it has least of, measured against how
-  // often guests wish for it. The pan without a helper gets the first wish
-  // left open, or null: what the player should roast next.
+  // often guests wish for it. The pan without a helper (or between batches)
+  // gets the first wish left open, preferably one it can still reach.
+  // "wish" is the guest's wish the pan works for, or null: what the gauge
+  // shows the player.
   function plan(s, dt = 0) {
     const open = queue(s)
       .filter((guest) => guest.phase === 'queue')
@@ -461,7 +463,7 @@ export function createRules(theme) {
     for (const level of s.stock) cover(level, 1);
     const all = [['pan', s.pan], ...s.drums.map((d, index) => [index, d])];
     for (const [, r] of all) if (r.batch) cover(r.batch.level, r.batch.bags);
-    const aims = { pan: null, drums: s.drums.map((d) => (d.level === 'auto' ? null : d.level)), open };
+    const aims = { pan: null, wish: null, drums: s.drums.map((d) => (d.level === 'auto' ? null : d.level)), open };
     s.drums.forEach((d, index) => {
       if (d.level !== 'auto' && (d.phase === 'empty' || d.phase === 'roasting')) cover(d.level, batchBags(s, index));
     });
@@ -480,14 +482,16 @@ export function createRules(theme) {
       .sort((a, b) => b[1].p - a[1].p);
     for (const [which, r] of following) {
       const next = r.p + roastRate(s, r) * dt;
-      const level = open.find((wish) => next < RANGES[wish][1]) ?? stockUp(next);
-      if (which === 'pan') aims.pan = level;
+      const wish = open.find((level) => next < RANGES[level][1]) ?? null;
+      const level = wish ?? stockUp(next);
+      if (which === 'pan') Object.assign(aims, { pan: level, wish });
       else aims.drums[which] = level;
       if (level) cover(level, batchBags(s, which));
     }
     if (!(isAutomatic(s, 'pan') && s.pan.phase === 'roasting')) {
       const p = s.pan.phase === 'roasting' ? s.pan.p : 0;
-      aims.pan = open.find((wish) => p < RANGES[wish][1]) ?? null;
+      aims.pan = open.find((level) => p < RANGES[level][1]) ?? open[0] ?? null;
+      aims.wish = aims.pan;
     }
     return aims;
   }
