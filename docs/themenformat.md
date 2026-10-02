@@ -1,6 +1,6 @@
 # Themenformat und Balancing
 
-Das beschreibt, woraus ein Thema besteht, wie die Spielregeln (`src/core/model.js`) seine Zahlen nutzen und wie der Balance-Simulator (`tools/simulate.mjs`) das Tempo prüft. Stand: 01.10.2026, Schritt 4b des [Plans für das neue Spiel](umsetzungsplan-neues-spiel.md).
+Das beschreibt, woraus ein Thema besteht, wie die Spielregeln (`src/core/model.js`) seine Zahlen nutzen und wie der Balance-Simulator (`tools/simulate.mjs`) das Tempo prüft. Stand: 02.10.2026, nach den strengen Wünschen und den einstellbaren Trommelröstern (nach Schritt 5b des [Plans für das neue Spiel](umsetzungsplan-neues-spiel.md)).
 
 ## Was zu einem Thema gehört
 
@@ -15,7 +15,7 @@ Das beschreibt, woraus ein Thema besteht, wie die Spielregeln (`src/core/model.j
 
 `index.html` nennt den Themenordner für Logo und Symbol direkt, denn beide müssen sichtbar sein, bevor das Spiel sein Thema lädt. Ein Ziel mit einem anderen Thema bräuchte darum eine eigene Seite; ein Unit-Test erinnert daran.
 
-Die Mechanik selbst gehört zum Spielkern: Röstcharge, erster und zweiter Crack, Abkühlen, Wagen, Schlange, Wünsche der Gäste, Automatik, Sonderlieferung und Ziele.
+Die Mechanik selbst gehört zum Spielkern: Röstcharge, erster und zweiter Crack, Abkühlen, Wagen mit seinen Fächern, Schlange, Wünsche und Geduld der Gäste, Automatik, Sonderlieferung und Ziele.
 
 ## theme.json
 
@@ -25,10 +25,10 @@ Die Mechanik selbst gehört zum Spielkern: Röstcharge, erster und zweiter Crack
 | `stylesheet`, `scene` | Dateinamen im Themenordner, siehe oben |
 | `roast.firstCrack`, `roast.secondCrack` | Röstfortschritt (0 bis 1) des ersten und zweiten Cracks. Vor dem ersten Crack kann man nicht auswerfen. |
 | `roast.levels[]` | Röstgrade in aufsteigender Reihenfolge: `id`, `until` (Ende des Bereichs; der erste beginnt beim ersten Crack, der letzte endet bei 1), `target` (wo die Automatik auswirft), `wish` (Gewicht, wie oft Gäste ihn wünschen), `color` (Farbe von Etikett, Skala und Sprechblase) |
-| `roast.defaultLevel` | Röstgrad, den die Automatik ohne Röstprofil röstet |
+| `roast.defaultLevel` | Röstgrad, auf dem ein neuer Trommelröster ohne Röstprofil steht. Die Automatik wirft bei ihm aus, wenn sie keinen gewünschten Röstgrad mehr erreichen kann. |
 | `roasters.<art>` | `roastSeconds` (Dauer einer Charge ohne Rühren), `tapHeat` (Fortschritt je Rühren), `coolSeconds`, `loadDelay` (Pause, bis die Automatik neu befüllt), `bags` (Säcke je Charge). `pan` ist Pflicht; weitere Arten kauft man über den Ausbau. |
-| `sales` | `basePrice` (Preis je Sack), `matchFactor` (Faktor bei getroffenem Wunsch), `capacity` (Plätze im Wagen), `incomeWindowSeconds` (Zeitraum für die Anzeige „pro Minute“) |
-| `guests` | `firstArrival`, `arrivalSeconds` (mittlerer Abstand), `arrivalSpread` (Schwankung, 0,5 heißt ±25 %), `firstWish` (Wunsch des ersten Gasts, der schon wartet), `buySeconds`, `walkSpeed` sowie die Positionen in Szenen-Einheiten: `slots` (Plätze in der Schlange), `spawnX`, `turnX`, `exitX` |
+| `sales` | `basePrice` (Preis je Sack, vor dem Runden), `capacity` (Säcke je Fach; der Wagen hat ein Fach je Röstgrad), `incomeWindowSeconds` (Zeitraum für die Anzeige „pro Minute“) |
+| `guests` | `firstArrival`, `arrivalSeconds` (mittlerer Abstand), `arrivalSpread` (Schwankung, 0,5 heißt ±25 %), `firstWish` (Wunsch des ersten Gasts, der schon wartet), `buySeconds`, `walkSpeed`, `patienceSeconds` (so lange wartet ein Gast in der Schlange auf seinen Röstgrad, siehe unten) sowie die Positionen in Szenen-Einheiten: `slots` (Plätze in der Schlange), `spawnX`, `turnX`, `exitX` |
 | `delivery` | Sonderlieferung: `firstAt`, `gapSeconds` ([kürzester, längster] Abstand), `waitSeconds`, `speed`, `stopX`, `offstageX`, `rewardIncomeSeconds` (Belohnung: so viele Sekunden des aktuellen Ertrags), `minReward` |
 | `items[]` | Ausbau: `id`, `cost` (Preise der Reihe nach; nur Röster gibt es mehrmals), optional `reveal` (Bedingung, ab der man ihn sieht), `effects` |
 | `goals[]` | Ziele in Reihenfolge: `id`, `reward`, `done` (Bedingung), optional `tutorial: true` (nur im ersten Durchgang; nach einem Umzug übersprungen) |
@@ -43,23 +43,37 @@ Die Mechanik selbst gehört zum Spielkern: Röstcharge, erster und zweiter Crack
 | Effekt | Wirkung |
 | --- | --- |
 | `panBags` | Säcke je Pfannen-Charge; der größte Wert zählt |
-| `capacity` | Plätze im Wagen; der größte Wert zählt |
+| `capacity` | Säcke je Fach im Wagen; der größte Wert zählt |
 | `priceFactor` | multipliziert den Preis je Sack |
 | `arrivalFactor` | multipliziert den Abstand zwischen zwei Gästen; unter 1 kommen sie öfter |
 | `roastFactor` | multipliziert die Röstdauer aller Röster; unter 1 rösten sie schneller |
-| `panAutomatic` | die Pfanne röstet und wirft von selbst aus |
-| `followWishes` | die Automatik röstet, was der erste Gast ohne passenden Sack im Wagen wünscht |
+| `panAutomatic` | die Pfanne röstet und wirft von selbst aus, und zwar für die offenen Wünsche (siehe „Wünsche und Automatik“) |
+| `followWishes` | Trommelröster lassen sich zusätzlich auf „auto“ stellen; der Kauf stellt alle darauf |
 | `roaster` | jeder Kauf stellt einen weiteren Röster dieser Art auf (`roasters.<art>`) |
 
 **Bedingungen** haben entweder `stat` oder `owned`, optional `min` (Standard 1):
-- `{ "stat": "sales" }`: so viele Verkäufe. Statistiken: `taps`, `manualEjects`, `ejects`, `sales`, `matched`, `lost`, `revenue`.
+- `{ "stat": "sales" }`: so viele Verkäufe. Statistiken: `taps` (Pfanne befüllt oder gerührt), `switches` (Trommelröster umgestellt), `manualEjects`, `ejects`, `sales`, `lost`, `revenue`.
 - `{ "owned": "helper" }`: so viele Stück dieses Ausbaus.
 
 `validateTheme()` in `src/core/model.js` prüft das alles beim Start. Ein Fehler stoppt das Spiel mit einer Meldung, statt mit falschen Zahlen zu laufen.
 
+## Wünsche und Automatik
+
+- **Nur der Wunsch:** Ein Gast kauft nur einen Sack in dem Röstgrad, den er sich wünscht. Es gibt einen Preis je Sack.
+- **Bedienen:** Der Verkäufer bedient einen Gast nach dem anderen. Dran ist der erste Gast in der Schlange, der an seinem Platz steht und dessen Röstgrad im Wagen liegt, auch wenn Gäste vor ihm noch warten.
+- **Geduld:** Ab dem ersten Verkauf wartet ein Gast `guests.patienceSeconds` Sekunden. Kommt sein Röstgrad nicht, geht er und zählt als verloren, wie ein Gast, der vor einer vollen Schlange umkehrt. Vor dem ersten Verkauf läuft keine Geduld ab, damit man die ersten Chargen in Ruhe lernt.
+- **Fächer im Wagen:** Der Wagen hat ein Fach je Röstgrad mit `capacity` Säcken. Ein volles Fach hält nur die Röster auf, die gerade diesen Röstgrad abladen wollen; die anderen Fächer bleiben frei. Ohne Fächer konnte ein Trommelröster, der lange auf einem Röstgrad stand, den ganzen Wagen füllen. Dann stand die Rösterei still, bis genug Gäste genau diesen Röstgrad wollten.
+- **Trommelröster:** Jeder steht auf einem Röstgrad und röstet ihn. Antippen schaltet weiter: hell, mittel, dunkel und mit dem Röstprofil auch „auto“. Eine laufende Charge zielt dann auf den neuen Röstgrad; ist sie schon darüber hinaus, kommt sie sofort heraus.
+- **Plan der Automatik** (`plan()`): Er legt fest, worauf jeder Röster hinarbeitet.
+  - Zuerst decken der Wagen, die Chargen auf den Kühlblechen und die Trommelröster mit festem Röstgrad Wünsche ab.
+  - Dann nehmen die Pfanne mit Helferin und die Trommelröster auf „auto“ je den ersten offenen Wunsch, den ihre Charge noch erreichen kann. Wer schon weiter geröstet hat, wählt zuerst. Jeder deckt so viele Wünsche dieses Röstgrads ab, wie seine Charge Säcke hat.
+  - Ist nichts offen, füllen sie die Fächer auf: den Röstgrad, von dem im Wagen am wenigsten liegt, gemessen daran, wie oft er gewünscht wird.
+  - Die Pfanne ohne Helferin bekommt den ersten Wunsch, der offen bleibt. Die Skala zeigt ihn dem Spieler an.
+
 ## Speicherstand und Offline-Ertrag
 
-- **Speicherstand:** `serializeState()` schreibt Zeit, Geld, Zufallszahl, Ausbau, Säcke im Wagen, Statistiken, Ziel und die nächste Sonderlieferung. `sanitizeState()` prüft einen geladenen Stand und gibt `null` zurück, wenn er nicht passt. Unbekannte Teile des Ausbaus und Röstgrade fallen weg; Mengen werden auf das begrenzt, was das Thema zulässt (Käufe je Teil, Plätze im Wagen, Zahl der Ziele). Gäste und laufende Chargen beginnen nach dem Laden neu.
+- **Speicherstand:** `serializeState()` schreibt Zeit, Geld, Zufallszahl, Ausbau, den Röstgrad jedes Trommelrösters (`drumLevels`), Säcke im Wagen, Statistiken, Ziel und die nächste Sonderlieferung. `sanitizeState()` prüft einen geladenen Stand und gibt `null` zurück, wenn er nicht passt. Unbekannte Teile des Ausbaus und Röstgrade fallen weg, ebenso „auto“ ohne Röstprofil; Mengen werden auf das begrenzt, was das Thema zulässt (Käufe je Teil, Säcke je Fach, Zahl der Ziele). Gäste und laufende Chargen beginnen nach dem Laden neu.
+- **Ältere Spielstände:** Ohne `drumLevels` stehen die Trommelröster auf `roast.defaultLevel`, mit Röstprofil auf „auto“. Ziele werden nach ihrer Nummer gespeichert; weil das Ziel „match“ weggefallen ist und „switch“ und „earn6“ dazugekommen sind, kann ein älterer Spielstand ein Ziel überspringen oder wiederholen.
 - **Offline-Ertrag:** `automaticIncomePerMinute()` spielt eine Kopie des Spielstands ohne Eingaben, erst `offline.warmupSeconds`, dann `offline.sampleSeconds`, und misst die Einnahmen der zweiten Phase. `src/core/offline.js` zahlt davon `offline.rate` für die Zeit weg, höchstens `offline.maxHours` Stunden.
 - **Spielstand bei Abwesenheit:** Er läuft in dieser Zeit nicht weiter; Gäste, Röster und Sonderlieferung stehen danach dort, wo sie waren.
 
@@ -99,16 +113,16 @@ Die Mechanik selbst gehört zum Spielkern: Röstcharge, erster und zweiter Crack
 ## Balance-Simulator
 
 `npm run sim` spielt das Thema mit zwei gescripteten Spielern und mehreren Seeds (`simulation.seeds`) bis `simulation.seconds`:
-- **aktiv:** rührt dreimal pro Sekunde und wirft aus, wenn die Röstung zum Wunsch des ersten Gasts passt.
-- **gemütlich:** rührt nie und wirft nur von Hand aus, bis die Automatik das übernimmt.
+- **aktiv:** rührt dreimal pro Sekunde, wirft aus, wenn die Röstung den Wunsch auf der Skala erreicht, und stellt jeden Trommelröster vor jeder Charge auf den ersten offenen Wunsch.
+- **gemütlich:** rührt nie, wirft nur von Hand aus, bis die Helferin das übernimmt, und stellt die Trommelröster nur alle 30 Sekunden um.
 
-Beide kaufen, was das aktuelle Ziel verlangt, danach alles, was sie sich leisten können, und tippen auf die Sonderlieferung. Sobald sie umziehen können, ziehen sie um; Zeitpunkte danach heißen `2:<Meilenstein>` und zählen ab dem Umzug. Boosts und Verdoppeln nutzen sie nicht; das Tempo gilt also für Spieler ohne Werbung. Das sind Annahmen, keine Messungen echter Spieler.
+Beide kaufen, was das aktuelle Ziel verlangt, tippen, was ein Ziel antippen lässt, danach kaufen sie alles, was sie sich leisten können, und tippen auf die Sonderlieferung. Trommelröster auf „auto“ lassen sie dort. Sobald sie umziehen können, ziehen sie um; Zeitpunkte danach heißen `2:<Meilenstein>` und zählen ab dem Umzug. Boosts und Verdoppeln nutzen sie nicht; das Tempo gilt also für Spieler ohne Werbung. Das sind Annahmen, keine Messungen echter Spieler.
 
 **Ausgabe:**
 - je Spieler der früheste und späteste Zeitpunkt über alle Seeds für den ersten Verkauf, jeden Ausbau und das Ende der Ziele
 - die längste Wartezeit ohne Fortschritt
-- **Leerlauf:** die längste Strecke am Stück (`longest idle`) und der Anteil an der Zeit (`idle share`), in denen Rösten nichts bringt. Gezählt wird in Abschnitten von 15 Sekunden: Der Wagen stand mindestens die Hälfte der Zeit voll, und kein Gast wartete auf einen Sack. Nur solange noch etwas offen ist, also nicht nach dem letzten Kauf.
-- **Verlorene Gäste** (`guests lost`): Anteil der Gäste, die vor einer vollen Schlange umkehren. Er zeigt, ob sich Rühren lohnt: Der aktive Spieler sollte deutlich weniger Gäste verlieren als der gemütliche.
+- **Leerlauf:** die längste Strecke am Stück (`longest idle`) und der Anteil an der Zeit (`idle share`), in denen Rösten nichts bringt. Gezählt wird in Abschnitten von 15 Sekunden: Mindestens die Hälfte der Zeit war der Wagen ganz voll oder ein Röster wartete auf Platz in seinem Fach, und kein Gast wartete auf einen Röstgrad, der nicht im Wagen lag. Nur solange noch etwas offen ist, also nicht nach dem letzten Kauf.
+- **Verlorene Gäste** (`guests lost`): Anteil der Gäste, die vor einer vollen Schlange umkehren oder ohne ihren Röstgrad gehen. Er zeigt, ob sich Rühren lohnt: Der aktive Spieler sollte deutlich weniger Gäste verlieren als der gemütliche.
 - was die Automatik am Ende ohne Spieler pro Minute einbringt (`auto per min`) und was das als Offline-Ertrag für die volle Obergrenze ergibt (`offline 8 h`)
 
 **Harte Fehler** beenden mit Code 1:
@@ -122,16 +136,20 @@ Beide kaufen, was das aktuelle Ziel verlangt, danach alles, was sie sich leisten
 
 Der Unit-Test des Simulators verlangt für das Thema null Warnungen; eine Warnung lässt also auch `npm test` scheitern.
 
-**Stand 01.10.2026 (Balance nach Schritt 5b):**
-- aktiv: Café nach 4:13 bis 4:23, Röstkurs nach 12:18 bis 12:55, Umzug nach 15:06 bis 15:27; im zweiten Durchgang Café nach 2:17 bis 2:29, Röstkurs nach 6:15 bis 6:44
-- gemütlich: Café nach 5:35 bis 6:06, Röstkurs nach 15:40 bis 16:05, Umzug nach 18:46 bis 19:25; im zweiten Durchgang Röstkurs nach 8:14 bis 8:43
-- längste Wartezeit ohne Kauf, Ziel oder Umzug: 1:34 (aktiv), 1:48 (gemütlich)
-- Leerlauf: höchstens 0:45 am Stück und 3 % der Zeit (aktiv), keiner beim gemütlichen Spieler
-- verlorene Gäste: 3 % (aktiv), 17 % (gemütlich)
+**Stand 02.10.2026 (strenge Wünsche, einstellbare Trommelröster):**
+- aktiv: Trommelröster nach 2:01 bis 2:10, Café nach 3:35 bis 3:53, Röstkurs nach 11:55 bis 12:24, Umzug nach 15:14 bis 16:08; im zweiten Durchgang Café nach 2:02 bis 2:16, Röstkurs nach 6:13 bis 6:39
+- gemütlich: Café nach 4:55 bis 5:13, Röstkurs nach 14:27 bis 15:10, Umzug nach 18:18 bis 18:51; im zweiten Durchgang Röstkurs nach 7:45 bis 8:05
+- längste Wartezeit ohne Kauf, Ziel oder Umzug: 1:36 (aktiv), 1:41 (gemütlich)
+- Leerlauf: höchstens 0:15 am Stück und 1 % der Zeit (aktiv), keiner beim gemütlichen Spieler
+- verlorene Gäste: 7 % (aktiv), 19 % (gemütlich)
 - keine Warnungen
+- **Was sich mit den strengen Wünschen geändert hat:**
+  - Preis je Sack 7,5 statt 5 (ohne Wunsch) und 8 (mit Wunsch). Gerundet sind das am Anfang 8, mit Café 11, mit Espressomaschine 16 und mit Röstkurs 20.
+  - Spätere Teile kosten mehr: Lastenrad 1.100, Espressomaschine 1.600, Gasbrenner 2.200, Röstkurs 2.500, Umzug 5.800. Mit Röstprofil und aufgefüllten Fächern trifft die Automatik die Wünsche fast immer; ohne die höheren Preise kam der Umzug für den aktiven Spieler schon nach etwa 13 bis 14 Minuten.
+  - Die Ziele für Einnahmen liegen wieder in der Mitte zwischen zwei Käufen (1.300, 2.450, 3.900, 5.600, 7.800 und neu 9.200), damit keine Pause länger als zwei Minuten wird.
 - **Warum diese Reihenfolge:** Vorher kamen Helferin und Trommelröster direkt hintereinander. Ab etwa Minute 2 konnten Pfanne und Trommelröster schon ohne Rühren rund 31 Säcke pro Minute rösten, es kamen aber nur etwa 21 Gäste (geschätzt aus den Röstzeiten und Ankünften). Der Wagen stand voll, die Röster standen 36 bis 68 % der Zeit still, und Rühren brachte bis zum Café nichts (Leerlauf bis 2:30 am Stück, 36 % der Zeit). Jetzt wechseln sich mehr Gäste und mehr Röster ab:
   - Helferin, dann der Kundenstopper (mehr Gäste): Gäste warten, Rühren lohnt sich.
   - Trommelröster (jetzt 12 statt 10 Sekunden bis zur dunkelsten Röstung), dann Röstprofil und Café: Nachfrage und Röster etwa gleich.
   - zweiter Trommelröster, dann das Lastenrad (mehr Gäste, mehr Platz): Danach warten wieder Gäste, bis der Gasbrenner die Röster beschleunigt. Die Espressomaschine und der Röstkurs heben dazwischen die Preise.
   - Die Ziele für Einnahmen liegen jeweils etwa in der Mitte zwischen zwei Käufen, damit keine Pause länger als zwei Minuten wird. Im Hafenviertel gelten dieselben Schwellen; mit den doppelten Preisen erreicht man sie schneller, der zweite Durchgang ist darum kürzer.
-- Automatik am Ende des simulierten zweiten Durchgangs: etwa 1.900 bis 2.300 pro Minute, also 460.000 bis 560.000 für 8 Stunden offline.
+- Automatik am Ende des simulierten zweiten Durchgangs: etwa 2.260 bis 2.360 pro Minute, also 540.000 bis 570.000 für 8 Stunden offline.
